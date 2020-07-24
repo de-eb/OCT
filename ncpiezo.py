@@ -23,11 +23,30 @@ class PiezoController:
         print(self.read_axis_name)
     
     def __command(self, cmd: str):
-        """
+        """ Format the command string and send it to the controller.
         """
         self.__ser.write((cmd+self.__delimiter).encode('utf-8'))
+    
+    def move_stage(self, axis: str, position: int):
+        """ Move stage to the absolute position.
+        """
+        self.__command('MV {}{}'.format(axis, position))
+    
+    def read_position(self, axis: str) -> str:
+        """ Return the reading value (present position) from A/D converter
+            of the displacement sensor by nanometer unit.
+        """
+        self.__command('PS? {}'.format(axis))
+        time.sleep(0.1)
+        return self.__ser.readline()
+    
+    def set_servo_mode(self, axis: str, mode: int):
+        """ Set the servo mode. There is a delay of several seconds
+            when switching the servo.
+        """
+        self.__command('SV {}{}'.format(axis, mode))
 
-    def write_communication_setting(
+    def set_communication(
             self, baudrate: int, rtscts: bool, delimiter: str) -> None:
         """ Execute setting of RS-232C communication.
         """
