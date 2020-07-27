@@ -18,9 +18,9 @@ class PiezoController:
             timeout = 0.1,
             rtscts = self.__rtscts)
         time.sleep(0.1)
-        print(self.read_communication_setting)
-        print(self.read_firmware_version)
-        print(self.read_axis_name)
+        print(self.read_communication_setting())
+        print(self.read_firmware_version())
+        print(self.read_axis_name())
     
     def __command(self, cmd: str):
         """ Format the command string and send it to the controller.
@@ -129,4 +129,4 @@ class InvalidSettingError(PiezoControllerError):
 
 if __name__ == "__main__":
 
-    stage = PiezoController(port='COM2')
+    stage = PiezoController(port='COM3')
