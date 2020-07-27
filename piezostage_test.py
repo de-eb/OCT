@@ -5,15 +5,13 @@ if __name__ == "__main__":
 
     ser = serial.Serial('COM2', 38400)
 
-    ser.flush()
-
-    cmd = 'Q:\r\n\r'.encode('utf-8')
+    cmd = 'Q:\r\n'.encode('utf-8')
     ser.write(cmd)
     print(cmd)
 
     time.sleep(0.01)
 
-    print(ser.read(10))
+    print(ser.readline())
 
 
 # import visa
