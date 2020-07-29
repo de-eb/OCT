@@ -24,7 +24,7 @@ if __name__ == "__main__":
     data = np.zeros((2,100))  # photodetector output (time, voltage)
 
     # Initialize DAQMX(A/D convertor) tasks.
-    pd = PhotoDetector(ai_channels="Dev2/ai2")
+    pd = PhotoDetector(ai_channels="Dev1/ai2")
 
     # Initialize graph.
     fig, ax = plt.subplots(1, 1)
