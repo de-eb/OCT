@@ -1,14 +1,27 @@
+import time
+import numpy as np
 import nidaqmx
 
 class PhotoDetector:
+    """Reads the output voltage of a photodetector by NI's DAQ device.
+    """
 
     def __init__(self, ai_channels: str):
         self.__task = nidaqmx.Task()
         self.__task.ai_channels.add_ai_voltage_chan(ai_channels)
         self.__task.start()
     
-    def measure_voltage(self):
-        return self.__task.read()
+    def read_voltage(self, samples=1) -> array:
+        """Reads the output voltage of a photodetector.
+        """
+        if samples <= 1:
+            return self.__task.read()
+        data = np.zeros((2,samples))
+        start_time = time.time()
+        for i in range(samples):
+            data[0,i] = time.time() - start_time
+            data[1,i] = self.__task.read()
+        return data
     
     def stop_measuring(self):
         self.__task.stop()
@@ -17,9 +30,7 @@ class PhotoDetector:
 
 if __name__ == "__main__":
 
-    import numpy as np
     import matplotlib.pyplot as plt
-    import time
 
     data = np.zeros((2,100))  # photodetector output (time, voltage)
 
@@ -36,8 +47,10 @@ if __name__ == "__main__":
 
     start = time.time()
     while True:
+        # Measure
         data[0,0] = time.time() - start
-        data[1,0] = pd.measure_voltage()
+        data[1,0] = pd.read_voltage()
+        # plot
         data = np.roll(data, -1, axis=1)
         graph.set_data(data[0], data[1])
         ax.set_xlim((data[0].min(), data[0].max()))
