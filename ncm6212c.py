@@ -2,7 +2,7 @@ import serial
 import time
 
 
-class PiezoController:
+class NCM6212C:
 
     def __init__(
             self, port: str, baudrate=38400, rtscts=True, delimiter='\r\n'):
@@ -98,8 +98,8 @@ class PiezoController:
         self.__command('RS')
         print("All settings have been reset. Reboot the piezo controller.")
 
-class PiezoControllerError(Exception):
-    """Base exception class for STS.
+class ErrorNCM6212C(Exception):
+    """Base exception class for PiezoController.
     
     All exceptions thrown from the package inherit this.
     Attributes
@@ -123,10 +123,10 @@ class PiezoControllerError(Exception):
         """Return the error message."""
         return self.msg
 
-class InvalidSettingError(PiezoControllerError):
+class InvalidSettingError(ErrorNCM6212C):
     """Raised when an invalid parameter is set."""
 
 
 if __name__ == "__main__":
 
-    stage = PiezoController(port='COM2')
+    stage = NCM6212C(port='COM2')
