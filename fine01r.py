@@ -2,7 +2,7 @@ import serial
 import time
 
 
-class FINE_01R:
+class FINE01R:
 
     def __init__(self, port: str, baudrate=38400, delimiter='\r\n'):
 
