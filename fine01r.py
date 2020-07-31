@@ -25,42 +25,47 @@ class FINE01R:
         """ Receive a reply from the controller.
         """
         ret = self.__ser.read_until(self.__delimiter.encode('utf-8'))
-        return ret
+        return ret.decode('utf-8').strip()
+    
+    def sendreceive(self, cmd: str):
+        """ Send a command and receive a reply
+        """
+        self.__ser.write((cmd+self.__delimiter).encode('utf-8'))
+        ret = self.__ser.read_until(self.__delimiter.encode('utf-8'))
+        return ret.decode('utf-8').strip()
     
     def read_status(self):
         """ Sends back the operating status of the stage
             and the coordinate values for each axis.
         """
-        self.__send('Q:')
-        stat = self.__receive()
+        stat = self.sendreceive('Q:')
         return stat
     
     def read_hardware_info(self):
         """ Returns the internal information data of the controller.
         """
-        self.__send('?:N')
-        device_name = self.__receive()
-        self.__send('?:V')
-        firmware_version = self.__receive()
+        device_name = self.sendreceive('?:N')
+        firmware_version = self.sendreceive('?:V')
         return device_name, firmware_version
     
-    def move_stage(self, position: int):
+    def absolute_move(self, position: int):
         """ Move stage to the absolute position.
         """
         if position == 0:
-            self.__send('H:1')
+            return self.sendreceive('H:1')
         else:
-            self.__send('A:1+P{}'.format(position))
-            self.__send('G:')
+            self.sendreceive('A:1+P{}'.format(position))
+            return self.sendreceive('G:')
     
-    def stop_stage(self):
+    def stop(self):
         """ Like the Emergency Stop button, it makes the stage stop
             and returns to the home(0mV) position.
         """
-        self.__send('L:E')
+        return self.sendreceive('L:E')
 
 
 if __name__ == "__main__":
-    stage = FINE_01R('COM2')
+    stage = FINE01R('COM4')
     print(stage.read_hardware_info())
+    print(stage.absolute_move(0))
     print(stage.read_status())
