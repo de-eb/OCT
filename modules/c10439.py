@@ -2,7 +2,7 @@ import time
 import numpy as np
 import nidaqmx
 
-class C10439_11:
+class C10439:
     """Reads the output voltage of a photodetector by NI's DAQ device.
     """
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     data = np.zeros((2,100))  # photodetector output (time, voltage)
 
     # Initialize DAQMX(A/D convertor) tasks.
-    pd = C10439_11(ai_channels="Dev1/ai2")
+    pd = C10439(ai_channels="Dev1/ai2")
 
     # Initialize graph.
     fig, ax = plt.subplots(1, 1)
