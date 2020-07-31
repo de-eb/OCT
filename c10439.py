@@ -11,7 +11,7 @@ class C10439_11:
         self.__task.ai_channels.add_ai_voltage_chan(ai_channels)
         self.__task.start()
     
-    def read_voltage(self, samples=1) -> array:
+    def read_voltage(self, samples=1):
         """Reads the output voltage of a photodetector.
         """
         if samples <= 1:
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     data = np.zeros((2,100))  # photodetector output (time, voltage)
 
     # Initialize DAQMX(A/D convertor) tasks.
-    pd = C10439_11(ai_channels="Dev2/ai2")
+    pd = C10439_11(ai_channels="Dev1/ai2")
 
     # Initialize graph.
     fig, ax = plt.subplots(1, 1)
