@@ -54,6 +54,7 @@ if __name__ == "__main__":
         data = np.roll(data, -1, axis=1)
         graph.set_data(data[0], data[1])
         ax.set_xlim((data[0].min(), data[0].max()))
+        ax.set_ylim((0, 2*data[1].max()))
         plt.pause(0.0001)
 
     pd.stop_measuring()
