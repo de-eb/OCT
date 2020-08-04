@@ -1,3 +1,4 @@
+import atexit
 import pyvisa
 
 
@@ -38,6 +39,7 @@ class HP8168F:
         self.__dev.write(':POW {}W'.format(power))
         self.__dev.write(':OUTP ON')
 
+    @atexit.register
     def stop(self):
         """ Stop the laser output.
         """
