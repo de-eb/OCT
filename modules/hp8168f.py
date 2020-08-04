@@ -5,10 +5,14 @@ import pyvisa
 
 class HP8168F:
 
+    class Switch(Enum):
+        ON = 'ON'
+        OFF = 'OFF'
+
     class SetTo(Enum):
-        MIN = 'MIN'
-        DEF = 'DEF'
-        MAX = 'MAX'
+        MINIMUM = 'MIN'
+        DEFAULT = 'DEF'
+        MAXIMUM = 'MAX'
     
     class PowerUnits(Enum):
         DBM = 'DBM'
@@ -40,11 +44,10 @@ class HP8168F:
         elif ret == '+0':
             return False
     
-    def output(self, output: bool, block: bool):
+    def output(self, output: bool):
         """ Switches the laser current OFF and ON.
         """
         self.__dev.write(':OUTP {}'.format('ON' if output else 'OFF'))
-        self.__dev.write('::POW:ATT:DARK {}'.format('ON' if block else 'OFF'))
     
     def set_output_mode(self, attenuation: bool):
         """ Selects Power or Attenuation Mode. 
@@ -61,6 +64,11 @@ class HP8168F:
         """ Sets the power units.
         """
         self.__dev.write(':POW:UNIT {}'.format(unit))
+    
+    def set_power(self, val):
+        """ Sets the power.
+        """
+        self.__dev.write(':POW {}'.format(val))
     
     def adjust(
         self, power: float, attenuation: float, wavelength: float):
@@ -95,22 +103,15 @@ class HP8168F:
     def read_status(self):
         """
         """
-        output = self.__dev.query(':OUTP?')
-        # blind = self.__dev.query(':POW:ATT:DARK?')
-        # mode = self.__dev.query(':POW:ATT:AUTO?')
-        unit = self.__dev.query(':POW:UNIT?')
-        power = self.__dev.query(':POW?')
-        attenuation = self.__dev.query(':POW:ATT?')
-        wavelength = self.__dev.query(':WAVE?')
-        status = {
-            'output': output,
-            # 'blind': blind,
-            # 'mode': mode,
-            'unit': unit,
-            'power': power,
-            'attenuation': attenuation,
-            'wavelength': wavelength}
-        return status
+        stat = {}
+        stat['output'] = self.__dev.query(':OUTP?')
+        # stat['blind'] = self.__dev.query(':POW:ATT:DARK?')
+        # stat['mode'] = self.__dev.query(':POW:ATT:AUTO?')
+        stat['unit'] = self.__dev.query(':POW:UNIT?')
+        stat['power'] = self.__dev.query(':POW?')
+        # stat['attenuation'] = self.__dev.query(':POW:ATT?')
+        stat['wavelength'] = self.__dev.query(':WAVE?')
+        return stat
 
 
 if __name__ == "__main__":
@@ -118,5 +119,7 @@ if __name__ == "__main__":
     laser = HP8168F('GPIB0::24::INSTR')
     print(laser.read_hardware_info())
     if not laser.lock_device(lock=False, password=0000):
-        stat = laser.read_status()
-        print(stat)
+        # laser.set_output_mode(attenuation=False)
+        laser.set_power('MAX')
+        laser.output(True)
+        print(laser.read_status())
