@@ -10,14 +10,14 @@ if __name__ == "__main__":
     #  Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev2/ai2")  # photo detector
-    stage = FINE01R('COM5')  # piezo stage
+    stage = FINE01R('COM7')  # piezo stage
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Measuring
-    laser.output(wavelength=1500, power=200)
+    laser.output(wavelength=1500, power=400)
     stage.absolute_move(0)
     time.sleep(5)
     for i in range(len(position)):
