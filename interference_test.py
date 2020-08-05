@@ -26,17 +26,22 @@ if __name__ == "__main__":
         time.sleep(0.5)
         voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
         print(voltage[i])
-    # laser.stop()
     stage.absolute_move(0)
     
     # Save data
     data = np.vstack((position, voltage)).T
     np.savetxt('data/data.csv', data, delimiter=',')
 
+    # Calculate theoretical curve
+    ref = np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1500)
+    ref = ref * (np.max(voltage)-np.min(voltage)) + np.min(voltage)
+
     # Show Graph
     fig, ax = plt.subplots(1, 1)
     ax.set_title("Measurement results")
     ax.set_xlabel("stage position [nm]")
     ax.set_ylabel("voltage [V]")
-    ax.plot(position, voltage)
+    ax.scatter(position, voltage, s=30, label='measured')
+    ax.plot(position, ref, label='theoretical')
+    ax.legend()
     plt.show()
