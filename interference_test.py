@@ -9,22 +9,22 @@ if __name__ == "__main__":
 
     #  Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
-    photo = C10439_11(ai_channels="Dev2/ai2")  # photo detector
-    stage = FINE01R('COM7')  # piezo stage
+    photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
+    stage = FINE01R('COM4')  # piezo stage
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Measuring
-    laser.output(wavelength=1500, power=400)
+    # laser.output(wavelength=1500, power=3000)
     stage.absolute_move(0)
     time.sleep(5)
     for i in range(len(position)):
         stage.absolute_move(position[i])
         print(stage.read_status())
-        time.sleep(0.5)
-        voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
+        time.sleep(2)
+        voltage[i] = np.mean(photo.read_voltage(samples=1000)[1])
         print(voltage[i])
     stage.absolute_move(0)
     
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     np.savetxt('data/data.csv', data, delimiter=',')
 
     # Calculate theoretical curve
-    ref = np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1500)
+    ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1500))**2
     ref = ref * (np.max(voltage)-np.min(voltage)) + np.min(voltage)
 
     # Show Graph
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     ax.set_title("Measurement results")
     ax.set_xlabel("stage position [nm]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(position, voltage, s=30, label='measured')
+    ax.scatter(position, voltage, s=20, label='measured')
     ax.plot(position, ref, label='theoretical')
     ax.legend()
     plt.show()
