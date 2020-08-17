@@ -5,20 +5,18 @@ import time
 class NCM6212C:
 
     def __init__(
-            self, port: str, baudrate=38400, rtscts=True, delimiter='\r\n'):
+            self, port: str, baudrate=38400, delimiter='\r\n'):
 
         self.__port = port
         self.__baudrate = baudrate
-        self.__rtscts = rtscts
         self.__delimiter = delimiter
 
         self.__ser = serial.Serial(
             port = self.__port,
             baudrate = self.__baudrate,
             timeout = 0.1,
-            rtscts = self.__rtscts)
-        # time.sleep(0.1)
-        print(self.read_hardware_info)
+            rtscts = True)
+        print(self.read_hardware_info())
     
     def __send(self, cmd: str):
         """ Format the command string and send it to the controller.
@@ -132,4 +130,4 @@ class NCM6212C:
 
 if __name__ == "__main__":
 
-    stage = NCM6212C(port='COM2')
+    stage = NCM6212C(port='COM5')
