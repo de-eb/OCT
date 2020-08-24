@@ -20,7 +20,7 @@ if __name__ == "__main__":
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Measuring
-    laser.output(wavelength=1500, power=3000)
+    laser.output(wavelength=1500, power=400)
     # stage.absolute_move(0)
     stage.absolute_move(axis='A', position=0)
     stage.absolute_move(axis='B', position=0)
