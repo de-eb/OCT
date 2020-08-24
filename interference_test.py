@@ -4,29 +4,41 @@ import matplotlib.pyplot as plt
 from modules.hp8168f import HP8168F
 from modules.c10439 import C10439_11
 from modules.fine01r import FINE01R
+from modules.ncm6212c import NCM6212C
 
 if __name__ == "__main__":
 
     #  Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage = FINE01R('COM4')  # piezo stage
+    # stage = FINE01R('COM4')  # piezo stage
+    stage = NCM6212C('COM5')  # piezo stage
+    
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Measuring
-    # laser.output(wavelength=1500, power=3000)
-    stage.absolute_move(0)
+    laser.output(wavelength=1500, power=3000)
+    # stage.absolute_move(0)
+    stage.absolute_move(axis='A', position=0)
+    stage.absolute_move(axis='B', position=0)
     time.sleep(5)
     for i in range(len(position)):
-        stage.absolute_move(position[i])
-        print(stage.read_status())
-        time.sleep(2)
+        # stage.absolute_move(position[i])
+        # print(stage.read_status())
+        stage.absolute_move(axis='A', position=position[i])
+        stat = stage.read_status()
+        print(stat)
+        position[i] = stat['position-A']
+        # time.sleep(2)
         voltage[i] = np.mean(photo.read_voltage(samples=1000)[1])
         print(voltage[i])
-    stage.absolute_move(0)
+    # stage.absolute_move(0)
+    stage.absolute_move(axis='A', position=0)
+    stage.absolute_move(axis='B', position=0)
+
     
     # Save data
     data = np.vstack((position, voltage)).T

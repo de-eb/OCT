@@ -86,13 +86,13 @@ class NCM6212C:
         `dict` Name and data pairs.
 
             {
-                'position-': str, Displacement of each axis of the stage [nm].
+                'position-': int, Displacement of each axis of the stage [nm].
                 'error-'   : str, Errors in each axis of the stage.
             }
         """
         status = {}
-        status['position-A'] = self.sendreceive('PS? A')
-        status['position-B'] = self.sendreceive('PS? B')
+        status['position-A'] = int(self.sendreceive('PS? A'))
+        status['position-B'] = int(self.sendreceive('PS? B'))
         # status['psition_ax3'] = self.sendreceive('PS? C')
         status['error-A'] = self.sendreceive('ER? A')
         status['error-B'] = self.sendreceive('ER? B')
