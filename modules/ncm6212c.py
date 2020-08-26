@@ -74,7 +74,6 @@ class NCM6212C:
         The final instruction position(absolute value) after executing.
         """
         self.__send('MV {}{}'.format(axis, position))
-        time.sleep(2)
         return self.sendreceive('MV? {}'.format(axis))
     
     def read_status(self):
