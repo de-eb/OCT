@@ -8,38 +8,32 @@ from modules.ncm6212c import NCM6212C
 
 if __name__ == "__main__":
 
-    #  Device settings
+    # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    # stage = FINE01R('COM4')  # piezo stage
-    stage = NCM6212C('COM5')  # piezo stage
-    
+    stage1 = FINE01R('COM4')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM5')  # piezo stage (sample side)
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Measuring
-    laser.output(wavelength=1500, power=400)
-    # stage.absolute_move(0)
-    stage.absolute_move(axis='A', position=0)
-    stage.absolute_move(axis='B', position=0)
+    laser.output(wavelength=1500, power=3000)
+    stage1.absolute_move(0)
+    stage2.absolute_move(axis='A', position=0)
+    stage2.absolute_move(axis='B', position=0)
     time.sleep(5)
     for i in range(len(position)):
-        # stage.absolute_move(position[i])
-        # print(stage.read_status())
-        stage.absolute_move(axis='A', position=position[i])
-        stat = stage.read_status()
-        print(stat)
-        position[i] = stat['position-A']
-        # time.sleep(2)
-        voltage[i] = np.mean(photo.read_voltage(samples=1000)[1])
-        print(voltage[i])
-    # stage.absolute_move(0)
-    stage.absolute_move(axis='A', position=0)
-    stage.absolute_move(axis='B', position=0)
+        # Be sure to comment out one or the other.
+        stage1.absolute_move(position[i])
+        # stage2.absolute_move(axis='A', position=position[i])
 
-    
+        voltage[i] = np.mean(photo.read_voltage(samples=1000)[1])
+        print('{} nm, {:.3f} V'.format(position[i],voltage[i]))
+    stage1.absolute_move(0)
+    stage2.absolute_move(axis='A', position=0)
+
     # Save data
     data = np.vstack((position, voltage)).T
     np.savetxt('data/data.csv', data, delimiter=',')
