@@ -37,7 +37,7 @@ class HP8168F:
         power : `int`, required
             Laser power intensity [μW]. It can be set between 10 ~ 450μW.
         """
-        self.__dev.write(':WAVE {}NM'.format(wavelength))
+        self.__dev.write(':WAVE {:.3f}NM'.format(wavelength))
         self.__dev.write(':POW {}UW'.format(power))
         self.__dev.write(':OUTP ON')
 
