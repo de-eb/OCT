@@ -15,11 +15,11 @@ if __name__ == "__main__":
     stage2 = NCM6212C('COM5')  # piezo stage (sample side)
 
     # Data container
-    wavelength = np.arange(start=1475.0, stop=1580.1, step=0.1)  # wavelength
+    wavelength = np.arange(start=1501.0, stop=1575.0, step=0.1)  # wavelength
     voltage = np.zeros_like(wavelength, dtype=float)  # photo detector output
 
     # Initializing
-    laser.output(wavelength=1475, power=3000)
+    laser.output(wavelength=1501.0, power=3000)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # Measuring
     for i in range(len(wavelength)):
-        laser.output(wavelength=wavelength[i], power=250)
+        laser.output(wavelength=wavelength[i], power=3000)
         stat = laser.read_status()
         voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
         print('{:.3f} nm, {:.3f} V'.format(wavelength[i],voltage[i]))
@@ -42,6 +42,6 @@ if __name__ == "__main__":
     ax.set_title("Measurement results")
     ax.set_xlabel("wavelength [nm]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(wavelength, voltage, s=20, label='measured')
+    ax.scatter(wavelength, voltage, s=10, label='measured')
     ax.legend()
     plt.show()
