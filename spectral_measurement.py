@@ -15,33 +15,34 @@ if __name__ == "__main__":
     stage2 = NCM6212C('COM5')  # piezo stage (sample side)
 
     # Data container
-    wavelength = np.arange(start=1501.0, stop=1575.0, step=0.1)  # wavelength
-    voltage = np.zeros_like(wavelength, dtype=float)  # photo detector output
+    frequency = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
+    voltage = np.zeros_like(frequency, dtype=float)  # photo detector output
 
     # Initializing
-    laser.output(wavelength=1501.0, power=3000)
+    laser.output(power=3000)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
     time.sleep(5)
 
     # Measuring
-    for i in range(len(wavelength)):
-        laser.output(wavelength=wavelength[i], power=3000)
+    for i in range(len(frequency)):
+        laser.set_frequency(frequency[i])
         stat = laser.read_status()
+        frequency[i] = stat['frequency']
         voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
-        print('{:.3f} nm, {:.3f} V'.format(wavelength[i],voltage[i]))
+        print('{:.1f} GHz, {:.3f} V'.format(frequency[i],voltage[i]))
     laser.stop()
 
     # Save data
-    data = np.vstack((wavelength, voltage)).T
+    data = np.vstack((frequency, voltage)).T
     np.savetxt('data/data.csv', data, delimiter=',')
 
     # Show Graph
     fig, ax = plt.subplots(1, 1)
     ax.set_title("Measurement results")
-    ax.set_xlabel("wavelength [nm]")
+    ax.set_xlabel("frequency [GHz]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(wavelength, voltage, s=10, label='measured')
+    ax.scatter(frequency, voltage, s=10, label='measured')
     ax.legend()
     plt.show()
