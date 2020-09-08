@@ -35,7 +35,7 @@ class HP8168F:
         self.__dev.write(':WAVE {}NM'.format(HP8168F.wl_ref))
         self.__dev.write(':WAVE:REF:DISP')
     
-    def output(self, wavelength: float, power: int):
+    def output(self, power: int):
         """ Output laser.
         
         Parameters
