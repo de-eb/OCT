@@ -11,25 +11,17 @@ d = 0.05e-3
 if __name__ == "__main__":
 
     # Data loading
-    data = np.loadtxt('data/200902_0.csv', delimiter=',')
-    wl = data[:,0] * 1e-9 # wavelength
+    data = np.loadtxt('data/200908_0.csv', delimiter=',')
+    freq = data[:,0] * 1e9 # frequency
     itf = data[:,1]  # interference spectra
-    ref = np.loadtxt('data/200902_0_ref.csv', delimiter=',')[:,1]  # reference spectra
+    ref = np.loadtxt('data/200908_0_ref.csv', delimiter=',')[:,1]  # reference spectra
 
     # Background Subtraction
     tmp = itf - ref
 
-    # Re-Sampling
-    N = len(wl)
-    i = np.arange(N)
-    s = (N-1)/(np.amax(wl)-np.amin(wl)) * (1/(1/np.amax(wl)+i/(N-1)*(1/np.amin(wl)-1/np.amax(wl))) - np.amin(wl))
-    wl_fix = np.amin(wl) + s*(np.amax(wl)-np.amin(wl))/(N-1)
-    func = interpolate.interp1d(wl, tmp, kind='cubic')  # interpolation
-    tmp = func(wl_fix)
-
     # Axis conversion
-    depth = c*(1/(c/(wl_fix*n)))/(2*n)  # depth
-    depth = depth - depth[int(N/2)]
+    depth = c*(1/freq)/(2*n)  # depth
+    depth = depth - depth[int(len(freq)/2)]
 
     # FFT
     tmp = np.abs(np.fft.ifft(tmp))
@@ -39,6 +31,9 @@ if __name__ == "__main__":
     ax.set_title("A-scan")
     ax.set_xlabel("depth [nm]")
     ax.set_ylabel("magnitude [-]")
-    ax.plot(depth*1e9, tmp, label='FFT')
-    # ax.legend()
+    ax.plot(depth*1e9, tmp)
+    # ax.set_title("spectral interferogram")
+    # ax.set_xlabel("frequency [THz]")
+    # ax.set_ylabel("voltage [V]")
+    # ax.plot(freq*1e-12, itf)
     plt.show()
