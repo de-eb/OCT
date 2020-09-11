@@ -41,8 +41,8 @@ if __name__ == "__main__":
     # Show Graph
     fig, ax = plt.subplots(1, 1)
     ax.set_title("Measurement results")
-    ax.set_xlabel("frequency [GHz]")
+    ax.set_xlabel("frequency [THz]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(frequency, voltage, s=10, label='measured')
+    ax.scatter(frequency*1e-3, voltage, s=10, label='measured')
     ax.legend()
     plt.show()
