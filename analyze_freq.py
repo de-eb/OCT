@@ -19,6 +19,7 @@ data=np.abs(np.fft.ifft(itf_BGremoved))
 time=1./freq
 depth=((time*3e8)/2)*1e9
 depth=depth-np.amin(depth)
+depth=depth-depth[int(len(freq)/2)]
 
 
 plt.xlabel("depth[nm]")
