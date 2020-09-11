@@ -16,13 +16,15 @@ itf_BGremoved = itf - ref #interference spectra(background removed)
 data=np.abs(np.fft.ifft(itf_BGremoved))
 
 # x-axis calculation
-time=1./freq
-depth=((time*3e8)/2)*1e9
+time=np.arange(0,len(freq))
+timeband=1./(np.amax(freq)-np.amin(freq))
+time=timeband*time #ここで[psec]
+depth=((time*3e8)/2)*1e3
 depth=depth-np.amin(depth)
 depth=depth-depth[int(len(freq)/2)]
 
 
-plt.xlabel("depth[nm]")
+plt.xlabel("depth[mm]")
 plt.ylabel("light intensity")
 plt.plot(depth,data)
 plt.show()
