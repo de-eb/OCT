@@ -11,31 +11,33 @@ if __name__ == "__main__":
     # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage1 = FINE01R('COM4')  # piezo stage (mirror side)
-    stage2 = NCM6212C('COM5')  # piezo stage (sample side)
+    stage1 = FINE01R('COM6')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM7')  # piezo stage (sample side)
 
     # Data container
-    frequency = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
-    voltage = np.zeros_like(frequency, dtype=float)  # photo detector output
+    freq = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
+    # voltage = np.zeros_like(frequency, dtype=float)  # photo detector output
+    volt = np.zeros((len(freq),100), dtype=float)
 
     # Initializing
-    laser.output(power=3000)
+    laser.output(power=100)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
     time.sleep(5)
 
     # Measuring
-    for i in range(len(frequency)):
-        laser.set_frequency(frequency[i])
-        stat = laser.read_status()
-        frequency[i] = stat['frequency']
-        voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
-        print('{:.1f} GHz, {:.3f} V'.format(frequency[i],voltage[i]))
+    for j in range(volt.shape[1]):
+        for i in range(volt.shape[0]):
+            laser.set_frequency(freq[i])
+            stat = laser.read_status()
+            # frequency[i] = stat['frequency']
+            volt[i,j] = np.mean(photo.read_voltage(samples=100)[1])
+            print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i,j]))
     laser.stop()
 
     # Save data
-    data = np.vstack((frequency, voltage)).T
+    data = np.hstack((freq.reshape(len(freq),1), volt))
     np.savetxt('data/data.csv', data, delimiter=',')
 
     # Show Graph
@@ -43,6 +45,6 @@ if __name__ == "__main__":
     ax.set_title("Measurement results")
     ax.set_xlabel("frequency [THz]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(frequency*1e-3, voltage, s=10, label='measured')
+    ax.scatter(freq*1e-3, np.mean(volt, axis=1), s=10, label='measured')
     ax.legend()
     plt.show()
