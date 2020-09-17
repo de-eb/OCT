@@ -11,15 +11,15 @@ if __name__ == "__main__":
     # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage1 = FINE01R('COM4')  # piezo stage (mirror side)
-    stage2 = NCM6212C('COM5')  # piezo stage (sample side)
+    stage1 = FINE01R('COM6')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM7')  # piezo stage (sample side)
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Initializing
-    laser.set_wavelength(wavelength=1500)
+    laser.set_wavelength(wavelength=1540)
     laser.output(power=3000)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     np.savetxt('data/data.csv', data, delimiter=',')
 
     # Calculate theoretical curve
-    ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1500))**2
+    ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1540))**2
     ref = ref * (np.max(voltage)-np.min(voltage)) + np.min(voltage)
 
     # Show Graph
