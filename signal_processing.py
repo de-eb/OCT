@@ -16,12 +16,16 @@ if __name__ == "__main__":
     itf = data[:,1]  # interference spectra
     ref = np.loadtxt('data/200908_0_ref.csv', delimiter=',')[:,1]  # reference spectra
 
-    # Background Subtraction
-    tmp = itf - ref
+    # Background correction
+    tmp = itf/(2*ref)
+    # tmp = itf - ref
 
-    # Axis conversion
-    depth = c*(1/freq)/(2*n)  # depth
-    depth = depth - depth[int(len(freq)/2)]
+    # x-axis calculation
+    centre = int(len(freq)/2)
+    time = 1. / (np.amax(freq)-np.amin(freq)) * np.arange(0,len(freq))
+    depth = time*c / (2*n)
+    depth = depth - np.amin(depth)
+    depth = depth - depth[centre]
 
     # FFT
     tmp = np.abs(np.fft.ifft(tmp))
@@ -29,9 +33,9 @@ if __name__ == "__main__":
     # Show Graph
     fig, ax = plt.subplots(1, 1)
     ax.set_title("A-scan")
-    ax.set_xlabel("depth [nm]")
+    ax.set_xlabel("depth [mm]")
     ax.set_ylabel("magnitude [-]")
-    ax.plot(depth*1e9, tmp)
+    ax.plot(depth[centre:]*1e3, tmp[centre:])
     # ax.set_title("spectral interferogram")
     # ax.set_xlabel("frequency [THz]")
     # ax.set_ylabel("voltage [V]")
