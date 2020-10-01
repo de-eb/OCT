@@ -16,7 +16,8 @@ if __name__ == "__main__":
 
     # Data container
     freq = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
-    volt = np.zeros_like(freq, dtype=float)  # photo detector output
+    # volt = np.zeros_like(freq, dtype=float)  # photo detector output
+    volt = np.zeros((len(freq),1000))
 
     # Initializing
     laser.output(power=3000)
@@ -26,16 +27,18 @@ if __name__ == "__main__":
     time.sleep(5)
 
     # Measuring
-    for i in range(len(freq)):
-        laser.set_frequency(freq[i])
-        stat = laser.read_status()
-        freq[i] = stat['frequency']
-        volt[i] = np.mean(photo.read_voltage(samples=100)[1])
-        print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i]))
+    for j in range(volt.shape[1]):
+        for i in range(len(freq)):
+            laser.set_frequency(freq[i])
+            stat = laser.read_status()
+            # freq[i] = stat['frequency']
+            volt[i,j] = np.mean(photo.read_voltage(samples=100)[1])
+            print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i,j]))
     laser.stop()
 
     # Save data
-    data = np.vstack((freq, volt)).T
+    # data = np.vstack((freq, volt)).T
+    data = np.hstack((np.reshape(freq, (len(freq),1)), volt))
     np.savetxt('data/data.csv', data, delimiter=',')
 
     # Show Graph
@@ -43,6 +46,6 @@ if __name__ == "__main__":
     ax.set_title("Measurement results")
     ax.set_xlabel("frequency [THz]")
     ax.set_ylabel("voltage [V]")
-    ax.scatter(freq*1e-3, volt, s=10, label='measured')
+    ax.scatter(freq*1e-3, np.mean(volt, axis=1), s=10, label='measured')
     ax.legend()
     plt.show()
