@@ -1,24 +1,31 @@
 import numpy as np
-from scipy import signal, interpolate
+from scipy.special import iv
 import matplotlib.pyplot as plt
 
 
 # Constants
 c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
 n = 1.46  # Refractive index of the sample. cellulose = 1.46
-d = 0.05e-3
+alpha = 1.  # oversampling factor
 
 if __name__ == "__main__":
 
     # Data loading
-    data = np.loadtxt('data/200908_0.csv', delimiter=',')
-    freq = data[:,0] * 1e9 # frequency
-    itf = data[:,1]  # interference spectra
-    ref = np.loadtxt('data/200908_0_ref.csv', delimiter=',')[:,1]  # reference spectra
+    ref = np.loadtxt('data/.csv', delimiter=',')
+    freq = ref[:,0] * 1e9 # frequency
+    bg = ref[:,1]  # background spectra
+    raw = np.loadtxt('data/.csv', delimiter=',')[:,1]  # sample spectra
 
-    # Background correction
-    tmp = itf/(2*ref)
-    # tmp = itf - ref
+    # Background subtruction
+    tmp = raw - bg
+
+    # Re-sampling
+    f_med = np.median(freq)
+    wl = int(0.5*len(raw))  # window length
+    delta_f = (np.amax(freq)-np.amin(freq))/(len(raw))
+    beta = np.pi()*np.sqrt(wl**2*(alpha-1/2)**2/alpha**2 - 0.8)  # design parameter
+    arg = beta
+    window = iv(v=0, z=arg)
 
     # x-axis calculation
     centre = int(len(freq)/2)
