@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     # Data container
     freq = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
-    volt = np.zeros((len(freq),100))  # photo detector output
+    volt = np.zeros((len(freq),1))  # photo detector output
 
     # Initializing
     laser.output(power=3000)
