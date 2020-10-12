@@ -1,5 +1,6 @@
-import time
+import datetime
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from modules.hp8168f import HP8168F
 from modules.c10439 import C10439_11
@@ -24,7 +25,6 @@ if __name__ == "__main__":
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
-    time.sleep(5)
 
     # Measuring
     for i in range(len(position)):
@@ -38,18 +38,23 @@ if __name__ == "__main__":
     stage2.absolute_move(axis='A', position=0)
 
     # Save data
-    data = np.vstack((position, voltage)).T
-    np.savetxt('data/data.csv', data, delimiter=',')
+    with open('data/data.csv', mode='w') as f:
+        f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
+    # data = np.vstack((position, voltage)).T
+    data = pd.DataFrame(
+        data=np.vstack((position, voltage)).T,
+        columns=['Stage position [nm]','Voltage [V]'],
+        dtype='float')
+    # np.savetxt('data/data.csv', data, delimiter=',')
+    data.to_csv('data/data.csv', mode='a')
 
     # Calculate theoretical curve
     ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1540))**2
     ref = ref * (np.max(voltage)-np.min(voltage)) + np.min(voltage)
 
     # Show Graph
-    fig, ax = plt.subplots(1, 1)
-    ax.set_title("Measurement results")
-    ax.set_xlabel("stage position [nm]")
-    ax.set_ylabel("voltage [V]")
+    fig = plt.figure()
+    ax = fig.add_subplot(111, title='Results', xlabel='Stage position [nm]', ylabel='Voltage [V]')
     ax.scatter(position, voltage, s=20, label='measured')
     ax.plot(position, ref, label='theoretical')
     ax.legend()

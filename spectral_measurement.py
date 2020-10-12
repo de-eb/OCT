@@ -1,5 +1,6 @@
-import time
+import datetime
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from modules.hp8168f import HP8168F
 from modules.c10439 import C10439_11
@@ -23,7 +24,6 @@ if __name__ == "__main__":
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
-    time.sleep(5)
 
     # Measuring
     for j in range(volt.shape[1]):
@@ -35,14 +35,19 @@ if __name__ == "__main__":
     laser.stop()
 
     # Save data
-    data = np.hstack((np.reshape(freq, (len(freq),1)), volt))
-    np.savetxt('data/data.csv', data, delimiter=',')
+    # data = np.hstack((np.reshape(freq, (len(freq),1)), volt))
+    # np.savetxt('data/data.csv', data, delimiter=',')
+    with open('data/data.csv', mode='w') as f:
+        f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
+    data = pd.DataFrame(
+        data=np.hstack((np.reshape(freq, (len(freq),1)), volt)),
+        columns=['Frequency [THz]','Voltage [V]'],
+        dtype='float')
+    data.to_csv('data/data.csv', mode='a')
 
     # Show Graph
-    fig, ax = plt.subplots(1, 1)
-    ax.set_title("Measurement results")
-    ax.set_xlabel("frequency [THz]")
-    ax.set_ylabel("voltage [V]")
-    ax.scatter(freq*1e-3, np.mean(volt, axis=1), s=10, label='measured')
+    fig = plt.figure()
+    ax = fig.add_subplot(111, title='Results', xlabel='Frequency [THz]', ylabel='Voltage [V]')
+    ax.scatter(freq*1e-3, np.mean(volt, axis=1), s=5, label='measured')
     ax.legend()
     plt.show()
