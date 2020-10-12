@@ -16,8 +16,8 @@ if __name__ == "__main__":
     stage2 = NCM6212C('COM7')  # piezo stage (sample side)
 
     # Data container
-    freq = np.arange(start=190349.2, stop=199733.5, step=10)  # frequency
-    volt = np.zeros((len(freq),1))  # photo detector output
+    freq = np.arange(start=190349.2, stop=199733.5, step=1)  # frequency
+    volt = np.zeros((len(freq),2))  # photo detector output
 
     # Initializing
     laser.output(power=3000)
@@ -30,18 +30,16 @@ if __name__ == "__main__":
         for i in range(len(freq)):
             laser.set_frequency(freq[i])
             stat = laser.read_status()
-            volt[i,j] = np.mean(photo.read_voltage(samples=100)[1])
+            volt[i,j] = np.mean(photo.read_voltage(samples=10)[1])
             print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i,j]))
     laser.stop()
 
     # Save data
-    # data = np.hstack((np.reshape(freq, (len(freq),1)), volt))
-    # np.savetxt('data/data.csv', data, delimiter=',')
     with open('data/data.csv', mode='w') as f:
         f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
     data = pd.DataFrame(
         data=np.hstack((np.reshape(freq, (len(freq),1)), volt)),
-        columns=['Frequency [THz]','Voltage [V]'],
+        columns=['Frequency [GHz]']+['Voltage_{} [V]'.format(i) for i in range(volt.shape[1])],
         dtype='float')
     data.to_csv('data/data.csv', mode='a')
 

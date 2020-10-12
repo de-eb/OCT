@@ -32,7 +32,7 @@ if __name__ == "__main__":
         # stage1.absolute_move(position[i])
         stage2.absolute_move(axis='A', position=position[i])
 
-        voltage[i] = np.mean(photo.read_voltage(samples=1000)[1])
+        voltage[i] = np.mean(photo.read_voltage(samples=10)[1])
         print('{} nm, {:.3f} V'.format(position[i],voltage[i]))
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
@@ -40,12 +40,10 @@ if __name__ == "__main__":
     # Save data
     with open('data/data.csv', mode='w') as f:
         f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
-    # data = np.vstack((position, voltage)).T
     data = pd.DataFrame(
         data=np.vstack((position, voltage)).T,
         columns=['Stage position [nm]','Voltage [V]'],
         dtype='float')
-    # np.savetxt('data/data.csv', data, delimiter=',')
     data.to_csv('data/data.csv', mode='a')
 
     # Calculate theoretical curve
