@@ -12,12 +12,12 @@ if __name__ == "__main__":
     # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage1 = FINE01R('COM6')  # piezo stage (mirror side)
-    stage2 = NCM6212C('COM7')  # piezo stage (sample side)
+    stage1 = FINE01R('COM11')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM10')  # piezo stage (sample side)
 
     # Data container
-    freq = np.arange(start=190349.2, stop=199733.5, step=1)  # frequency
-    volt = np.zeros((len(freq),2))  # photo detector output
+    freq = np.arange(start=189746.8, stop=203254.2, step=0.2)  # frequency  for 3mW: 190349.2 ~ 199733.5
+    volt = np.zeros((len(freq),3))  # photo detector output
 
     # Initializing
     laser.output(power=3000)
@@ -26,12 +26,19 @@ if __name__ == "__main__":
     stage2.absolute_move(axis='B', position=0)
 
     # Measuring
+    pos = 0
+    num = 0
     for j in range(volt.shape[1]):
         for i in range(len(freq)):
+            print(num, end=', ')
+            stage2.absolute_move(axis='A', position=pos)
             laser.set_frequency(freq[i])
             stat = laser.read_status()
             volt[i,j] = np.mean(photo.read_voltage(samples=10)[1])
             print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i,j]))
+            num += 1
+        pos += 1000
+    stage2.absolute_move(axis='A', position=0)
     laser.stop()
 
     # Save data
