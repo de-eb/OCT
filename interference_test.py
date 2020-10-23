@@ -1,3 +1,4 @@
+import time
 import datetime
 import numpy as np
 import pandas as pd
@@ -12,8 +13,8 @@ if __name__ == "__main__":
     # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage1 = FINE01R('COM6')  # piezo stage (mirror side)
-    stage2 = NCM6212C('COM7')  # piezo stage (sample side)
+    stage1 = FINE01R('COM11')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM10')  # piezo stage (sample side)
 
     # Data container
     position = np.arange(start=0, stop=2000, step=10)  # stage position
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
     stage2.absolute_move(axis='B', position=0)
+    time.sleep(3)
 
     # Measuring
     for i in range(len(position)):
@@ -32,10 +34,11 @@ if __name__ == "__main__":
         # stage1.absolute_move(position[i])
         stage2.absolute_move(axis='A', position=position[i])
 
-        voltage[i] = np.mean(photo.read_voltage(samples=10)[1])
+        voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
         print('{} nm, {:.3f} V'.format(position[i],voltage[i]))
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
+    laser.stop()
 
     # Save data
     with open('data/data.csv', mode='w') as f:
