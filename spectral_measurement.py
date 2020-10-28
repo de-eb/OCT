@@ -26,20 +26,21 @@ if __name__ == "__main__":
     stage2.absolute_move(axis='B', position=0)
 
     # Measuring
-    pos = 0
+    # pos = 0
     num = 0
     for j in range(volt.shape[1]):
         for i in range(len(freq)):
             print(num, end=', ')
-            stage2.absolute_move(axis='A', position=pos)
+            # stage2.absolute_move(axis='A', position=pos)
             laser.set_frequency(freq[i])
             stat = laser.read_status()
             volt[i,j] = np.mean(photo.read_voltage(samples=10)[1])
             print('{:.1f} GHz, {:.3f} V'.format(freq[i],volt[i,j]))
             num += 1
-        pos += 1000
-    stage2.absolute_move(axis='A', position=0)
+        # pos += 1000
     laser.stop()
+    photo.stop_measuring()
+    stage2.absolute_move(axis='A', position=0)
 
     # Save data
     with open('data/data.csv', mode='w') as f:
