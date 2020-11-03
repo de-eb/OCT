@@ -2,10 +2,23 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Graph settings
+plt.rcParams['font.family'] ='sans-serif'
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+plt.rcParams["xtick.minor.visible"] = True
+plt.rcParams["ytick.minor.visible"] = True
+plt.rcParams['xtick.major.width'] = 1.0
+plt.rcParams['ytick.major.width'] = 1.0
+plt.rcParams["xtick.minor.width"] = 0.5
+plt.rcParams["ytick.minor.width"] = 0.5
+plt.rcParams['font.size'] = 14
+plt.rcParams['axes.linewidth'] = 1.0
+
 if __name__ == "__main__":
 
     # Data loading
-    data = pd.read_csv('data/201023_2.csv', header=2, index_col=0)
+    data = pd.read_csv('data/201029_1.csv', header=2, index_col=0)
     position = data.values[:,0]
     voltage = data.values[:,1]
 
@@ -15,7 +28,7 @@ if __name__ == "__main__":
 
     # Show Graph
     fig, ax = plt.subplots(1, 1)
-    ax.set_title("Interference fringes at 1540nm with EL-NIKKOR 135mm 1:5.6")
+    ax.set_title("Interference Fringes in the optical axis")
     ax.set_xlabel("stage position [nm]")
     ax.set_ylabel("voltage [V]")
     ax.scatter(position, voltage, s=20, label='measured')
