@@ -16,11 +16,11 @@ if __name__ == "__main__":
     stage2 = NCM6212C('COM10')  # piezo stage (sample side)
 
     # Data container
-    x_ax = np.arange(start=0, stop=100, step=1)
-    y_ax = np.zeros((len(x_ax),1))
+    x_ax = np.arange(start=0, stop=10, step=0.1)
+    y_ax = np.zeros_like(x_ax, dtype=float)
 
     # Initializing
-    laser.set_wavelength(wavelength=1540)
+    laser.set_wavelength(wavelength=1500)
     laser.output(power=3000)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
@@ -29,19 +29,20 @@ if __name__ == "__main__":
     # Measuring
     try:
         for i in range(len(x_ax)):
-            key = input('Press Enter to measure and Ctrl+C to exit.')
+            key = input('Press Enter to measure or Ctrl+C to exit.')
             if key == '':  # Enter
                 y_ax[i] = np.mean(photo.read_voltage(samples=1000)[1])
-                print('{:.1f}:, {:.3f} V'.format(x_ax[i],y_ax[i]))
+                print('{}:, {:.3f} V'.format(x_ax[i],y_ax[i]))
     except KeyboardInterrupt:  # Ctrl + C
-        stage2.absolute_move(axis='A', position=0)
         laser.stop()
+        photo.stop_measuring()
+        stage2.absolute_move(axis='A', position=0)
 
     # Save data
     with open('data/data.csv', mode='w') as f:
         f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
     data = pd.DataFrame(
-        data=np.hstack((np.reshape(x_ax, (len(x_ax),1)), y_ax)),
+        data=np.vstack((x_ax, y_ax)).T,
         columns=['x']+['y'],
         dtype='float')
     data.to_csv('data/data.csv', mode='a')
@@ -49,6 +50,6 @@ if __name__ == "__main__":
     # Show Graph
     fig = plt.figure()
     ax = fig.add_subplot(111, title='Results', xlabel='x', ylabel='y')
-    ax.scatter(x_ax, np.mean(y_ax, axis=1), s=5, label='measured')
+    ax.scatter(x_ax, y_ax, s=5, label='measured')
     ax.legend()
     plt.show()

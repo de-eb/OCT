@@ -21,7 +21,7 @@ if __name__ == "__main__":
     voltage = np.zeros_like(position, dtype=float)  # photo detector output
 
     # Initializing
-    laser.set_wavelength(wavelength=1540)
+    laser.set_wavelength(wavelength=1500)
     laser.output(power=3000)
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
@@ -36,9 +36,10 @@ if __name__ == "__main__":
 
         voltage[i] = np.mean(photo.read_voltage(samples=100)[1])
         print('{} nm, {:.3f} V'.format(position[i],voltage[i]))
+    laser.stop()
+    photo.stop_measuring()
     stage1.absolute_move(0)
     stage2.absolute_move(axis='A', position=0)
-    laser.stop()
 
     # Save data
     with open('data/data.csv', mode='w') as f:
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     data.to_csv('data/data.csv', mode='a')
 
     # Calculate theoretical curve
-    ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1540))**2
+    ref = (np.cos(2*np.pi*(position-position[np.argmax(voltage)])/1500))**2
     ref = ref * (np.max(voltage)-np.min(voltage)) + np.min(voltage)
 
     # Show Graph
