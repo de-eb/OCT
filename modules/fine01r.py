@@ -64,6 +64,6 @@ class FINE01R:
 
 
 if __name__ == "__main__":
-    stage = FINE01R('COM4')
+    stage = FINE01R('COM11')
     print(stage.absolute_move(0))
     print(stage.read_status())

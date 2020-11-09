@@ -120,7 +120,7 @@ class NCM6212C:
 
 
 if __name__ == "__main__":
-    stage = NCM6212C(port='COM5')
+    stage = NCM6212C(port='COM10')
     stage.absolute_move(axis='A', position=0)
     stage.absolute_move(axis='B', position=0)
     print(stage.read_status())
