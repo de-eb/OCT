@@ -20,6 +20,28 @@ class INQUIRY(Structure):
         ('bVPixelSize', c_ubyte),
     )
 
+
+class PARAMETER(Structure):
+    _fields_ = (
+        ('bFlags1', c_ubyte),
+        ('bFlags2', c_ubyte),
+        ('bTriggerMode', c_ubyte),
+        ('bTriggerPolarity', c_ubyte),
+        ('bTransferMode', c_ubyte),
+        ('bShutter', c_ubyte),
+        ('bIi', c_ubyte),
+        ('bIiGain', c_ubyte),
+        ('bAmpGain', c_ubyte),
+        ('bStartMode', c_ubyte),
+        ('wExposureTime', c_ushort),
+        ('wDelayTime', c_ushort),
+        ('wPixelClockTime', c_ushort),
+        ('wLineNumber', c_ushort),
+        ('bIiStatus', c_ubyte),
+        ('bReserved1', c_ubyte),
+    )
+
+
 class PMA12:
     """
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
@@ -37,15 +59,24 @@ class PMA12:
         dev_id : `int`, required
             USB ID of the device. It can be set between 0 ~ 8.
         """
+        self.dev_id = dev_id
         if PMA12.__dev.StartDevice() != 0:
             raise ModuleError(msg="PMA12: The device could not be initialized.")
-        if PMA12.__dev.CheckPmaUnit(dev_id) != 1:
-            raise ModuleError(msg="PMA12: The device is not found.")
-        
+        # if PMA12.__dev.CheckPmaUnit(dev_id) != 1:
+        #     raise ModuleError(msg="PMA12: The device is not found.")
         self.inquiry = INQUIRY()
-        if PMA12.__dev.Inquiry(dev_id, byref(self.inquiry)) != 1:
+        if PMA12.__dev.Inquiry(self.dev_id, byref(self.inquiry)) != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
-        print(self.inquiry.bProductRevisionLevel[0])
+    
+    def set_parameter(self, trigger_mode, trigger_polarity, transfer_mode,
+                      shutter, ii, ii_gain, amp_gain, start_mode,
+                      exposure_time, delay_time, pixel_clock_time):
+        """ Set the measurement conditions.
+        """
+        self.parameter = PARAMETER()
+        if PMA12.__dev.SendParameter(self.dev_id, byref(self.parameter)) != 0:
+            raise ModuleError(msg="")
+
     
     def close(self) -> bool:
         """ Release the instrument and device driver
