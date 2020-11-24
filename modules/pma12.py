@@ -99,9 +99,15 @@ class PMA12:
     def read_spectra(self):
         """ Start measurement and read out spectra.
         """
-        buffer = (ctypes.c_ubyte*1024)()
-        data_info = READ(1, 1024, ctypes.byref(buffer))
+        size = 1024*2
+        buffer = (ctypes.c_ubyte*size)()
+        # p_buffer = ctypes.pointer(buffer)
+        # r_buffer = ctypes.byref(buffer)
+
+        data_info = READ(1, size, ctypes.pointer(buffer))
+        print("test")
         ret = PMA12.__dev.Read(self.dev_id, ctypes.byref(data_info))
+        print("pass")
         if ret != 1:
             print(ret)
             raise ModuleError(msg="PMA12: The device is not found.")
@@ -126,4 +132,4 @@ if __name__ == "__main__":
     time.sleep(2)
     ret = spect.read_spectra()
     spect.close()
-
+    print("end")
