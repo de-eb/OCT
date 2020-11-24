@@ -1,52 +1,53 @@
-from ctypes import *
+import ctypes
+import numpy as np
 from error import ModuleError
 
 import time
 
 
-class INQUIRY(Structure):
+class INQUIRY(ctypes.Structure):
     _fields_ = [
-        ('bStandard', c_ubyte*8),
-        ('bVenderIdentification', c_ubyte*8),
-        ('bProductIdentification', c_ubyte*16),
-        ('bProductRevisionLevel', c_ubyte*4),
-        ('bSensorType', c_ubyte),
-        ('bChannelNumber', c_ubyte),
-        ('bSensorNumber', c_ubyte),
-        ('bHeadNumber', c_ubyte),
-        ('bSpectrometer', c_ubyte),
-        ('bPmaType', c_ubyte),
-        ('bWavelength', c_ubyte),
-        ('bADType', c_ubyte),
-        ('bADClock', c_ubyte),
-        ('bVPixelSize', c_ubyte),
+        ('bStandard', ctypes.c_ubyte*8),
+        ('bVenderIdentification', ctypes.c_ubyte*8),
+        ('bProductIdentification', ctypes.c_ubyte*16),
+        ('bProductRevisionLevel', ctypes.c_ubyte*4),
+        ('bSensorType', ctypes.c_ubyte),
+        ('bChannelNumber', ctypes.c_ubyte),
+        ('bSensorNumber', ctypes.c_ubyte),
+        ('bHeadNumber', ctypes.c_ubyte),
+        ('bSpectrometer', ctypes.c_ubyte),
+        ('bPmaType', ctypes.c_ubyte),
+        ('bWavelength', ctypes.c_ubyte),
+        ('bADType', ctypes.c_ubyte),
+        ('bADClock', ctypes.c_ubyte),
+        ('bVPixelSize', ctypes.c_ubyte),
     ]
 
-class PARAMETER(Structure):
+class PARAMETER(ctypes.Structure):
     _fields_ = [
-        ('bFlags1', c_ubyte),
-        ('bFlags2', c_ubyte),
-        ('bTriggerMode', c_ubyte),
-        ('bTriggerPolarity', c_ubyte),
-        ('bTransferMode', c_ubyte),
-        ('bShutter', c_ubyte),
-        ('bIi', c_ubyte),
-        ('bIiGain', c_ubyte),
-        ('bAmpGain', c_ubyte),
-        ('bStartMode', c_ubyte),
-        ('wExposureTime', c_ushort),
-        ('wDelayTime', c_ushort),
-        ('wPixelClockTime', c_ushort),
-        ('wLineNumber', c_ushort),
-        ('bIiStatus', c_ubyte),
-        ('bReserved1', c_ubyte),
+        ('bFlags1', ctypes.c_ubyte),
+        ('bFlags2', ctypes.c_ubyte),
+        ('bTriggerMode', ctypes.c_ubyte),
+        ('bTriggerPolarity', ctypes.c_ubyte),
+        ('bTransferMode', ctypes.c_ubyte),
+        ('bShutter', ctypes.c_ubyte),
+        ('bIi', ctypes.c_ubyte),
+        ('bIiGain', ctypes.c_ubyte),
+        ('bAmpGain', ctypes.c_ubyte),
+        ('bStartMode', ctypes.c_ubyte),
+        ('wExposureTime', ctypes.c_ushort),
+        ('wDelayTime', ctypes.c_ushort),
+        ('wPixelClockTime', ctypes.c_ushort),
+        ('wLineNumber', ctypes.c_ushort),
+        ('bIiStatus', ctypes.c_ubyte),
+        ('bReserved1', ctypes.c_ubyte),
     ]
 
-class READ(Structure):
+class READ(ctypes.Structure):
     _fields_ = [
-        ('wTransferLineNumber', c_ushort),
-        ('dwDataBufferLength', c_ulong),
-        ('lpbDataBuffer', byref(c_ubyte*1024)),
+        ('wTransferLineNumber', ctypes.c_ushort),
+        ('dwDataBufferLength', ctypes.c_ulong),
+        ('lpbDataBuffer', ctypes.c_ubyte),
     ]
 
 
@@ -55,9 +56,9 @@ class PMA12:
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
     """
     # Load DLL
-    windll.LoadLibrary('modules\WnPmaUSB.dll')
-    windll.LoadLibrary('modules\StopMsg.dll')
-    __dev = windll.LoadLibrary('modules\PmaUsbW32.dll')
+    ctypes.windll.LoadLibrary('modules\WnPmaUSB.dll')
+    ctypes.windll.LoadLibrary('modules\StopMsg.dll')
+    __dev = ctypes.windll.LoadLibrary('modules\PmaUsbW32.dll')
 
     def __init__(self, dev_id: int):
         """ Initiates and unlocks communication with the device.
@@ -75,7 +76,7 @@ class PMA12:
         #     raise ModuleError(msg="PMA12: The device is not found.")
 
         self.inquiry = INQUIRY()
-        if PMA12.__dev.Inquiry(self.dev_id, byref(self.inquiry)) != 1:
+        if PMA12.__dev.Inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
 
         self.set_parameter()
@@ -92,18 +93,19 @@ class PMA12:
             shutter, ii, ii_gain, amp_gain, start_mode, exposure_time,
             delay_time, pixel_clock_time
         )
-        if PMA12.__dev.SendParameter(self.dev_id, byref(self.parameter)) != 1:
+        if PMA12.__dev.SendParameter(self.dev_id, ctypes.byref(self.parameter)) != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
 
     def read_spectra(self):
         """ Start measurement and read out spectra.
         """
-        buffer = (c_ubyte*1024)()
-        data_info = READ(1, 1024, byref(buffer))
-        ret = PMA12.__dev.Read(self.dev_id, byref(data_info))
+        buffer = (ctypes.c_ubyte*1024)()
+        data_info = READ(1, 1024, ctypes.byref(buffer))
+        ret = PMA12.__dev.Read(self.dev_id, ctypes.byref(data_info))
         if ret != 1:
             print(ret)
             raise ModuleError(msg="PMA12: The device is not found.")
+        return np.ctypeslib.as_array(buffer)
     
     def close(self) -> bool:
         """ Release the instrument and device driver
@@ -122,6 +124,6 @@ if __name__ == "__main__":
 
     spect = PMA12(dev_id=5)
     time.sleep(2)
-    spect.read_spectra()
+    ret = spect.read_spectra()
     spect.close()
 
