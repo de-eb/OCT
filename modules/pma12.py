@@ -1,6 +1,8 @@
 from ctypes import *
 from error import ModuleError
 
+import time
+
 
 class INQUIRY(Structure):
     _fields_ = [
@@ -44,7 +46,7 @@ class READ(Structure):
     _fields_ = [
         ('wTransferLineNumber', c_ushort),
         ('dwDataBufferLength', c_ulong),
-        ('lpbDataBuffer', POINTER(c_ubyte)),
+        ('lpbDataBuffer', byref(c_ubyte*1024)),
     ]
 
 
@@ -76,35 +78,31 @@ class PMA12:
         if PMA12.__dev.Inquiry(self.dev_id, byref(self.inquiry)) != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
 
-        self.parameter = PARAMETER()
-        if PMA12.__dev.ReceiveParameter(self.dev_id, byref(self.parameter)) != 0:
-            raise ModuleError(msg="PMA12: The device is not found.")
+        self.set_parameter()
     
-    def set_parameter(self, trigger_mode, trigger_polarity, transfer_mode,
-                      shutter, ii, ii_gain, amp_gain, start_mode,
-                      exposure_time, delay_time, pixel_clock_time):
+    def set_parameter(self, trigger_mode=0, trigger_polarity=0, transfer_mode=0,
+                      shutter=0, ii=0, ii_gain=0, amp_gain=3, start_mode=0,
+                      exposure_time=19, delay_time=0, pixel_clock_time=4):
         """ Set the measurement conditions.
         """
-        self.parameter.bTriggerMode = trigger_mode
-        self.parameter.bTriggerPolarity = trigger_polarity
-        self.parameter.bTransferMode = transfer_mode
-        self.parameter.bShutter = shutter
-        self.parameter.bIi = ii
-        self.parameter.bIiGain = ii_gain
-        self.parameter.bAmpGain = amp_gain
-        self.parameter.bStartMode = start_mode
-        self.parameter.wExposureTime = exposure_time
-        self.parameter.wDelayTime = delay_time
-        self.parameter.wPixelClockTime = pixel_clock_time
-        if PMA12.__dev.SendParameter(self.dev_id, byref(self.parameter)) != 0:
-            raise ModuleError(msg="")
+        flags1 = 0xFF
+        flags2 = 0x3F
+        self.parameter = PARAMETER(
+            flags1, flags2, trigger_mode, trigger_polarity, transfer_mode,
+            shutter, ii, ii_gain, amp_gain, start_mode, exposure_time,
+            delay_time, pixel_clock_time
+        )
+        if PMA12.__dev.SendParameter(self.dev_id, byref(self.parameter)) != 1:
+            raise ModuleError(msg="PMA12: The device is not found.")
 
     def read_spectra(self):
         """ Start measurement and read out spectra.
         """
-        self.data = READ()
-        self.data.wTransferLineNumber = self.parameter.wLineNumber
-        if PMA12.__dev.Read(self.dev_id, byref(self.data)) != 0:
+        buffer = (c_ubyte*1024)()
+        data_info = READ(1, 1024, byref(buffer))
+        ret = PMA12.__dev.Read(self.dev_id, byref(data_info))
+        if ret != 1:
+            print(ret)
             raise ModuleError(msg="PMA12: The device is not found.")
     
     def close(self) -> bool:
@@ -123,9 +121,7 @@ class PMA12:
 if __name__ == "__main__":
 
     spect = PMA12(dev_id=5)
+    time.sleep(2)
+    spect.read_spectra()
     spect.close()
-    # param = PARAMETER()
-    # print(param.bFlags1)
-    # param.bFlags1 = 1
-    # print(param.bFlags1)
 
