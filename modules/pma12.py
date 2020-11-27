@@ -3,8 +3,6 @@ from enum import Enum, auto
 import numpy as np
 from error import ModuleError
 
-import time
-
 
 class INQUIRY(ctypes.Structure):
     _fields_ = [
@@ -54,15 +52,14 @@ class PMA12():
     """
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
     """
-    # Load DLL
-    ctypes.windll.LoadLibrary('modules\pma\WnPmaUSB.dll')
-    ctypes.windll.LoadLibrary('modules\pma\StopMsg.dll')
-    ctypes.windll.LoadLibrary('modules\pma\PmaUsbW32.dll')
-    __dev = ctypes.windll.LoadLibrary('modules\pma\pma.dll')
-
+    # External modules loading
+    ctypes.windll.LoadLibrary(r'modules\pma\WnPmaUSB.dll')
+    ctypes.windll.LoadLibrary(r'modules\pma\StopMsg.dll')
+    ctypes.windll.LoadLibrary(r'modules\pma\PmaUsbW32.dll')
+    __dev = ctypes.windll.LoadLibrary(r'modules\pma\pma.dll')
     __channel = [128, 256, 512, 1024]
 
-    def __init__(self, dev_id: int):
+    def __init__(self, dev_id: int, correction_data: str):
         """ Initiates and unlocks communication with the device.
 
         Parameters
@@ -70,15 +67,28 @@ class PMA12():
         dev_id : `int`, required
             USB ID of the device. It can be set between 0 ~ 8.
         """
+        # Correction data loading
+        with open(correction_data) as f:
+            self.__ref = np.array(f.read().split(), dtype=float)
+        self.__ref = np.reshape(self.__ref, (int(self.__ref.size/2),2))
+        self.__wavelength = self.__ref[:,0]
+        self.__sensitivity = self.__ref[:,1]
+
+        # Device initializing
         self.dev_id = dev_id
         if PMA12.__dev.start_device() != 0:
             raise ModuleError(msg="PMA12: The device could not be initialized.")
         self.inquiry = INQUIRY()
         if PMA12.__dev.inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
+
         # Background measurement
         self.set_parameter()
-        self.background = self.read_spectra(correction=False)
+        self.__background = self.read_spectra(correction=False)
+    
+    @property
+    def wavelength(self):
+        return self.__wavelength
     
     def set_parameter(self, trigger_mode=0, start_mode=0, trigger_polarity=0,
                       shutter=0, ii=0, ii_gain=0, amp_gain=3,
@@ -123,9 +133,10 @@ class PMA12():
         )
         if ret != 1:
             raise ModuleError(msg="PMA12: The device is not found.")
-        data = buffer[:int(buffer.size/2)] + buffer[int(buffer.size/2):]
+        data = (buffer[:int(buffer.size/2)] + buffer[int(buffer.size/2):]).astype(int)
         if correction:
-            data = data - self.background
+            data = data - self.__background
+            data = np.where(data < 0, 0, data)*self.__sensitivity
         return data
     
     def close(self) -> bool:
@@ -143,7 +154,25 @@ class PMA12():
 
 if __name__ == "__main__":
 
-    spect = PMA12(dev_id=5)
-    # data = spect.read_spectra()
+    import matplotlib.pyplot as plt
+
+    spect = PMA12(dev_id=5, correction_data=r'modules\pma\320016.sc')
+    data = np.zeros_like(spect.wavelength, dtype=float)
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_title("spectrometer output")
+    ax.set_xlabel("wavelength [nm]")
+    ax.set_ylabel("intensity [-]")
+    graph, = ax.plot(spect.wavelength, data)
+
+    spect.set_parameter(shutter=1)
+    while True:
+        # Measure
+        data = spect.read_spectra()
+        # plot
+        graph.set_data(spect.wavelength, data)
+        ax.set_ylim((0, 1.2*data.max()))
+        plt.pause(0.0001)
+
+    spect.set_parameter(shutter=0)
     spect.close()
-    print("end")
