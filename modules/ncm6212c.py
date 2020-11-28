@@ -29,7 +29,7 @@ class NCM6212C:
             rtscts = True)
         self.set_servo_mode(mode=1)
         time.sleep(2)
-        print(self.read_hardware_info())
+        print("NCM6212C is ready.")
     
     def __send(self, cmd: str):
         """ Format the command string and send it to the controller.

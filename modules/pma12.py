@@ -1,7 +1,7 @@
 import ctypes
 from enum import Enum, auto
 import numpy as np
-from error import ModuleError
+import time
 
 
 class INQUIRY(ctypes.Structure):
@@ -77,14 +77,16 @@ class PMA12():
         # Device initializing
         self.dev_id = dev_id
         if PMA12.__dev.start_device() != 0:
-            raise ModuleError(msg="PMA12: The device could not be initialized.")
+            raise PMAError(msg="PMA12: The device could not be initialized.")
         self.inquiry = INQUIRY()
         if PMA12.__dev.inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
-            raise ModuleError(msg="PMA12: The device is not found.")
+            raise PMAError(msg="PMA12: The device is not found.")
 
         # Background measurement
         self.set_parameter()
+        time.sleep(2)
         self.__background = self.read_spectra(correction=False)
+        print("PMA12 is ready.")
     
     @property
     def wavelength(self):
@@ -106,7 +108,7 @@ class PMA12():
         elif trigger_mode == 1 and start_mode == 2:
             self.trigger = TRIGGER.EXTEXP
         else:
-            raise ModuleError(msg="PMA12: Invalid parameters were set.")
+            raise PMAError(msg="PMA12: Invalid parameters were set.")
         
         self.parameter = PARAMETER(
             0xFF, 0x3F, trigger_mode, trigger_polarity, 0,
@@ -114,7 +116,7 @@ class PMA12():
             exposure_time, delay_time, pixel_clock_time
         )
         if PMA12.__dev.send_parameter(self.dev_id, ctypes.byref(self.parameter)) != 1:
-            raise ModuleError(msg="PMA12: The device is not found.")
+            raise PMAError(msg="PMA12: The device is not found.")
 
     def read_spectra(self, correction=True):
         """ Start measurement and read out spectra.
@@ -132,7 +134,7 @@ class PMA12():
             buffer.ctypes.data_as(ctypes.POINTER(ctypes.wintypes.WORD))
         )
         if ret != 1:
-            raise ModuleError(msg="PMA12: The device is not found.")
+            raise PMAError(msg="PMA12: The device is not found.")
         data = (buffer[:int(buffer.size/2)] + buffer[int(buffer.size/2):]).astype(int)
         if correction:
             data = data - self.__background
@@ -149,7 +151,35 @@ class PMA12():
             When the module is not controlled correctly.
         """
         if PMA12.__dev.end_device() != 0:
-            raise ModuleError(msg="PMA12: The device could not be released.")
+            raise PMAError(msg="PMA12: The device could not be released.")
+
+
+class PMAError(Exception):
+    """Base exception class for all modules.
+    
+    All exceptions thrown from the package inherit this.
+    
+    Attributes
+    ----------
+    msg : `str`
+        Human readable string describing the exception.
+    
+    """
+
+    def __init__(self, msg: str):
+        """Set the error message.
+    
+        Parameters
+        ----------
+        msg : `str`
+            Human readable string describing the exception.
+        
+        """
+        self.msg = msg
+    
+    def __str__(self):
+        """Return the error message."""
+        return self.msg
 
 
 if __name__ == "__main__":
