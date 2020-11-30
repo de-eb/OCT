@@ -1,7 +1,7 @@
-import ctypes
-from enum import Enum, auto
-import numpy as np
 import time
+import atexit
+import ctypes
+import numpy as np
 
 
 class INQUIRY(ctypes.Structure):
@@ -42,12 +42,6 @@ class PARAMETER(ctypes.Structure):
         ('bReserved1', ctypes.c_ubyte),
     ]
 
-class TRIGGER(Enum):
-    INTERNAL = auto()
-    EXTERNAL = auto()
-    INTEXP = auto()
-    EXTEXP = auto()
-
 class PMA12():
     """
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
@@ -58,6 +52,7 @@ class PMA12():
     ctypes.windll.LoadLibrary(r'modules\pma\PmaUsbW32.dll')
     __dev = ctypes.windll.LoadLibrary(r'modules\pma\pma.dll')
     __channel = [128, 256, 512, 1024]
+    __trigger = ([0,0],[1,0],[1,1],[2,0],[0,2],[1,2],[0,3],[1,3])
 
     def __init__(self, dev_id: int, correction_data: str):
         """ Initiates and unlocks communication with the device.
@@ -77,10 +72,13 @@ class PMA12():
         # Device initializing
         self.dev_id = dev_id
         if PMA12.__dev.start_device() != 0:
-            raise PMAError(msg="PMA12: The device could not be initialized.")
+            raise PMAError(msg="PMA12 could not be initialized.")
         self.inquiry = INQUIRY()
         if PMA12.__dev.inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
-            raise PMAError(msg="PMA12: The device is not found.")
+            raise PMAError(msg="PMA12 is not found.")
+        
+        # Register the exit process
+        atexit.register(self.close)
 
         # Background measurement
         self.set_parameter()
@@ -97,49 +95,48 @@ class PMA12():
                       exposure_time=19, delay_time=0, pixel_clock_time=4):
         """ Set the measurement conditions.
         """
-        if trigger_mode == 0:
-            self.trigger = TRIGGER.INTERNAL
-        elif start_mode == 0:
-            self.trigger = TRIGGER.EXTERNAL
-        elif start_mode == 1:
-            self.trigger = TRIGGER.INTEXP
-        elif trigger_mode == 0 and start_mode == 2:
-            self.trigger = TRIGGER.INTEXP
-        elif trigger_mode == 1 and start_mode == 2:
-            self.trigger = TRIGGER.EXTEXP
-        else:
-            raise PMAError(msg="PMA12: Invalid parameters were set.")
-        
+        if [trigger_mode, start_mode] not in PMA12.__trigger:
+            raise PMAError(msg="Invalid parameters were set.")
         self.parameter = PARAMETER(
             0xFF, 0x3F, trigger_mode, trigger_polarity, 0,
             shutter, ii, ii_gain, amp_gain, start_mode,
             exposure_time, delay_time, pixel_clock_time
         )
-        if PMA12.__dev.send_parameter(self.dev_id, ctypes.byref(self.parameter)) != 1:
-            raise PMAError(msg="PMA12: The device is not found.")
+        if PMA12.__dev.send_parameter(
+                self.dev_id, ctypes.byref(self.parameter)) != 1:
+            raise PMAError(msg="PMA12 is not found.")
 
-    def read_spectra(self, correction=True):
-        """ Start measurement and read out spectra.
-        """
-        if self.trigger==TRIGGER.EXTERNAL and self.inquiry.bSensorType!=3:
-            line_num = 2
+        if (self.parameter.bTriggerMode == 1
+            and self.parameter.bStartMode == 0
+            and self.inquiry.bSensorType != 3
+        ):
+            self.line_num = 2
         else:
-            line_num = 1
-        buffer = np.zeros(
-            (PMA12.__channel[self.inquiry.bChannelNumber]*2*line_num,),
+            self.line_num = 1
+        self.buffer = np.zeros(
+            (PMA12.__channel[self.inquiry.bChannelNumber]*2*self.line_num,),
             dtype=np.uint16
         )
-        ret = PMA12.__dev.read(
-            self.dev_id, line_num, buffer.size,
-            buffer.ctypes.data_as(ctypes.POINTER(ctypes.wintypes.WORD))
-        )
-        if ret != 1:
-            raise PMAError(msg="PMA12: The device is not found.")
-        data = (buffer[:int(buffer.size/2)] + buffer[int(buffer.size/2):]).astype(int)
+
+    def read_spectra(self, correction=True, averaging=1):
+        """ Start measurement and read out spectra.
+        """
+        data = np.zeros((averaging,int(self.buffer.size/2)), dtype=int)
+        for i in range(averaging):
+            ret = PMA12.__dev.read(
+                self.dev_id, self.line_num, self.buffer.size,
+                self.buffer.ctypes.data_as(ctypes.POINTER(ctypes.wintypes.WORD))
+            )
+            if ret != 1:
+                raise PMAError(msg="PMA12: The device is not found.")
+            data[i] = (self.buffer[:int(self.buffer.size/2)]
+                    + self.buffer[int(self.buffer.size/2):]).astype(int)
+        if data.max() >= 65535:
+            raise PMAError(msg="Measured data are saturated.")
         if correction:
             data = data - self.__background
             data = np.where(data < 0, 0, data)*self.__sensitivity
-        return data
+        return np.mean(data, axis=0)
     
     def close(self) -> bool:
         """ Release the instrument and device driver
@@ -150,8 +147,9 @@ class PMA12():
         ModuleError :
             When the module is not controlled correctly.
         """
+        self.set_parameter()
         if PMA12.__dev.end_device() != 0:
-            raise PMAError(msg="PMA12: The device could not be released.")
+            raise PMAError(msg="PMA12 could not be released.")
 
 
 class PMAError(Exception):
@@ -175,7 +173,7 @@ class PMAError(Exception):
             Human readable string describing the exception.
         
         """
-        self.msg = msg
+        self.msg = '\033[31m' + msg + '\033[0m'
     
     def __str__(self):
         """Return the error message."""
@@ -185,24 +183,35 @@ class PMAError(Exception):
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import ScalarFormatter
 
-    spect = PMA12(dev_id=5, correction_data=r'modules\pma\320016.sc')
-    data = np.zeros_like(spect.wavelength, dtype=float)
-
+    # Graph settings
+    plt.rcParams['font.family'] ='sans-serif'
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams["xtick.minor.visible"] = True
+    plt.rcParams["ytick.minor.visible"] = True
+    plt.rcParams['xtick.major.width'] = 1.0
+    plt.rcParams['ytick.major.width'] = 1.0
+    plt.rcParams["xtick.minor.width"] = 0.5
+    plt.rcParams["ytick.minor.width"] = 0.5
+    plt.rcParams['font.size'] = 14
+    plt.rcParams['axes.linewidth'] = 1.0
     fig, ax = plt.subplots(1, 1)
-    ax.set_title("spectrometer output")
+    ax.set_title("Spectrometer output")
     ax.set_xlabel("wavelength [nm]")
     ax.set_ylabel("intensity [-]")
-    graph, = ax.plot(spect.wavelength, data)
+    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 
+    spect = PMA12(dev_id=5, correction_data=r'modules\pma\320016.sc')  # Device settings
+    data = np.zeros_like(spect.wavelength, dtype=float)  # Data container
+
+    # Measure & plot
+    graph, = ax.plot(spect.wavelength, data)
     spect.set_parameter(shutter=1)
     while True:
-        # Measure
-        data = spect.read_spectra()
-        # plot
+        data = spect.read_spectra(averaging=1)
         graph.set_data(spect.wavelength, data)
         ax.set_ylim((0, 1.2*data.max()))
         plt.pause(0.0001)
-
-    spect.set_parameter(shutter=0)
-    spect.close()

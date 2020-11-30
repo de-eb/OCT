@@ -31,9 +31,7 @@ if __name__ == "__main__":
     for i in range(spectra.shape[1]):
         stage2.absolute_move(axis='A', position=stage_pos[i])
         time.sleep(1)
-        spectra[:,i] = spect.read_spectra()
-    spect.set_parameter(shutter=0)
-    spect.close()
+        spectra[:,i] = spect.read_spectra(averaging=100)
     stage2.absolute_move(axis='A', position=0)
 
     # Save data
