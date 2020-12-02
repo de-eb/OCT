@@ -197,10 +197,8 @@ if __name__ == "__main__":
     plt.rcParams["ytick.minor.width"] = 0.5
     plt.rcParams['font.size'] = 14
     plt.rcParams['axes.linewidth'] = 1.0
-    fig, ax = plt.subplots(1, 1)
-    ax.set_title("Spectrometer output")
-    ax.set_xlabel("wavelength [nm]")
-    ax.set_ylabel("intensity [-]")
+    fig = plt.figure()
+    ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 
