@@ -29,10 +29,10 @@ if __name__ == "__main__":
     # Measuring
     print("Measurement start.")
     for i in range(spectra.shape[1]):
-        stage2.absolute_move(axis='A', position=stage_pos[i])
+        stage1.absolute_move(position=stage_pos[i])
         time.sleep(1)
         spectra[:,i] = spect.read_spectra(averaging=100)
-    stage2.absolute_move(axis='A', position=0)
+    stage1.absolute_move(0)
 
     # Save data
     with open('data/data.csv', mode='w') as f:
