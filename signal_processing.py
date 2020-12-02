@@ -22,14 +22,14 @@ c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
 n = 1.4  # Refractive index of the sample. cellulose = 1.46
 alpha = 1.5  # design factor of Kaiser window
 
-st = 779
-ed = 980
+st = 762
+ed = 953
 
 if __name__ == "__main__":
 
     # Data loading
-    ref = pd.read_csv('data/201130_ref.csv', header=2, index_col=0)
-    data = pd.read_csv('data/201130_0.csv', header=2, index_col=0)
+    ref = pd.read_csv('data/201202_ref.csv', header=2, index_col=0)
+    data = pd.read_csv('data/201202_3.csv', header=2, index_col=0)
     wl = ref.values[st:ed,0]  # wavelength
     bg = ref.values[st:ed,1]  # background spectra
     sp = data.values[st:ed,1:]  # sample spectra
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     # Normalize
     sub = sp_fix/np.amax(sp_fix, axis=0, keepdims=True) - (bg_fix/bg_fix.max()).reshape((n,1))
+    # sub = sp_fix - bg_fix.reshape((n,1))
 
     # Windowing
     x = np.linspace(0, n, n)
@@ -65,22 +66,23 @@ if __name__ == "__main__":
 
     # Show Graph
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
-    ax0 = fig.add_subplot(211, title='Resampled spectra', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+    ax0 = fig.add_subplot(311, title='Resampling', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0.plot(wl_fix, bg_fix, label='bg', color=(0,0,0,0.5))
-    ax0.plot(wl_fix, sp_fix[:,0], label='0μm', color=(0,0,1,0.5))
-    ax0.plot(wl_fix, sp_fix[:,1], label='1μm', color=(1,0,0,0.5))
-    ax0.plot(wl_fix, sp_fix[:,2], label='2μm', color=(0,1,0,0.5))
-    ax0.plot(wl_fix, sp_fix[:,3], label='3μm', color=(1,0,1,0.5))
+    ax0.ticklabel_format(style='sci',  axis='y',scilimits=(0,0))
+    ax0.plot(wl, bg, label='bg_raw', linestyle = '--', color=(0,0,0,0.5))
+    ax0.plot(wl_fix, bg_fix, label='bg_fix', linestyle = '-', color=(0,0,0,0.5))
+    ax0.plot(wl, sp[:,0], label='sample_raw', linestyle = '--', color=(1,0,0,0.5))
+    ax0.plot(wl_fix, sp_fix[:,0], label='sample_fix', linestyle = '-', color=(1,0,0,0.5))
     ax0.legend()
-    ax2 = fig.add_subplot(212, title='A-scan', xlabel='Depth[-]', ylabel='Intensity [-]')
-    ax2.xaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax2.ticklabel_format(style="sci",  axis="x",scilimits=(0,0))
+    ax1 = fig.add_subplot(312, title='BG-subtruction & Windowing', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+    ax1.plot(wl_fix, sub[:,0], label='subtructed', color=(0,0,1,0.5))
+    ax1.plot(wl_fix, wnd[:,0], label='windowed', color=(1,0,0,0.5))
+    # ax0.grid(which='both', axis='x', color='gray', alpha=0.3, linestyle='-', linewidth=0.5)
+    ax1.legend()
+    ax2 = fig.add_subplot(313, title='A-scan', xlabel='data num.[-]', ylabel='Intensity [-]')
     ax2.plot(fft[:,0], label='0μm', color=(0,0,1,0.5))
     ax2.plot(fft[:,1], label='1μm', color=(1,0,0,0.5))
     ax2.plot(fft[:,2], label='2μm', color=(0,1,0,0.5))
     ax2.plot(fft[:,3], label='3μm', color=(1,0,1,0.5))
-    # ax0.grid(which='both', axis='x', color='gray', alpha=0.3, linestyle='-', linewidth=0.5)
     ax2.legend()
     plt.show()
