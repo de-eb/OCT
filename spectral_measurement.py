@@ -11,7 +11,7 @@ from modules.ncm6212c import NCM6212C
 if __name__ == "__main__":
 
     # Device settings
-    spect = PMA12(dev_id=5, correction_data=r'modules\pma\320016.sc')  # spectrometer
+    spect = PMA12(dev_id=5)  # spectrometer
     stage1 = FINE01R('COM11')  # piezo stage (mirror side)
     stage2 = NCM6212C('COM10')  # piezo stage (sample side)
 

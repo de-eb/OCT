@@ -51,10 +51,11 @@ class PMA12():
     ctypes.windll.LoadLibrary(r'modules\pma\StopMsg.dll')
     ctypes.windll.LoadLibrary(r'modules\pma\PmaUsbW32.dll')
     __dev = ctypes.windll.LoadLibrary(r'modules\pma\pma.dll')
+    __correction_data = r'modules\pma\320016.sc'
     __channel = [128, 256, 512, 1024]
     __trigger = ([0,0],[1,0],[1,1],[2,0],[0,2],[1,2],[0,3],[1,3])
 
-    def __init__(self, dev_id: int, correction_data: str):
+    def __init__(self, dev_id: int):
         """ Initiates and unlocks communication with the device.
 
         Parameters
@@ -63,7 +64,7 @@ class PMA12():
             USB ID of the device. It can be set between 0 ~ 8.
         """
         # Correction data loading
-        with open(correction_data) as f:
+        with open(PMA12.__correction_data) as f:
             self.__ref = np.array(f.read().split(), dtype=float)
         self.__ref = np.reshape(self.__ref, (int(self.__ref.size/2),2))
         self.__wavelength = self.__ref[:,0]
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 
-    spect = PMA12(dev_id=5, correction_data=r'modules\pma\320016.sc')  # Device settings
+    spect = PMA12(dev_id=5)  # Device settings
     data = np.zeros_like(spect.wavelength, dtype=float)  # Data container
 
     # Measure & plot
