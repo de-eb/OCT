@@ -1,7 +1,8 @@
-import serial
 import time
+import atexit
+import serial
 
-class NCM6212C:
+class Ncm6212c:
 
     def __init__(self, port: str, baudrate=38400, delimiter='\r\n'):
         """ Starts serial communication with the device.
@@ -22,14 +23,39 @@ class NCM6212C:
         self.__baudrate = baudrate
         self.__delimiter = delimiter
 
-        self.__ser = serial.Serial(
-            port = self.__port,
-            baudrate = self.__baudrate,
-            timeout = 0.1,
-            rtscts = True)
-        self.set_servo_mode(mode=1)
+        try:
+            self.__ser = serial.Serial(
+                port = self.__port,
+                baudrate = self.__baudrate,
+                timeout = 0.1,
+                rtscts = True)
+        except serial.serialutil.SerialException:
+            raise Ncm6212cError(msg="NCM6212C not found.")
+        atexit.register(self.close)  # Register the exit process
         time.sleep(2)
+        self.read_hw_info()
+        if self.__hw_info['firmware_version'] != 'NC1000SR 150801  03-11':
+            raise Ncm6212cError(msg="NCM6212C not found.")
+        self.set_servo_mode(mode=1)
         print("NCM6212C is ready.")
+    
+    @property
+    def hw_info(self):
+        return self.__hw_info
+    
+    @property
+    def status(self):
+        """ Sends back the operating status of the stage
+            and the coordinate values for each axis.
+        """
+        self.__status = {}
+        self.__status['position-A'] = int(self.sendreceive('PS? A'))
+        self.__status['position-B'] = int(self.sendreceive('PS? B'))
+        # self.__status['psition_ax3'] = self.sendreceive('PS? C')
+        self.__status['error-A'] = self.sendreceive('ER? A')
+        self.__status['error-B'] = self.sendreceive('ER? B')
+        # self.__status['error-ax3'] = self.sendreceive('ER? C')
+        return self.__status
     
     def __send(self, cmd: str):
         """ Format the command string and send it to the controller.
@@ -58,13 +84,21 @@ class NCM6212C:
         self.__send(cmd)
         return self.__receive()
     
+    def read_hw_info(self) -> tuple:
+        """ Read out the internal information data of the controller.
+        """
+        self.__hw_info = {}
+        self.__hw_info['firmware_version'] = self.sendreceive('VR?')
+        self.__hw_info['axis_name'] = self.sendreceive('CH?')
+        self.__hw_info['communication_setting'] = self.sendreceive('BD?')
+    
     def absolute_move(self, axis: str, position: int):
         """ Move stage to the absolute position.
 
         Parameters
         ----------
         axis : `str`, required,
-            Axis to move. 'A', 'B', or 'C'.
+            Axis to move. 'A', 'B'.
         
         position : `int`, required,
             Target Absolute Position [nm].
@@ -75,28 +109,6 @@ class NCM6212C:
         """
         self.__send('MV {}{}'.format(axis, position))
         return self.sendreceive('MV? {}'.format(axis))
-    
-    def read_status(self):
-        """ Sends back the operating status of the stage
-            and the coordinate values for each axis.
-        
-        Returns
-        -------
-        `dict` Name and data pairs.
-
-            {
-                'position-': int, Displacement of each axis of the stage [nm].
-                'error-'   : str, Errors in each axis of the stage.
-            }
-        """
-        status = {}
-        status['position-A'] = int(self.sendreceive('PS? A'))
-        status['position-B'] = int(self.sendreceive('PS? B'))
-        # status['psition_ax3'] = self.sendreceive('PS? C')
-        status['error-A'] = self.sendreceive('ER? A')
-        status['error-B'] = self.sendreceive('ER? B')
-        # status['error-ax3'] = self.sendreceive('ER? C')
-        return status
     
     def set_servo_mode(self, mode: int):
         """ Set the servo mode.
@@ -110,17 +122,42 @@ class NCM6212C:
         self.__send('SV B{}'.format(mode))
         # self.__send('SV C{}'.format(mode))
     
-    def read_hardware_info(self) -> tuple:
-        """ Returns the internal information data of the controller.
+    def close(self) -> bool:
+        """ Release the instrument and device driver
+            and terminate the connection.
         """
-        firmware_version = self.sendreceive('VR?')
-        axis_name = self.sendreceive('CH?')
-        communication_setting = self.sendreceive('BD?')
-        return firmware_version, axis_name, communication_setting
+        self.absolute_move(axis='A', position=0)
+        self.absolute_move(axis='B', position=0)
+        self.__ser.close()
+
+
+class Ncm6212cError(Exception):
+    """Base exception class for this modules.
+
+    Attributes
+    ----------
+    msg : `str`
+        Human readable string describing the exception.
+
+    """
+
+    def __init__(self, msg: str):
+        """Set the error message.
+    
+        Parameters
+        ----------
+        msg : `str`
+            Human readable string describing the exception.
+        
+        """
+        self.msg = '\033[31m' + msg + '\033[0m'
+    
+    def __str__(self):
+        """Return the error message."""
+        return self.msg
 
 
 if __name__ == "__main__":
-    stage = NCM6212C(port='COM10')
-    stage.absolute_move(axis='A', position=0)
-    stage.absolute_move(axis='B', position=0)
-    print(stage.read_status())
+    stage = Ncm6212c(port='COM13')
+    print(stage.hw_info)
+    print(stage.status)

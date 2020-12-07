@@ -17,12 +17,38 @@ class Fine01r:
                 timeout = 0.1)
         except serial.serialutil.SerialException:
             raise Fine01rError(msg="FINE01R not found.")
-        time.sleep(2)
-        self.device_name, self.firmware_version = self.read_hardware_info()
-        if self.device_name != 'FINE-01r':
-            raise Fine01rError(msg="FINE01R not found.")
         atexit.register(self.close)  # Register the exit process
+        time.sleep(2)
+        self.read_hw_info()
+        if self.__hw_info['device_name'] != 'FINE-01r':
+            raise Fine01rError(msg="FINE01R not found.")
         print("FINE-01r is ready.")
+    
+    @property
+    def hw_info(self):
+        return self.__hw_info
+    
+    @property
+    def status(self):
+        """ Sends back the operating status of the stage
+            and the coordinate values for each axis.
+        """
+        stat = self.sendreceive('Q:').split(',')
+        self.__status = {}
+        self.__status['position'] = int(stat[0])
+        if stat[1] == 'K':
+            self.__status['cmd_success'] = True
+        else:
+            self.__status['cmd_success'] = False
+        if stat[2] == 'K':
+            self.__status['Stop'] = True
+        else:
+            self.__status['Stop'] = False
+        if stat[3] == 'R':
+            self.__status['cmd_permission'] = True
+        else:
+            self.__status['cmd_permission'] = False
+        return self.__status
     
     def __send(self, cmd: str):
         """ Format the command string and send it to the controller.
@@ -41,19 +67,12 @@ class Fine01r:
         self.__send(cmd)
         return self.__receive()
     
-    def read_status(self):
-        """ Sends back the operating status of the stage
-            and the coordinate values for each axis.
+    def read_hw_info(self):
+        """ Read out the internal information data of the controller.
         """
-        stat = self.sendreceive('Q:')
-        return stat
-    
-    def read_hardware_info(self):
-        """ Returns the internal information data of the controller.
-        """
-        device_name = self.sendreceive('?:N')
-        firmware_version = self.sendreceive('?:V')
-        return device_name, firmware_version
+        self.__hw_info = {}
+        self.__hw_info['device_name'] = self.sendreceive('?:N')
+        self.__hw_info['firmware_version'] = self.sendreceive('?:V')
     
     def absolute_move(self, position: int):
         """ Move stage to the absolute position.
@@ -106,5 +125,5 @@ class Fine01rError(Exception):
 
 if __name__ == "__main__":
     stage = Fine01r('COM12')
-    print(stage.absolute_move(0))
-    print(stage.read_status())
+    print(stage.hw_info)
+    print(stage.status)
