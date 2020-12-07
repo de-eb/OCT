@@ -2,18 +2,18 @@ import time
 import datetime
 import numpy as np
 import pandas as pd
-from modules.pma12 import PMA12
+from modules.pma12 import Pma12
 from modules.hp8168f import HP8168F
 from modules.c10439 import C10439_11
-from modules.fine01r import FINE01R
+from modules.fine01r import Fine01r
 from modules.ncm6212c import NCM6212C
 
 if __name__ == "__main__":
 
     # Device settings
-    spect = PMA12(dev_id=5)  # spectrometer
-    stage1 = FINE01R('COM11')  # piezo stage (mirror side)
-    stage2 = NCM6212C('COM10')  # piezo stage (sample side)
+    spect = Pma12(dev_id=5)  # spectrometer
+    stage1 = Fine01r('COM12')  # piezo stage (mirror side)
+    stage2 = NCM6212C('COM13')  # piezo stage (sample side)
 
     # Data container
     spectra = data = np.zeros((spect.wavelength.size,4), dtype=float)

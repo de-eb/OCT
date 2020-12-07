@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from modules.hp8168f import HP8168F
 from modules.c10439 import C10439_11
-from modules.fine01r import FINE01R
+from modules.fine01r import Fine01r
 from modules.ncm6212c import NCM6212C
 
 if __name__ == "__main__":
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # Device settings
     laser = HP8168F(gpib_id='GPIB0::24::INSTR', pin=0000)  # tunable laser
     photo = C10439_11(ai_channels="Dev1/ai2")  # photo detector
-    stage1 = FINE01R('COM11')  # piezo stage (mirror side)
+    stage1 = Fine01r('COM12')  # piezo stage (mirror side)
     stage2 = NCM6212C('COM10')  # piezo stage (sample side)
 
     # Data container

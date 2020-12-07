@@ -42,7 +42,7 @@ class PARAMETER(ctypes.Structure):
         ('bReserved1', ctypes.c_ubyte),
     ]
 
-class PMA12():
+class Pma12():
     """
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
     """
@@ -64,7 +64,7 @@ class PMA12():
             USB ID of the device. It can be set between 0 ~ 8.
         """
         # Correction data loading
-        with open(PMA12.__correction_data) as f:
+        with open(Pma12.__correction_data) as f:
             self.__ref = np.array(f.read().split(), dtype=float)
         self.__ref = np.reshape(self.__ref, (int(self.__ref.size/2),2))
         self.__wavelength = self.__ref[:,0]
@@ -72,11 +72,11 @@ class PMA12():
 
         # Device initializing
         self.dev_id = dev_id
-        if PMA12.__dev.start_device() != 0:
-            raise PMAError(msg="PMA12 could not be initialized.")
+        if Pma12.__dev.start_device() != 0:
+            raise PmaError(msg="PMA12 could not be initialized.")
         self.inquiry = INQUIRY()
-        if PMA12.__dev.inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
-            raise PMAError(msg="PMA12 is not found.")
+        if Pma12.__dev.inquiry(self.dev_id, ctypes.byref(self.inquiry)) != 1:
+            raise PmaError(msg="PMA12 not found.")
         
         # Register the exit process
         atexit.register(self.close)
@@ -96,16 +96,16 @@ class PMA12():
                       exposure_time=19, delay_time=0, pixel_clock_time=4):
         """ Set the measurement conditions.
         """
-        if [trigger_mode, start_mode] not in PMA12.__trigger:
-            raise PMAError(msg="Invalid parameters were set.")
+        if [trigger_mode, start_mode] not in Pma12.__trigger:
+            raise PmaError(msg="Invalid parameters were set.")
         self.parameter = PARAMETER(
             0xFF, 0x3F, trigger_mode, trigger_polarity, 0,
             shutter, ii, ii_gain, amp_gain, start_mode,
             exposure_time, delay_time, pixel_clock_time
         )
-        if PMA12.__dev.send_parameter(
+        if Pma12.__dev.send_parameter(
                 self.dev_id, ctypes.byref(self.parameter)) != 1:
-            raise PMAError(msg="PMA12 is not found.")
+            raise PmaError(msg="PMA12 not found.")
 
         if (self.parameter.bTriggerMode == 1
             and self.parameter.bStartMode == 0
@@ -115,7 +115,7 @@ class PMA12():
         else:
             self.line_num = 1
         self.buffer = np.zeros(
-            (PMA12.__channel[self.inquiry.bChannelNumber]*2*self.line_num,),
+            (Pma12.__channel[self.inquiry.bChannelNumber]*2*self.line_num,),
             dtype=np.uint16
         )
 
@@ -124,17 +124,17 @@ class PMA12():
         """
         data = np.zeros((averaging,int(self.buffer.size/2)), dtype=int)
         for i in range(averaging):
-            ret = PMA12.__dev.read(
+            ret = Pma12.__dev.read(
                 self.dev_id, self.line_num, self.buffer.size,
                 self.buffer.ctypes.data_as(ctypes.POINTER(ctypes.wintypes.WORD))
             )
             if ret != 1:
-                raise PMAError(msg="PMA12: The device is not found.")
+                raise PmaError(msg="PMA12 not found.")
             data[i] = (self.buffer[:int(self.buffer.size/2)]
                     + self.buffer[int(self.buffer.size/2):]).astype(int)
-        if data.max() >= 65535:
-            raise PMAError(msg="Measured data are saturated.")
         if correction:
+            if data.max() >= 65535:
+                raise PmaError(msg="Measured data are saturated.")
             data = data - self.__background
             data = np.where(data < 0, 0, data)*self.__sensitivity
         return np.mean(data, axis=0)
@@ -149,14 +149,12 @@ class PMA12():
             When the module is not controlled correctly.
         """
         self.set_parameter()
-        if PMA12.__dev.end_device() != 0:
-            raise PMAError(msg="PMA12 could not be released.")
+        if Pma12.__dev.end_device() != 0:
+            raise PmaError(msg="PMA12 could not be released.")
 
 
-class PMAError(Exception):
-    """Base exception class for all modules.
-    
-    All exceptions thrown from the package inherit this.
+class PmaError(Exception):
+    """Base exception class for this modules.
     
     Attributes
     ----------
@@ -203,14 +201,14 @@ if __name__ == "__main__":
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 
-    spect = PMA12(dev_id=5)  # Device settings
+    spect = Pma12(dev_id=5)  # Device settings
     data = np.zeros_like(spect.wavelength, dtype=float)  # Data container
 
     # Measure & plot
     graph, = ax.plot(spect.wavelength, data)
     spect.set_parameter(shutter=1)
     while True:
-        data = spect.read_spectra(averaging=1)
+        data = spect.read_spectra(correction=False)
         graph.set_data(spect.wavelength, data)
         ax.set_ylim((0, 1.2*data.max()))
         plt.pause(0.0001)
