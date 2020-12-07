@@ -32,7 +32,6 @@ if __name__ == "__main__":
         stage1.absolute_move(position=stage_pos[i])
         time.sleep(1)
         spectra[:,i] = spect.read_spectra(averaging=100)
-    stage1.absolute_move(0)
 
     # Save data
     with open('data/data.csv', mode='w') as f:
