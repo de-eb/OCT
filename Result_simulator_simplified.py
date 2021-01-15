@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 c0=299792458  #speed of light in vacuum[m/sec]
 n1=1.0        #refractive index of air
 n2=1.5        #refractive index of glass 
-ta=50e-3       #thickness of air
+ta=150e-3       #thickness of air
 tg1=1e-3      #thickness of 1st glass[m]
 tg2=2e-3      #thickness of 2nd glass[m]
 tg3=0.3e-3      #thickness of 3rd glass[m]
 tg4=0   #thickness of 4th glass[m]
-tg5=0   #thickness of 5th glass[m]
+tg5=0  #thickness of 5th glass[m]
 tg=[1e-3,2e-3,2e-3,0.3e-3,0.2e-3]
 fmin=189.7468 #minimum sweep frequency[THz]
 fmax=203.2548 #maximum sweep frequency[THz]
@@ -27,7 +27,7 @@ T=1-R                 #transmittance
 
 #x-axis calculation
 depth=np.linspace(0,xmax*1e3,len(freq))
-time=(n2*depth*1e-3)/c0*2
+time=2*(n2*depth*1e-3)/c0
 
 ref=np.sin(one_cycle) #reference light
 #window function
@@ -53,9 +53,7 @@ for i in range(1):
             light2=0
         else:
             lp2=((2*(tg1+tg2))%wl_g)/wl_g*2*np.pi
-            light2=T**2*np.sin(one_cycle+phase_diff+lp2)
-            if tg3!=0:
-                light2*=R
+            light2=T**2*R*np.sin(one_cycle+phase_diff+lp2)
 
         #light throught the 3rd glass
         if tg3==0:
@@ -63,8 +61,6 @@ for i in range(1):
         else:
             lp3=((2*(tg1+tg2+tg3))%wl_g)/wl_g*2*np.pi
             light3=T**4*R*np.sin(one_cycle+phase_diff+lp3)
-            if tg4!=0:
-                light3*=R
 
         #light throught the 4th glass
         if tg4==0:
@@ -81,23 +77,24 @@ for i in range(1):
         else:
             lp5=((2*(tg1+tg2+tg3+tg4+tg5))%wl_g)/wl_g*2*np.pi
             light5=T**8*np.sin(one_cycle+phase_diff+lp5)    
-
-        #plt.plot(one_cycle,ref,label='reference light')
-        #plt.plot(one_cycle,light_sur,label='light from surface')
-        #plt.plot(one_cycle,light1,label='light through the glass')
-        #plt.xlabel('phase[rad]')
-        #plt.legend()
-        #plt.show()
-        #print(freq[j])
-
-
+        '''
+        plt.plot(one_cycle,ref,label='reference light')
+        plt.plot(one_cycle,light_sur,label='light from surface')
+        plt.plot(one_cycle,light1,label='light through the glass')
+        plt.xlabel('phase[rad]')
+        plt.legend()
+        plt.show()
+        print(freq[j])
+        '''
         check=(ref+light_sur+light1+light2+light3+light4+light5)**2
         itf[j]=np.amax(check)-1
         itf_wf=itf*wf
-    #plt.plot(freq,itf)
+    '''
+    plt.plot(freq,itf)
     #plt.xlim(190,191)
-    #plt.xlabel('frequency[THz]')
-    #plt.show()
+    plt.xlabel('frequency[THz]')
+    plt.show()
+    '''
 
     #inverse ft
     for j in range(len(freq)):
@@ -109,5 +106,5 @@ for i in range(1):
     plt.plot(depth,abs(result))
 plt.xlabel('depth[mm]')
 plt.xticks(np.arange(0,xmax*1e3,0.5))
-plt.ylim(0,0.03)
+plt.ylim(0,0.05)
 plt.show()
