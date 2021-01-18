@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 #model configulation
 width=4  #width of glass[mm] <x-axis>
@@ -23,14 +24,15 @@ plt.show()
 '''
 #constants
 c0=299792458  #speed of light in vacuum[m/sec]
-n1=1.0        #refractive index of air
-n2=1.1        #refractive index of glass 
+n1=1.4        #refractive index of air
+n2=1.335        #refractive index of glass 
 ta=150e-3       #thickness of air
 fmin=189.7468 #minimum sweep frequency[THz]
 fmax=203.2548 #maximum sweep frequency[THz]
 fstep=2e-3  #sweep frequency step[THz]
 xmax=(depth+1)*1e-3 #x-axis length[m]
 c=c0/n2               #speed of light in glass[m/sec]
+c1=c0/n1            #speed of light in air
 freq=np.arange(fmin,fmax,fstep)
 itf=np.empty_like(freq)
 one_cycle=np.arange(0,1,1e-3)*2*np.pi
@@ -53,10 +55,12 @@ partB=[]
 for i in range(len(circle_x)):
     partB.append([0,float(circle_lower[i]*1e-3),float(circle_upper[i]*1e-3),float(depth*1e-3)])
 
-for i in range(len(x_axis)):
+partD=[0,float(circle_lower[i]*1e-3),float(depth*1e-3)]
+
+for i in tqdm(range(len(x_axis))):
     for j in range(len(freq)):
-        wl_g=c/freq[j]*1e-12    #wavelength of incident wave[m](glass)
-        wl_a=c0/freq[j]*1e-12   #wavelength of incident wave[m](air)
+        wl_g=c1/freq[j]*1e-12    #wavelength of incident wave[m](glass)
+        wl_a=c1/freq[j]*1e-12   #wavelength of incident wave[m](air)
         phase_diff=(ta%wl_a)/wl_a*2*np.pi+np.pi
         light1=light2=light3=0
 
@@ -67,6 +71,13 @@ for i in range(len(x_axis)):
             frag=0
             lp1=((2*(partAC[1]-partAC[0]))%wl_g)/wl_g*2*np.pi
             light1=R*np.sin(one_cycle+phase_diff+lp1)
+        
+        elif i==(width/2-r)*split or i==(width/2+r)*split:
+            lp1=((2*(partD[1]-partD[0]))%wl_g)/wl_g*2*np.pi
+            light1=R*np.sin(one_cycle+phase_diff+lp1)
+            lp2=((2*(partD[2]-partD[1]))%wl_g)/wl_g*2*np.pi
+            light2=R*np.sin(one_cycle+phase_diff+lp1+lp2)
+
         else:
             frag=1
             for k in range(3):
@@ -121,10 +132,9 @@ for i in range(len(x_axis)):
         result_map=abs(result)
     else:
         result_map=np.vstack((result_map,abs(result)))
-    print('calculation progress:',100*(i+1)/len(x_axis),'[%]')
 
 plt.figure()
-plt.imshow(result_map,cmap='jet',extent=[0,depth+1,0,width])
+plt.imshow(result_map,cmap='jet',extent=[0,depth+1,0,width],vmin=0,vmax=(np.amax(result_map))/2)
 plt.colorbar()
 plt.ylabel('width[mm]')
 plt.xlabel('depth[mm]')
