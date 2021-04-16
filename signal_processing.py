@@ -26,21 +26,21 @@ st = 762
 ed = 953
 
 
-def inverse_ft_plot(freq,itf,xmax,n):
+def inverse_ft(freq,itf,xmax,n):
     """Inverse Fourier transform function for oct.
     
         Parameters
         ----------
-        freq : `type?`
-            description?
-        itf : `type?`
-            description?
-        xmax : `type?`
-            description?
-        n : `type?`
-            description?
+        freq : ndarray
+            frequency data[THz]
+        itf : ndarray
+            measured interference data
+        xmax : float
+            maximum value of depth axis[mm]
+        n : float
+            refractive index of sample
     """
-    depth_axis=np.linspace(0,xmax*1e3,int(1e5))
+    depth_axis=np.linspace(0,xmax,int(1e5))
     time=2*(n*depth_axis*1e-3)/299792458
 
     for i in range(len(freq)):
