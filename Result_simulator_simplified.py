@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 #constants
 c0=299792458  #speed of light in vacuum[m/sec]
@@ -8,15 +9,14 @@ n2=1.5        #refractive index of glass
 ta=150e-3       #thickness of air
 tg1=1e-3      #thickness of 1st glass[m]
 tg2=2e-3      #thickness of 2nd glass[m]
-tg3=0.3e-3      #thickness of 3rd glass[m]
+tg3=0      #thickness of 3rd glass[m]
 tg4=0   #thickness of 4th glass[m]
 tg5=0  #thickness of 5th glass[m]
 tg=[1e-3,2e-3,2e-3,0.3e-3,0.2e-3]
 fmin=189.7468 #minimum sweep frequency[THz]
 fmax=203.2548 #maximum sweep frequency[THz]
-fstep=1e-3  #sweep frequency step[THz]
+fstep=0.2e-3  #sweep frequency step[THz]
 xmax=4e-3    #x-axis length[m]
-#phase_diff=0 #phase difference between reference and sample light
 
 c=c0/n2               #speed of light in glass[m/sec]
 freq=np.arange(fmin,fmax,fstep)
@@ -35,25 +35,25 @@ x=np.linspace(0,1,len(freq))
 wf=0.42-0.5*np.cos(2*np.pi*x)+0.08*np.cos(4*np.pi*x)
 
 for i in range(1):
-    for j in range(len(freq)):
+    for j in tqdm(range(len(freq))):
         wl_g=c/freq[j]*1e-12 #wavelength of incident wave[m](glass)
         wl_a=c0/freq[j]*1e-12
 
         phase_diff=(ta%wl_a)/wl_a*2*np.pi+np.pi
 
         #light from surface
-        light_sur=np.sin(one_cycle+phase_diff)
+        light_sur=R*np.sin(one_cycle+phase_diff)
 
         #light throught the 1st glass
         lp1=(((2*tg1)%wl_g)/wl_g)*2*np.pi
-        light1=R*np.sin(one_cycle+phase_diff+lp1)
+        light1=R*T**2*np.sin(one_cycle+phase_diff+lp1)
 
         #light throught the 2nd glass
         if tg2==0:
             light2=0
         else:
-            lp2=((2*(tg1+tg2))%wl_g)/wl_g*2*np.pi
-            light2=T**2*R*np.sin(one_cycle+phase_diff+lp2)
+            lp2=((2*tg2)%wl_g)/wl_g*2*np.pi
+            light2=R*T**4*np.sin(one_cycle+phase_diff+lp1+lp2)
 
         #light throught the 3rd glass
         if tg3==0:
@@ -91,20 +91,22 @@ for i in range(1):
         itf_wf=itf*wf
     '''
     plt.plot(freq,itf)
-    #plt.xlim(190,191)
+    plt.xlim(190,191)
     plt.xlabel('frequency[THz]')
     plt.show()
     '''
 
     #inverse ft
-    for j in range(len(freq)):
+    for j in tqdm(range(len(freq))):
         if j==0:
             result=itf_wf[j]*np.sin(2*np.pi*time*freq[j]*1e12)
         else:
             result+=itf_wf[j]*np.sin(2*np.pi*time*freq[j]*1e12)
     result/=len(freq)
+
     plt.plot(depth,abs(result))
-plt.xlabel('depth[mm]')
+plt.xlabel('Depth[mm]')
+plt.ylabel('Intensity(arb. unit)')
 plt.xticks(np.arange(0,xmax*1e3,0.5))
-plt.ylim(0,0.05)
+plt.ylim(0,0.005)
 plt.show()

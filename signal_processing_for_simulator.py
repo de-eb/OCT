@@ -24,10 +24,16 @@ result3=np.abs(np.fft.ifft(itf3))
 result4=np.abs(np.fft.ifft(itf4))
 
 # x-axis calculation
-time=1./(np.amax(freq1)-np.amin(freq1))*np.arange(0,len(freq1))
-depth=((time*3e8)/2*n)*1e3
-depth=depth-np.amin(depth)
-depth=depth-depth[int(len(freq1)/2)]
+#time=1./(np.amax(freq1)-np.amin(freq1))*np.arange(0,len(freq1))
+#depth=((time*3e8)/2*n)*1e3
+#depth=depth-np.amin(depth)
+#depth=depth-depth[int(len(freq1)/2)]
+
+c=299792458
+tg=np.array([0.1e-3,0.5e-3,1e-3,2e-3])
+time=2*tg/c
+depth1=
+
 
 plt.xlabel("depth[mm]")
 plt.ylabel("light intensity")
@@ -35,7 +41,7 @@ plt.plot(depth,result1,label='0.1mm')
 plt.plot(depth,result2,label='0.5mm')
 plt.plot(depth,result3,label='1mm')
 plt.plot(depth,result4,label='2mm')
-plt.xlim(0,np.amax(depth))
-plt.ylim(0,50)
+plt.xlim(0,np.max(depth))
+plt.ylim(0,40)
 plt.legend()
 plt.show()

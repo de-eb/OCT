@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.fftpack import ifft
 
-data=np.loadtxt("200902_0.csv",delimiter=",")
+data=np.loadtxt("data/200902_0.csv",delimiter=",")
 wl = data[:,0] # wavelength
 itf = data[:,1]  # interference spectra
 
