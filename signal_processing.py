@@ -25,6 +25,34 @@ alpha = 1.5  # design factor of Kaiser window
 st = 762
 ed = 953
 
+
+def inverse_ft_plot(freq,itf,xmax,n):
+    """Inverse Fourier transform function for oct.
+    
+        Parameters
+        ----------
+        freq : `type?`
+            description?
+        itf : `type?`
+            description?
+        xmax : `type?`
+            description?
+        n : `type?`
+            description?
+    """
+    depth_axis=np.linspace(0,xmax*1e3,int(1e5))
+    time=2*(n*depth_axis*1e-3)/299792458
+
+    for i in range(len(freq)):
+        if i==0:
+            result=itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+        else:
+            result+=itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+    result/=len(freq)
+    
+    return depth_axis,abs(result)
+
+
 if __name__ == "__main__":
 
     # Data loading
