@@ -3,34 +3,34 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 #model configulation
-width=0.4  #width of glass[mm] <x-axis>
-depth=0.4  #depth of glass[mm] <y-axis>
-r=0.1      #radius of bubble in glass[mm]
-split=1000 #[mm^-1]
+width=20e-3 #width of glass[mm] <x-axis>
+depth=0.2  #depth of glass[mm] <y-axis>
+r=5e-3     #radius of bubble in glass[mm]
+split=2500 #[mm^-1]
 circle_x=np.linspace(width/2-r,width/2+r,int(r*2*split))
-circle_upper=np.sqrt(r**2-(circle_x-width/2)**2)+r
-circle_lower=-circle_upper+r*2
+circle_upper=np.sqrt(abs(r**2-(circle_x-width/2)**2))+depth/2
+circle_lower=-circle_upper+depth
 '''
 #model check drawing
 plt.plot(circle_x,circle_upper)
 plt.plot(circle_x,circle_lower)
 plt.hlines(depth,0,width)
 plt.vlines(width,0,depth)
-plt.xlim(0,width+1)
-plt.ylim(0,depth+1)
+plt.xlim(0,width*1.2)
+plt.ylim(0,depth*1.2)
 plt.xlabel('width[mm]')
 plt.ylabel('depth[mm]')
 plt.show()
 '''
 #constants
 c0=299792458  #speed of light in vacuum[m/sec]
-n1=1.4        #refractive index of air
-n2=1.335        #refractive index of glass 
+n1=1        #refractive index of air
+n2=1.5        #refractive index of glass 
 ta=150e-3       #thickness of air
 fmin=189.7468 #minimum sweep frequency[THz]
 fmax=203.2548 #maximum sweep frequency[THz]
 fstep=2e-3  #sweep frequency step[THz]
-xmax=(depth+1)*1e-3 #x-axis length[m]
+xmax=depth*1.2*1e-3 #x-axis length[m]
 c=c0/n2               #speed of light in glass[m/sec]
 c1=c0/n1            #speed of light in air
 freq=np.arange(fmin,fmax,fstep)
@@ -55,8 +55,6 @@ partB=[]
 for i in range(len(circle_x)):
     partB.append([0,float(circle_lower[i]*1e-3),float(circle_upper[i]*1e-3),float(depth*1e-3)])
 
-partD=[0,float(circle_lower[i]*1e-3),float(depth*1e-3)]
-
 for i in tqdm(range(len(x_axis))):
     for j in range(len(freq)):
         wl_g=c/freq[j]*1e-12    #wavelength of incident wave[m](glass)
@@ -68,16 +66,10 @@ for i in tqdm(range(len(x_axis))):
         #light from surface
         light_sur=np.sin(one_cycle+phase_diff)
 
-        if i<(width/2-r)*split or i>(width/2+r)*split:
+        if i<=(width/2-r)*split or i>=(width/2+r)*split:
             frag=0
             lp1=((2*(partAC[1]-partAC[0]))%wl_g)/wl_g*2*np.pi
             light1=R*np.sin(one_cycle+phase_diff+lp1)
-        
-        elif i==(width/2-r)*split or i==(width/2+r)*split:
-            lp1=((2*(partD[1]-partD[0]))%wl_g)/wl_g*2*np.pi
-            light1=R*np.sin(one_cycle+phase_diff+lp1)
-            lp2=((2*(partD[2]-partD[1]))%wl_g)/wl_g*2*np.pi
-            light2=R*np.sin(one_cycle+phase_diff+lp1+lp2)
 
         else:
             frag=1
@@ -119,23 +111,20 @@ for i in tqdm(range(len(x_axis))):
             result+=itf_wf[j]*np.sin(2*np.pi*time*freq[j]*1e12)
     result/=len(freq)
     '''
-    for j in range(100):
-        result[j]=0
+    if i%20==0:
+        #graph check(result)
+        plt.plot(depth_axis,abs(result))
+        plt.xlabel('depth[mm]')
+        plt.ylabel('signal intensity(arb. unit)')
+        plt.show()
     '''
-    '''
-    #graph check(result)
-    plt.plot(depth_axis,abs(result))
-    plt.xlabel('depth[mm]')
-    plt.show()
-    '''
-    #remove first peak
     if i==0:
         result_map=abs(result)
     else:
         result_map=np.vstack((result_map,abs(result)))
 
 plt.figure()
-plt.imshow(result_map,cmap='jet',extent=[0,depth+1,0,width],vmin=0,vmax=np.amax(result_map)/2000)
+plt.imshow(result_map,cmap='jet',extent=[0,depth*1.2,0,width],vmin=0,vmax=np.amax(result_map)/30)
 plt.colorbar()
 plt.ylabel('width[mm]')
 plt.xlabel('depth[mm]')

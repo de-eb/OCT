@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 N=2**20    #データ数
 dt=0.0001  #データ幅
-f1,f2=5,8  #周波数
-A1,A2=5,0  #振幅
-p1,p2=0,0  #位相
+f1,f2=6,8  #周波数
+A1,A2=5,2  #振幅
+p1,p2=1,0  #位相
 
 t=np.arange(0,N*dt,dt)
 freq=np.linspace(0,1.0/dt,N)
