@@ -34,11 +34,19 @@ def inverse_ft(freq,itf,xmax,n):
         freq : ndarray
             frequency data[THz]
         itf : ndarray
-            measured interference data
+            measured interference data[arb. unit]
         xmax : float
             maximum value of depth axis[mm]
         n : float
             refractive index of sample
+        
+        Returned value
+        ----------
+        depth_axis : ndarray
+            calculated depth axis[mm]
+        result : ndarray
+            transformed data[arb. unit]
+
     """
     depth_axis=np.linspace(0,xmax,int(1e5))
     time=2*(n*depth_axis*1e-3)/299792458
