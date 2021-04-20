@@ -47,11 +47,11 @@ class Pma12():
     Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
     """
     # External modules loading
-    ctypes.windll.LoadLibrary(r'modules\pma\WnPmaUSB.dll')
-    ctypes.windll.LoadLibrary(r'modules\pma\StopMsg.dll')
-    ctypes.windll.LoadLibrary(r'modules\pma\PmaUsbW32.dll')
-    __dev = ctypes.windll.LoadLibrary(r'modules\pma\pma.dll')
-    __correction_data = r'modules\pma\320016.sc'
+    ctypes.windll.LoadLibrary(r'modules\dlls\WnPmaUSB.dll')
+    ctypes.windll.LoadLibrary(r'modules\dlls\StopMsg.dll')
+    ctypes.windll.LoadLibrary(r'modules\dlls\PmaUsbW32.dll')
+    __dev = ctypes.windll.LoadLibrary(r'modules\dlls\pma.dll')
+    __correction_data = r'modules\dlls\320016.sc'
     __channel = [128, 256, 512, 1024]
     __trigger = ([0,0],[1,0],[1,1],[2,0],[0,2],[1,2],[0,3],[1,3])
 
