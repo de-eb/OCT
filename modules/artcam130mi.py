@@ -19,6 +19,7 @@ class ArtCam130():
             raise ArtCamError(msg="Initialization failed.")
         # Register the exit process
         atexit.register(self.release)
+        print("ArtCam130 is ready.")
     
     def open(self, width=1280, height=1024, exposure_time=10000):
         """ Start capture.
