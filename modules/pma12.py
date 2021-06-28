@@ -62,6 +62,11 @@ class Pma12():
         ----------
         dev_id : `int`, required
             USB ID of the device. It can be set between 0 ~ 8.
+        
+        Raise
+        -------
+        PmaError :
+            When the module initialization fails.
         """
         # Correction data loading
         with open(Pma12.__correction_data) as f:
@@ -95,6 +100,23 @@ class Pma12():
                       shutter=0, ii=0, ii_gain=0, amp_gain=3,
                       exposure_time=19, delay_time=0, pixel_clock_time=4):
         """ Set the measurement conditions.
+        See the manual of the device for details of each setting.
+
+        Parameters
+        ----------
+        trigger_mode : `int`
+            Trigger mode setting. It can be set between 0 ~ 2.
+        start_mode : `int`
+            Trigger mode setting. It can be set between 0 ~ 3.
+        trigger_polarity : `int`
+            Set to 0 for positive logic and 1 for negative logic.
+        shutter : `int`
+            Set 0 to close the shutter and 1 to open it.
+        
+        Raise
+        -------
+        PmaError :
+            When an invalid parameter is set.
         """
         if [trigger_mode, start_mode] not in Pma12.__trigger:
             raise PmaError(msg="Invalid parameters were set.")
@@ -121,6 +143,19 @@ class Pma12():
 
     def read_spectra(self, correction=True, averaging=1):
         """ Start measurement and read out spectra.
+
+        Parameters
+        ----------
+        correction : `bool`
+            Whether to correct the data due to the sensitivity characteristics of the sensor.
+        averaging : `int`
+            The number of measurement repetitions. 2 or more, the data is an average value.
+        
+        Raise
+        -------
+        PmaError :
+            When communication with the device is lost.
+            Or when the measured value overflows (when correction is performed).
         """
         data = np.zeros((averaging,int(self.buffer.size/2)), dtype=int)
         for i in range(averaging):
@@ -145,7 +180,7 @@ class Pma12():
         
         Raise
         -------
-        ModuleError :
+        PmaError :
             When the module is not controlled correctly.
         """
         self.set_parameter()
