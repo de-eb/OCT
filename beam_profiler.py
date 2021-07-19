@@ -5,12 +5,14 @@ from modules.artcam130mi import ArtCam130
 
 if __name__ == "__main__":
 
+    scale = 0.8
+
     camera = ArtCam130()
     camera.open(exposure_time=10000)
 
     while True:
         img = camera.capture()
-
+        img = cv2.resize(img , (int(img.shape[1]*scale), int(img.shape[0]*scale)))
         centre_v = int(img.shape[0]/2)
         centre_h = int(img.shape[1]/2)
         cv2.line(img, (centre_h, 0), (centre_h, img.shape[0]), 255, thickness=1, lineType=cv2.LINE_4)
