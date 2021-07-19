@@ -12,8 +12,8 @@ if __name__ == "__main__":
 
     # Device settings
     spect = Pma12(dev_id=5)  # spectrometer
-    stage1 = Fine01r('COM12')  # piezo stage (mirror side)
-    stage2 = Ncm6212c('COM13')  # piezo stage (sample side)
+    stage1 = Fine01r('COM11')  # piezo stage (mirror side)
+    stage2 = Ncm6212c('COM10')  # piezo stage (sample side)
 
     # Data container
     spectra = data = np.zeros((spect.wavelength.size,4), dtype=float)
