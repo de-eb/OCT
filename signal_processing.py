@@ -61,8 +61,8 @@ def inverse_ft(freq, itf, xmax, n):
 if __name__ == "__main__":
 
     # Data loading
-    ref = pd.read_csv('data/201202_ref.csv', header=2, index_col=0)
-    data = pd.read_csv('data/201202_3.csv', header=2, index_col=0)
+    ref = pd.read_csv('data/reference.csv', header=2, index_col=0)
+    data = pd.read_csv('data/interference.csv', header=2, index_col=0)
     wl = ref.values[st:ed,0]  # wavelength
     bg = ref.values[st:ed,1]  # background spectra
     sp = data.values[st:ed,1:]  # sample spectra

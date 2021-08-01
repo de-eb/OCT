@@ -8,7 +8,7 @@ if __name__ == "__main__":
     scale = 0.8
 
     camera = ArtCam130()
-    camera.open(exposure_time=10000)
+    camera.open(exposure_time=1000)
 
     while True:
         img = camera.capture()
