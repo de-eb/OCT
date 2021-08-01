@@ -3,8 +3,6 @@ import datetime
 import numpy as np
 import pandas as pd
 from modules.pma12 import Pma12
-from modules.hp8168f import HP8168F
-from modules.c10439 import C10439_11
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 
