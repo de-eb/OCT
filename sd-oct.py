@@ -1,5 +1,6 @@
 import datetime
 from multiprocessing import Process, Queue
+from queue import Empty
 import numpy as np
 import cv2
 import pandas as pd
@@ -37,7 +38,8 @@ def profile_beam(q, window_scale, exposure_time):
     camera = ArtCam130()
     camera.open(exposure_time)
 
-    while True:
+    key = -1
+    while key != 27:
         img = camera.capture()
         img = cv2.resize(img , (int(img.shape[1]*window_scale), int(img.shape[0]*window_scale)))
         centre_v = int(img.shape[0]/2)
@@ -47,12 +49,12 @@ def profile_beam(q, window_scale, exposure_time):
         cv2.imshow('capture', img)
 
         key = cv2.waitKey(10)
-        q.put(key)
-        if key == 27:  # ESC key to exit
-            break
-        elif key == ord('s'):  # 'S' key to save image
-            cv2.imwrite('data/image.png', img)
-            print("The image was saved.")
+        if key > 0:
+            q.put(key)
+            print(key)
+            if key == ord('s'):  # 'S' key to save image
+                cv2.imwrite('data/image.png', img)
+                print("The image was saved.")
 
     camera.close()
     cv2.destroyAllWindows()
@@ -69,6 +71,7 @@ if __name__ == "__main__":
     p.start()
 
     # Parameter initialization
+    key = -1
     spec_ref = None
     spec_itf = np.zeros_like(pma.wavelength, dtype=float)
     err = False
@@ -81,6 +84,7 @@ if __name__ == "__main__":
     wl_fix = wl.min() + s*(wl.max()-wl.min())/(n-1)  # Fixed Wavelength
     x = np.linspace(0, n, n)
     window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
+    depth = np.linspace(0, ed-st-1, ed-st)
 
     # Graph initialization
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
@@ -89,11 +93,12 @@ if __name__ == "__main__":
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
     ax0_0, = ax0.plot(wl, spec_itf[st:ed], label='interference')
     ax0_1, = ax0.plot(wl, spec_itf[st:ed], label='reference')
-    ax0.legend()
+    ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax1 = fig.add_subplot(212, title='A-scan', xlabel='data num.[-]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0 = ax1.plot(spec_itf[st:ed], label='Numpy fft')
+    ax1_0, = ax1.plot(depth, spec_itf[st:ed], label='Numpy fft')
+    ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     
     # Device initialization
     stage1.absolute_move(0)
@@ -101,23 +106,26 @@ if __name__ == "__main__":
     stage2.absolute_move(axis='B', position=0)
     pma.set_parameter(shutter=1)
 
-    while True:
-        key = q.get()
-        if key == 27:  # ESC key to exit
-            break
-        elif key == ord('r'):  # update reference data
+    while key != 27:  # ESC key to exit
+
+        try:
+            key = q.get(block=False)
+        except Empty as e:
+            key = -1
+
+        if key == ord('r'):  # update reference data
             spec_ref = pma.read_spectra(averaging=100)
             func_ref = interpolate.interp1d(wl, spec_ref[st:ed], kind='cubic')
             spec_ref_fix = func_ref(wl_fix)
             print("Reference data updated.")
-            ax0_1.set_data(wl, spec_ref)
+            ax0_1.set_data(wl, spec_ref[st:ed])
 
         elif key == ord('s'):  # 'S' key to save data
             spec_itf = pma.read_spectra(averaging=100)  # update interference data
             with open('data/data.csv', mode='w') as f:
                 f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
             df = pd.DataFrame(
-                data=np.hstack((pma.wavelength, spec_ref, spec_itf)),
+                data=np.vstack((pma.wavelength, np.vstack((spec_ref, spec_itf)))).T,
                 columns=['Wavelength [nm]', 'Reference [-]', 'Interference [-]'],
                 dtype='float')
             df.to_csv('data/data.csv', mode='a')
@@ -150,22 +158,17 @@ if __name__ == "__main__":
                 if err:
                     print("                            ")
                     err= False
+            ax0_0.set_data(pma.wavelength[st:ed], spec_itf[st:ed])  # Graph update
+            ax0.set_ylim((0, 1.2*spec_itf[st:ed].max()))
         
         if spec_ref is not None:  # Signal processing
-            # Interpolation
             func_itf = interpolate.interp1d(wl, spec_itf[st:ed], kind='cubic')
-            spec_itf_fix = func_itf(wl_fix)
-            # Normalize
-            sub = spec_itf_fix/spec_itf_fix.max() - spec_ref_fix/spec_ref_fix.max()
-            # Windowing
-            wnd = sub*window
-            # FFT
-            fft = np.abs(np.fft.ifft(wnd, axis=0))
-        
-        ax0_0.set_data(wl, spec_itf)
-        ax0.set_ylim((0, 1.2*spec_itf.max()))
-        ax1_0.set_data(fft)
-        ax1.set_ylim((0, 1.2*fft.max()))
-        plt.pause(0.0001)
+            spec_itf_fix = func_itf(wl_fix)  # Interpolation
+            sub = spec_itf_fix/spec_itf_fix.max() - spec_ref_fix/spec_ref_fix.max()  # Normalize
+            wnd = sub*window  # Windowing
+            fft = np.abs(np.fft.ifft(wnd, axis=0))  # FFT
+            ax1_0.set_data(depth, fft)  # Graph update
+            ax1.set_ylim((0, 1.2*fft.max()))
 
+        plt.pause(0.0001)
     p.terminate()
