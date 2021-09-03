@@ -35,25 +35,33 @@ ed = 953  # Calculation range (End) of spectrum [nm]
 g_key = None  # Pressed key
 
 
-def profile_beam(q, window_scale, exposure_time):
+def profile_beam(q, scale, exposure):
 
     camera = ArtCam130()
-    camera.open(exposure_time)
+    camera.open(exposure)
+
+    ref = np.zeros_like(camera.capture(), dtype=np.uint8)
+    ref = cv2.resize(ref, (int(ref.shape[1]*scale), int(ref.shape[0]*scale)))
+    centre_v = int(ref.shape[0]/2)
+    centre_h = int(ref.shape[1]/2)
 
     while True:
         img = camera.capture()
-        img = cv2.resize(img , (int(img.shape[1]*window_scale), int(img.shape[0]*window_scale)))
-        centre_v = int(img.shape[0]/2)
-        centre_h = int(img.shape[1]/2)
-        cv2.line(img, (centre_h, 0), (centre_h, img.shape[0]), 255, thickness=1, lineType=cv2.LINE_4)
-        cv2.line(img, (0, centre_v), (img.shape[1], centre_v), 255, thickness=1, lineType=cv2.LINE_4)
-        cv2.imshow('capture', img)
+        img = cv2.resize(img ,(ref.shape[1], ref.shape[0]))
+        sub = img.astype(np.int16) - ref
+        sub = np.where(sub<0, 0, sub)
+        sub = sub.astype(np.uint8)
+        cv2.line(sub, (centre_h, 0), (centre_h, sub.shape[0]), 255, thickness=1, lineType=cv2.LINE_4)
+        cv2.line(sub, (0, centre_v), (sub.shape[1], centre_v), 255, thickness=1, lineType=cv2.LINE_4)
+        cv2.imshow('capture', sub)
         cv2.waitKey(1)
         try: key = q.get(block=False)
         except Empty: pass
         else:
-            if key == ' ':  # 'Space' key to save image
-                cv2.imwrite('data/image.png', img)
+            if key == 'enter':
+                ref = img
+            elif key == ' ':  # 'Space' key to save image
+                cv2.imwrite('data/image.png', sub)
                 print("The image was saved.")
             elif key == 'escape':  # ESC key to exit
                 break
@@ -104,7 +112,7 @@ if __name__ == "__main__":
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0, 500))  # piezo stage
-    proc1 = Process(target=profile_beam, args=(q1, 0.8, 1000))  # Beam profiler
+    proc1 = Process(target=profile_beam, args=(q1, 0.8, 3000))  # Beam profiler
     proc0.start()
     proc1.start()
 
@@ -139,7 +147,7 @@ if __name__ == "__main__":
     pma.set_parameter(shutter=1)
     while g_key != 'escape':  # ESC key to exit
         # Spectral measurement
-        try: spec_itf = pma.read_spectra(averaging=1)
+        try: spec_itf = pma.read_spectra(averaging=5)
         except PmaError as e:
             err = True
             print(e, end="\r")
