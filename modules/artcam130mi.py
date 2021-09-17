@@ -22,7 +22,7 @@ class ArtCam130():
         time.sleep(1)
         print("ArtCam130 is ready.")
     
-    def open(self, width=1280, height=1024, exposure_time=10000):
+    def open(self, exposure_time, width=1280, height=1024):
         """ Start capture.
             Be sure to run this function before executing the `capture()`.
         
