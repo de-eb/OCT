@@ -19,6 +19,7 @@ class ArtCam130():
             raise ArtCamError(msg="Initialization failed.")
         # Register the exit process
         atexit.register(self.release)
+        time.sleep(1)
         print("ArtCam130 is ready.")
     
     def open(self, width=1280, height=1024, exposure_time=10000):
@@ -42,12 +43,16 @@ class ArtCam130():
         # Device settings
         if not ArtCam130.__dll.ArtCam_SetCaptureWindowEx(self.__camera_handler,width,0,width,height,0,height):
             raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
         if not ArtCam130.__dll.ArtCam_SetColorMode(self.__camera_handler, 8):
             raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
         if not ArtCam130.__dll.ArtCam_SetRealExposureTime(self.__camera_handler, exposure_time):
             raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
         if not ArtCam130.__dll.ArtCam_SetAutoIris(self.__camera_handler, 0):
             raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
         # Data container
         self.__img = np.zeros((height, width), dtype=np.uint8)
         # Start capture
