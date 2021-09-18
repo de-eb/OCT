@@ -26,36 +26,86 @@ st = 762
 ed = 953
 
 
-def inverse_ft(freq, itf, xmax, n):
-    """Inverse Fourier transform function for oct.
-    
-        Parameters
-        ----------
-        freq : `ndarray`
-            frequency data[THz]
-        itf : `ndarray`
-            measured interference data[arb. unit]
-        xmax : `float`
-            maximum value of depth axis[mm]
-        n : `float`
-            refractive index of sample
-        
-        Returns
-        -------
-        depth_axis : `ndarray`
-            calculated depth axis[mm]
-        result : `ndarray`
-            transformed data[arb. unit]
+class SignalProcessor():
     """
-    depth_axis = np.linspace(0, xmax, int(1e5))
-    time = 2*(n*depth_axis*1e-3)/c
-    for i in range(len(freq)):
-        if i==0:
-            result = itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-        else:
-            result += itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-    result /= len(freq)
-    return depth_axis, abs(result)
+    A class that packages various types of signal processing for OCT.
+    """
+    c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
+
+    def __init__(self, wavelength, n, alpha=1.5):
+        """
+        """
+        # Axis conversion for resampling
+        self.wl = wavelength
+        ns = len(self.wl)  # Number of samples after resampling
+        i = np.arange(ns)
+        s = (ns-1)/(self.wl.max()-self.wl.min()) * (1/(1/self.wl.max()+i/(ns-1)*(1/self.wl.min()-1/self.wl.max())) - self.wl.min())
+        self.wl_fix = self.wl.min() + s*(self.wl.max()-self.wl.min())/(ns-1)  # Fixed Wavelength
+        
+        # Generating window functions
+        x = np.linspace(0, ns, ns)
+        self.window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
+        
+        # Axis conversion for FFT
+        freq = c / (wl_fix*n)
+        fs = 2*freq.max()  # Nyquist frequency
+        self.nf = ns // 2  # Number of samples after IFFT
+        t = self.nf / fs  # Maximum value of time axis after IFFT
+        self.depth = np.linspace(0, c*t/2, self.nf)
+        # depth = c*(1/(c/(wl_fix*n)))/(2*n)
+
+    def resample(self, spectra):
+        """
+        """
+        func = interpolate.interp1d(self.wl, spectra, kind='cubic')
+        return func(self.wl_fix)
+
+    def remove_bg(self, interference, reference):
+        """
+        """
+        return interference/interference.max() - reference/reference.max()
+    
+    def apply_window(self, spectra):
+        """
+        """
+        return spectra*self.window
+    
+    def make_ascan(self, spectra):
+        """
+        """
+        magnitude = np.abs(np.fft.ifft(spectra, axis=0))
+        return magnitude[self.nf:]
+
+    def inverse_ft(freq, itf, xmax, n):
+        """Inverse Fourier transform function for oct.
+        
+            Parameters
+            ----------
+            freq : `ndarray`
+                frequency data[THz]
+            itf : `ndarray`
+                measured interference data[arb. unit]
+            xmax : `float`
+                maximum value of depth axis[mm]
+            n : `float`
+                refractive index of sample
+            
+            Returns
+            -------
+            depth_axis : `ndarray`
+                calculated depth axis[mm]
+            result : `ndarray`
+                transformed data[arb. unit]
+        """
+        depth_axis = np.linspace(0, xmax, int(1e5))
+        time = 2*(n*depth_axis*1e-3)/c
+        for i in range(len(freq)):
+            if i==0:
+                result = itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+            else:
+                result += itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+        result /= len(freq)
+        return depth_axis, abs(result)
 
 
 if __name__ == "__main__":
