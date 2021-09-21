@@ -23,6 +23,9 @@ class SignalProcessor():
         alpha : `float`
             Design factor of Kaiser window.
         """
+        # Data containers
+        self.reference = None
+
         # Axis conversion for resampling
         self.wl = wavelength
         self.ns = len(self.wl)  # Number of samples after resampling
@@ -49,21 +52,42 @@ class SignalProcessor():
         func = interpolate.interp1d(self.wl, spectra, kind='cubic')
         return func(self.wl_fix)
 
-    def remove_bg(self, interference, reference):
+    def remove_background(self, spectra):
         """
         """
-        return interference/interference.max() - reference/reference.max()
+        return spectra/spectra.max() - self.reference/self.reference.max()
     
     def apply_window(self, spectra):
         """
         """
         return spectra*self.window
     
-    def make_ascan(self, spectra):
+    def apply_ifft(self, spectra):
         """
         """
         magnitude = np.abs(np.fft.ifft(spectra, n=self.nf, axis=0))
         return magnitude[self.ns:]
+    
+    def set_reference(self, spectra):
+        """
+        """
+        self.reference = self.resample(spectra)
+    
+    def get_ascan(self, interference, reference):
+        """
+        """
+        if self.reference is None:
+            self.set_reference(reference)
+        itf = self.resample(interference)
+        rmv = self.remove_background(itf)
+        wnd = self.apply_window(rmv)
+        ascan = self.apply_ifft(wnd)
+        return ascan
+    
+    def remove_autocorrelation(self, ascan0, ascan1):
+        """
+        """
+        return np.abs(self.remove_background(ascan0, ascan1))
 
     def inverse_ft(freq, itf, xmax, n):
         """Inverse Fourier transform function for oct.
@@ -121,13 +145,9 @@ if __name__ == "__main__":
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2]  # sample spectra
 
+    # Signal processing
     sp = SignalProcessor(wl, 1.46)  # cellulose = 1.46
-
-    ref_fix = sp.resample(ref)
-    itf_ifx = sp.resample(itf)
-    rmv = sp.remove_bg(itf_ifx, ref_fix)
-    wnd = sp.apply_window(rmv)
-    ascan = sp.make_ascan(wnd)
+    ascan = sp.get_ascan(itf, ref)
 
     # Show Graph
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
