@@ -24,59 +24,65 @@ class SignalProcessor():
             Design factor of Kaiser window.
         """
         # Data containers
-        self.reference = None
+        self.__ref_fix = None
 
         # Axis conversion for resampling
-        self.wl = wavelength
-        self.ns = len(self.wl)  # Number of samples after resampling
-        i = np.arange(self.ns)
-        s = (self.ns-1)/(self.wl.max()-self.wl.min()) * (1/(1/self.wl.max()+i/(self.ns-1)*(1/self.wl.min()-1/self.wl.max())) - self.wl.min())
-        self.wl_fix = self.wl.min() + s*(self.wl.max()-self.wl.min())/(self.ns-1)  # Fixed Wavelength
+        self.__wl = wavelength
+        self.__ns = len(self.__wl)  # Number of samples after resampling
+        i = np.arange(self.__ns)
+        s = (self.__ns-1)/(self.__wl.max()-self.__wl.min()) * (1/(1/self.__wl.max()+i/(self.__ns-1)*(1/self.__wl.min()-1/self.__wl.max())) - self.__wl.min())
+        self.wl_fix = self.__wl.min() + s*(self.__wl.max()-self.__wl.min())/(self.__ns-1)  # Fixed Wavelength
         
         # Generating window functions
-        x = np.linspace(0, self.ns, self.ns)
+        x = np.linspace(0, self.__ns, self.__ns)
         # self.window = 0.42 - 0.5*np.cos(2*np.pi*x) + 0.08*np.cos(4*np.pi*x)  # Blackman window
-        self.window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
+        self.__window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
         
         # Axis conversion for FFT
         freq = SignalProcessor.c / (self.wl_fix*1e-9*n)
         fs = 2*freq.max()  # Nyquist frequency
-        self.nf = self.ns * 2 # Number of samples after IFFT
-        t = self.nf / fs  # Maximum value of time axis after IFFT
-        self.depth = np.linspace(0, SignalProcessor.c*t/2, self.ns)
+        self.__nf = self.__ns * 2 # Number of samples after IFFT
+        t = self.__nf / fs  # Maximum value of time axis after IFFT
+        self.__depth = np.linspace(0, SignalProcessor.c*t/2, self.__ns)
         # depth = c*(1/(c/(wl_fix*n)))/(2*n)
+
+    @property
+    def depth(self):
+        """ Horizontal axis after FFT (depth [μm])
+        """
+        return self.__depth
 
     def resample(self, spectra):
         """
         """
-        func = interpolate.interp1d(self.wl, spectra, kind='cubic')
+        func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
         return func(self.wl_fix)
 
     def remove_background(self, spectra):
         """
         """
-        return spectra/spectra.max() - self.reference/self.reference.max()
+        return spectra/spectra.max() - self.__ref_fix/self.__ref_fix.max()
     
     def apply_window(self, spectra):
         """
         """
-        return spectra*self.window
+        return spectra*self.__window
     
     def apply_ifft(self, spectra):
         """
         """
-        magnitude = np.abs(np.fft.ifft(spectra, n=self.nf, axis=0))
-        return magnitude[self.ns:]
+        magnitude = np.abs(np.fft.ifft(spectra, n=self.__nf, axis=0))
+        return magnitude[self.__ns:]
     
     def set_reference(self, spectra):
         """
         """
-        self.reference = self.resample(spectra)
+        self.__ref_fix = self.resample(spectra)
     
-    def get_ascan(self, interference, reference):
+    def generate_ascan(self, interference, reference):
         """
         """
-        if self.reference is None:
+        if self.__ref_fix is None:
             self.set_reference(reference)
         itf = self.resample(interference)
         rmv = self.remove_background(itf)
@@ -147,7 +153,7 @@ if __name__ == "__main__":
 
     # Signal processing
     sp = SignalProcessor(wl, 1.46)  # cellulose = 1.46
-    ascan = sp.get_ascan(itf, ref)
+    ascan = sp.generate_ascan(itf, ref)
 
     # Show Graph
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
