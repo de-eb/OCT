@@ -12,6 +12,7 @@ from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
+from modules.signal_processing import SignalProcessor
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -27,9 +28,6 @@ plt.rcParams['font.size'] = 14
 plt.rcParams['axes.linewidth'] = 1.0
 
 # Globals
-c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
-n = 1.4  # Refractive index of the sample. cellulose = 1.46
-alpha = 1.5  # Design factor of Kaiser window
 st = 762  # Calculation range (Start) of spectrum [nm]
 ed = 953  # Calculation range (End) of spectrum [nm]
 g_key = None  # Pressed key
@@ -109,6 +107,7 @@ if __name__ == "__main__":
 
     # Device settings
     pma = Pma12(dev_id=5)  # Spectrometer
+    sp = SignalProcessor(pma.wavelength[st:ed], 1.46)
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0, 500))  # piezo stage
@@ -117,17 +116,9 @@ if __name__ == "__main__":
     proc1.start()
 
     # Parameter initialization
-    spec_ref = None
-    spec_itf = np.zeros_like(pma.wavelength, dtype=float)
+    ref = None
+    itf = np.zeros_like(pma.wavelength, dtype=float)
     err = False
-    wl = pma.wavelength[st:ed]
-    n = len(wl)
-    i = np.arange(n)
-    s = (n-1)/(wl.max()-wl.min()) * (1/(1/wl.max()+i/(n-1)*(1/wl.min()-1/wl.max())) - wl.min())
-    wl_fix = wl.min() + s*(wl.max()-wl.min())/(n-1)  # Fixed Wavelength
-    x = np.linspace(0, n, n)
-    window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
-    depth = np.linspace(0, ed-st-1, ed-st)
 
     # Graph initialization
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
@@ -135,19 +126,19 @@ if __name__ == "__main__":
     ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0_0, = ax0.plot(wl, spec_itf[st:ed], label='interference')
-    ax0_1, = ax0.plot(wl, spec_itf[st:ed], label='reference')
+    ax0_0, = ax0.plot(pma.wavelength[st:ed], itf[st:ed], label='interference')
+    ax0_1, = ax0.plot(pma.wavelength[st:ed], itf[st:ed], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    ax1 = fig.add_subplot(212, title='A-scan', xlabel='data num.[-]', ylabel='Intensity [-]')
+    ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(depth, spec_itf[st:ed], label='Numpy fft')
+    ax1_0, = ax1.plot(sp.depth*1e6, itf[st:ed], label='Numpy fft')
     ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     
     pma.set_parameter(shutter=1)
     while g_key != 'escape':  # ESC key to exit
         # Spectral measurement
-        try: spec_itf = pma.read_spectra(averaging=5)
+        try: itf = pma.read_spectra(averaging=5)
         except PmaError as e:
             err = True
             print(e, end="\r")
@@ -155,37 +146,32 @@ if __name__ == "__main__":
             if err:
                 print("                            ")
                 err= False
-        ax0_0.set_data(pma.wavelength[st:ed], spec_itf[st:ed])  # Graph update
-        ax0.set_ylim((0, 1.2*spec_itf[st:ed].max()))
+        ax0_0.set_data(pma.wavelength[st:ed], itf[st:ed])  # Graph update
+        ax0.set_ylim((0, 1.2*itf[st:ed].max()))
 
         # Signal processing
-        if spec_ref is not None:
-            func_itf = interpolate.interp1d(wl, spec_itf[st:ed], kind='cubic')
-            spec_itf_fix = func_itf(wl_fix)  # Interpolation
-            sub = spec_itf_fix/spec_itf_fix.max() - spec_ref_fix/spec_ref_fix.max()  # Normalize
-            wnd = sub*window  # Windowing
-            fft = np.abs(np.fft.ifft(wnd, axis=0))  # FFT
-            ax1_0.set_data(depth, fft)  # Graph update
-            ax1.set_ylim((0, 1.2*fft.max()))
+        if ref is not None:
+            ascan = sp.generate_ascan(itf[st:ed], ref[st:ed])
+            ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
+            ax1.set_ylim((0, 1.2*ascan.max()))
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
-            spec_ref = pma.read_spectra(averaging=100)
-            func_ref = interpolate.interp1d(wl, spec_ref[st:ed], kind='cubic')
-            spec_ref_fix = func_ref(wl_fix)
+            ref = pma.read_spectra(averaging=100)
+            sp.set_reference(ref[st:ed])
             print("Reference data updated.")
-            ax0_1.set_data(wl, spec_ref[st:ed])
+            ax0_1.set_data(pma.wavelength[st:ed], ref[st:ed])
 
         # 'Space' key to save data
         elif g_key == ' ':
-            if spec_ref is None:
+            if ref is None:
                 print("Failed to save the spectra.")
             else:
-                spec_itf = pma.read_spectra(averaging=100)  # update interference data
+                itf = pma.read_spectra(averaging=100)  # update interference data
                 with open('data/data.csv', mode='w') as f:
                     f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
                 df = pd.DataFrame(
-                    data=np.vstack((pma.wavelength, np.vstack((spec_ref, spec_itf)))).T,
+                    data=np.vstack((pma.wavelength, np.vstack((ref, itf)))).T,
                     columns=['Wavelength [nm]', 'Reference [-]', 'Interference [-]'],
                     dtype='float')
                 df.to_csv('data/data.csv', mode='a')
