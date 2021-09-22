@@ -35,7 +35,7 @@ class SignalProcessor():
         
         # Generating window functions
         x = np.linspace(0, self.__ns, self.__ns)
-        # self.window = 0.42 - 0.5*np.cos(2*np.pi*x) + 0.08*np.cos(4*np.pi*x)  # Blackman window
+        # self.__window = 0.42 - 0.5*np.cos(2*np.pi*x) + 0.08*np.cos(4*np.pi*x)  # Blackman window
         self.__window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
         
         # Axis conversion for FFT
@@ -53,34 +53,91 @@ class SignalProcessor():
         return self.__depth
 
     def resample(self, spectra):
-        """
+        """ Resamples the spectra.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra sampled evenly in the wavelength space.
+
+        Returns
+        -------
+        `1d-ndarray`
+            Spectra resampled evenly in the frequency space.
         """
         func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
         return func(self.wl_fix)
 
     def remove_background(self, spectra):
-        """
+        """ Removes the reference spectra from the interference spectra.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra. Normally, specify the interference spectra after resampling.
+
+        Returns
+        -------
+        `1d-ndarray`
+            Spectra after reference spectra removal.
         """
         return spectra/spectra.max() - self.__ref_fix/self.__ref_fix.max()
     
     def apply_window(self, spectra):
-        """
+        """ Multiply the spectra by the window function.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra. (After removing the background.)
+
+        Returns
+        -------
+        `1d-ndarray`
+            Spectra after applying the window function.
         """
         return spectra*self.__window
     
     def apply_ifft(self, spectra):
-        """
+        """ Apply IFFT to the spectra and convert it to time domain data (i.e. A-scan).
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra. (After applying the window function.)
+
+        Returns
+        -------
+        `1d-ndarray`
+            Data after IFFT.
         """
         magnitude = np.abs(np.fft.ifft(spectra, n=self.__nf, axis=0))
         return magnitude[self.__ns:]
     
     def set_reference(self, spectra):
-        """
+        """ Specify the reference spectra. This spectra will be used in later calculations.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
         """
         self.__ref_fix = self.resample(spectra)
     
     def generate_ascan(self, interference, reference):
-        """
+        """ Performs a series of signal processing in one step.
+
+        Parameters
+        ----------
+        interference : `1d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+        reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
+
+        Returns
+        -------
+        `1d-ndarray`
+            A-scan.
         """
         if self.__ref_fix is None:
             self.set_reference(reference)
@@ -91,7 +148,9 @@ class SignalProcessor():
         return ascan
     
     def remove_autocorrelation(self, ascan0, ascan1):
-        """
+        """ Remove the autocorrelation component from the A-scan.
+        Since this method is not common,
+        please carefully examine the data before and after processing before using it.
         """
         return np.abs(self.remove_background(ascan0, ascan1))
 
