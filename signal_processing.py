@@ -136,8 +136,9 @@ class SignalProcessor():
 
         Returns
         -------
-        `1d-ndarray`
-            A-scan.
+        ascan : `1d-ndarray`
+            Light intensity data in the time domain (i.e. A-scan).
+            The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
         if self.__ref_fix is None:
             self.set_reference(reference)
@@ -205,7 +206,7 @@ if __name__ == "__main__":
     ed = 953  # Calculation range (End) of spectrum [nm]
 
     # Data loading
-    data = pd.read_csv('data/210903_1.csv', header=2, index_col=0)
+    data = pd.read_csv('data/data.csv', header=2, index_col=0)
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2]  # sample spectra
