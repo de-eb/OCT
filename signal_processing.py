@@ -154,36 +154,36 @@ class SignalProcessor():
         """
         return np.abs(self.remove_background(ascan0, ascan1))
 
-    def inverse_ft(freq, itf, xmax, n):
-        """Inverse Fourier transform function for oct.
+    # def inverse_ft(freq, itf, xmax, n):
+    #     """Inverse Fourier transform function for oct.
         
-            Parameters
-            ----------
-            freq : `ndarray`
-                frequency data[THz]
-            itf : `ndarray`
-                measured interference data[arb. unit]
-            xmax : `float`
-                maximum value of depth axis[mm]
-            n : `float`
-                refractive index of sample
+    #         Parameters
+    #         ----------
+    #         freq : `ndarray`
+    #             frequency data[THz]
+    #         itf : `ndarray`
+    #             measured interference data[arb. unit]
+    #         xmax : `float`
+    #             maximum value of depth axis[mm]
+    #         n : `float`
+    #             refractive index of sample
             
-            Returns
-            -------
-            depth_axis : `ndarray`
-                calculated depth axis[mm]
-            result : `ndarray`
-                transformed data[arb. unit]
-        """
-        depth_axis = np.linspace(0, xmax, int(1e5))
-        time = 2*(n*depth_axis*1e-3)/c
-        for i in range(len(freq)):
-            if i==0:
-                result = itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-            else:
-                result += itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-        result /= len(freq)
-        return depth_axis, abs(result)
+    #         Returns
+    #         -------
+    #         depth_axis : `ndarray`
+    #             calculated depth axis[mm]
+    #         result : `ndarray`
+    #             transformed data[arb. unit]
+    #     """
+    #     depth_axis = np.linspace(0, xmax, int(1e5))
+    #     time = 2*(n*depth_axis*1e-3)/SignalProcessor.c
+    #     for i in range(len(freq)):
+    #         if i==0:
+    #             result = itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+    #         else:
+    #             result += itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
+    #     result /= len(freq)
+    #     return depth_axis, abs(result)
 
 
 if __name__ == "__main__":
