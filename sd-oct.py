@@ -1,11 +1,9 @@
 import datetime
 from multiprocessing import Process, Queue
-from operator import is_
 from queue import Empty
 import numpy as np
 import cv2
 import pandas as pd
-from scipy import special, interpolate
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12, PmaError
@@ -111,7 +109,7 @@ if __name__ == "__main__":
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0, 500))  # piezo stage
-    proc1 = Process(target=profile_beam, args=(q1, 0.8, 3000))  # Beam profiler
+    proc1 = Process(target=profile_beam, args=(q1, 0.8, 1000))  # Beam profiler
     proc0.start()
     proc1.start()
 
