@@ -248,6 +248,8 @@ class PmaError(Exception):
 
 if __name__ == "__main__":
 
+    import datetime
+    import pandas as pd
     import matplotlib.pyplot as plt
     from matplotlib.ticker import ScalarFormatter
 
@@ -263,19 +265,50 @@ if __name__ == "__main__":
     plt.rcParams["ytick.minor.width"] = 0.5
     plt.rcParams['font.size'] = 14
     plt.rcParams['axes.linewidth'] = 1.0
-    fig = plt.figure()
+
+    # Parameter initialization
+    pma = Pma12(dev_id=5)  # Device settings
+    data = np.zeros_like(pma.wavelength, dtype=float)  # Data container
+    key = None  # Pressed key
+    err = False
+
+    def on_key(event):
+        global key
+        key = event.key
+
+    # Graph initialization
+    fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
+    fig.canvas.mpl_connect('key_press_event', on_key)  # Key event
     ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-
-    spect = Pma12(dev_id=5)  # Device settings
-    data = np.zeros_like(spect.wavelength, dtype=float)  # Data container
+    graph, = ax.plot(pma.wavelength, data)
 
     # Measure & plot
-    graph, = ax.plot(spect.wavelength, data)
-    spect.set_parameter(shutter=1)
-    while True:
-        data = spect.read_spectra(correction=False)
-        graph.set_data(spect.wavelength, data)
+    pma.set_parameter(shutter=1)
+    while g_key != 'escape':  # ESC key to exit:
+        
+        try: data = pma.read_spectra(averaging=1)  # Spectral measurement
+        except PmaError as e:
+            err = True
+            print(e, end="\r")
+        else:
+            if err:
+                print("                            ", end="\r")
+                err= False
+        graph.set_data(pma.wavelength, data)  # Graph update
         ax.set_ylim((0, 1.2*data.max()))
+
+        if g_key == ' ':  # 'Space' key to save data
+            data = pma.read_spectra(averaging=100)
+            with open('data/data.csv', mode='w') as f:
+                f.write('date,{}\nmemo,\n'.format(datetime.datetime.now()))
+            df = pd.DataFrame(
+                data=np.vstack((pma.wavelength, data)).T,
+                columns=['Wavelength [nm]', 'Intensity [-]'],
+                dtype='float')
+            df.to_csv('data/data.csv', mode='a')
+            print("The spectra were saved.")
+
+        g_key = None
         plt.pause(0.0001)
