@@ -1,8 +1,5 @@
 import numpy as np
-import pandas as pd
 from scipy import special, interpolate
-import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
 
 
 class SignalProcessor():
@@ -188,6 +185,10 @@ class SignalProcessor():
 
 
 if __name__ == "__main__":
+
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import ScalarFormatter
 
     # Graph settings
     plt.rcParams['font.family'] ='sans-serif'
