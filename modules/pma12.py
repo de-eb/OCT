@@ -136,6 +136,22 @@ class Pma12():
         """
         if [trigger_mode, start_mode] not in Pma12.__trigger:
             raise PmaError(msg="Invalid parameters were set.")
+        if trigger_polarity not in [0,1]:
+            raise PmaError(msg="Invalid parameters were set.")
+        if shutter not in [0,1]:
+            raise PmaError(msg="Invalid parameters were set.")
+        if ii not in [0,1]:
+            raise PmaError(msg="Invalid parameters were set.")
+        if ii_gain not in [0,1,2,3,4,5,6,7]:
+            raise PmaError(msg="Invalid parameters were set.")
+        if amp_gain not in [1,2,3]:
+            raise PmaError(msg="Invalid parameters were set.")
+        if exposure_time < 19 or exposure_time > 65535:
+            raise PmaError(msg="Invalid parameters were set.")
+        if delay_time < 0 or exposure_time > 32767:
+            raise PmaError(msg="Invalid parameters were set.")
+        if pixel_clock_time != 4:
+            raise PmaError(msg="Invalid parameters were set.")
         self.parameter = PARAMETER(
             0xFF, 0x3F, trigger_mode, trigger_polarity, 0,
             shutter, ii, ii_gain, amp_gain, start_mode,
