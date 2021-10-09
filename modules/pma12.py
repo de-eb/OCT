@@ -94,6 +94,8 @@ class Pma12():
     
     @property
     def wavelength(self):
+        """ Wavelength [nm] axis corresponding to the measurement data.
+        """
         return self.__wavelength
     
     def set_parameter(self, trigger_mode=0, start_mode=0, trigger_polarity=0,
@@ -105,14 +107,28 @@ class Pma12():
         Parameters
         ----------
         trigger_mode : `int`
-            Trigger mode setting. It can be set between 0 ~ 2.
+            Trigger mode setting. 0:INTERNAL, 1:EXTERNAL, 2:OPENING
         start_mode : `int`
-            Trigger mode setting. It can be set between 0 ~ 3.
+            Setting the exposure start method.
+            0:Concurrent with trigger
+            1:Synchronize exposure time with external trigger
         trigger_polarity : `int`
-            Set to 0 for positive logic and 1 for negative logic.
+            Measurement timing by external trigger. 0:POSITIVE, 1:NEGATIVE
         shutter : `int`
-            Set 0 to close the shutter and 1 to open it.
-        
+            Shutter control. 0:CLOSE, 1:OPEN
+        ii : `int`
+            Image intensifier power supply. 0:OFF,1:ON
+        ii_gain : `int`
+            Image intensifier gain. It can be set between 0 ~ 7.
+        amp_gain : `int`
+            Amplifier gain. 1:HIGH, 2:MIDDLE, 3:LOW
+        exposure_time : `int`
+            Exposure time [ms]. It can be set between 19 ~ 65535.
+        delay_time : `int`
+            Delay time [ms] from external trigger to start of measurement. It can be set between 0 ~ 32767.
+        pixel_clock_time : `int`
+            Clock time [μs] of the detector. Set to 4 for PMA-12.
+
         Raise
         -------
         PmaError :
