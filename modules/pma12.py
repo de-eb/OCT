@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
     # Measure & plot
     pma.set_parameter(shutter=1)
-    while g_key != 'escape':  # ESC key to exit:
+    while key != 'escape':  # ESC key to exit:
         
         try: data = pma.read_spectra(averaging=1)  # Spectral measurement
         except PmaError as e:
@@ -299,7 +299,7 @@ if __name__ == "__main__":
         graph.set_data(pma.wavelength, data)  # Graph update
         ax.set_ylim((0, 1.2*data.max()))
 
-        if g_key == ' ':  # 'Space' key to save data
+        if key == ' ':  # 'Space' key to save data
             data = pma.read_spectra(averaging=100)
             with open('data/data.csv', mode='w') as f:
                 f.write('date,{}\nmemo,\n'.format(datetime.datetime.now()))
@@ -310,5 +310,5 @@ if __name__ == "__main__":
             df.to_csv('data/data.csv', mode='a')
             print("The spectra were saved.")
 
-        g_key = None
+        key = None
         plt.pause(0.0001)
