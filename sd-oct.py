@@ -167,7 +167,7 @@ if __name__ == "__main__":
             else:
                 itf = pma.read_spectra(averaging=100)  # update interference data
                 with open('data/data.csv', mode='w') as f:
-                    f.write('date,{}\nmemo,\n'.format(datetime.datetime.now().isoformat()))
+                    f.write('date,{}\nmemo,\n'.format(datetime.datetime.now()))
                 df = pd.DataFrame(
                     data=np.vstack((pma.wavelength, np.vstack((ref, itf)))).T,
                     columns=['Wavelength [nm]', 'Reference [-]', 'Interference [-]'],
@@ -177,5 +177,5 @@ if __name__ == "__main__":
         
         g_key = None
         plt.pause(0.0001)
-    proc0.join()   
+    proc0.join()
     proc1.join()
