@@ -142,7 +142,7 @@ if __name__ == "__main__":
             print(e, end="\r")
         else:
             if err:
-                print("                            ")
+                print("                            ", end="\r")
                 err= False
         ax0_0.set_data(pma.wavelength[st:ed], itf[st:ed])  # Graph update
         ax0.set_ylim((0, 1.2*itf[st:ed].max()))
