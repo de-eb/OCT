@@ -109,7 +109,7 @@ if __name__ == "__main__":
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0, 500))  # piezo stage
-    proc1 = Process(target=profile_beam, args=(q1, 0.8, 1000))  # Beam profiler
+    proc1 = Process(target=profile_beam, args=(q1, 0.8, 2800))  # Beam profiler
     proc0.start()
     proc1.start()
 
