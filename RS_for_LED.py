@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from modules.signal_processing import SignalProcessor
 from pycubicspline import *
 
 def Resampling(wl,itf):
@@ -68,8 +69,8 @@ def inverse_ft(freq, itf, xmax, n):
 #memo
 #GR...st=300 ed=600
 #WH...st=200 ed=900
-st=300
-ed=600
+st=201
+ed=667
 
 #data loading
 name=['wl','bg','sp']
@@ -108,12 +109,24 @@ for i in range(len(wl)):
     check=(ref+light_sur+light1+light2)**2
     itf[i]=np.amax(check)
 
+#Interference Graph
 plt.plot(wl*1e9,itf)
 plt.title('Interference light',fontsize=18)
-plt.xlabel('Wavelength[nm]',fontsize=16)
+plt.xlabel('Wavelength [nm]',fontsize=16)
 plt.ylabel('Intensity [arb. unit]',fontsize=16)
 plt.show()
 
+#generate ascan & coversion depth
+sp = SignalProcessor(wl, 1.46)
+re = sp.generate_ascan(itf, bg)
+x = sp.depth
+
+#A-scan Graph
+plt.plot(x, re)
+plt.title('A-scan',fontsize=18)
+plt.xlabel('Depth [μm]',fontsize=16)
+plt.ylabel('Intensity [-]',fontsize=16)
+plt.show()
 
 
 # freq_fixed,itf_fixed=Resampling(wl,itf)
