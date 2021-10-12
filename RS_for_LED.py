@@ -74,14 +74,14 @@ ed=600
 #data loading
 name=['wl','bg','sp']
 data=pd.read_csv('data/211007_GR.csv', header=3, index_col=0,names=name)
-wl=data.loc[st:ed,'wl']*1e-9 # Wavelength
-bg=data.loc[st:ed,'bg'] # Background spectra
-sp=data.loc[st:ed,'sp'] # Sample spectra
+wl=data.loc[st:ed,'wl']*1e-9      # Wavelength
+bg=data.loc[st:ed,'bg']           # Background spectra
+sp=data.loc[st:ed,'sp']           # Sample spectra
 
 #constants
-c0=299792458  #speed of light in vacuum[m/sec]
-n1=1.0        #refractive index of air
-n2=1.4        #refractive index of cellophane 
+c0=299792458    #speed of light in vacuum[m/sec]
+n1=1.0          #refractive index of air
+n2=1.4          #refractive index of cellophane 
 ta=150e-3       #thickness of air
 tc=50e-6        #thickness of cellophane(50µm)
 
