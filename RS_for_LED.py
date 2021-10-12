@@ -109,6 +109,7 @@ for i in range(len(wl)):
     itf[i]=np.amax(check)
 
 plt.plot(wl*1e9,itf)
+plt.title('Interference light',fontsize=18)
 plt.xlabel('Wavelength[nm]',fontsize=16)
 plt.ylabel('Intensity [arb. unit]',fontsize=16)
 plt.show()
