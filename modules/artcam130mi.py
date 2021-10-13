@@ -2,6 +2,7 @@ import time
 import atexit
 import ctypes
 import numpy as np
+import cv2
 
 
 class ArtCam130():
@@ -13,7 +14,31 @@ class ArtCam130():
 
     def __init__(self,  exposure_time, auto_iris=0,
             h_total=1280, h_start=0, h_effective=1280, v_total=1024, v_start=0, v_effective=1024):
-        """
+        """ Set the parameters and initialize the camera.
+        
+        Parameters
+        ----------
+        exposure_time : `int`, required
+            Exposure time [μsec] of the camera. Set in units of 100 μsec.
+        auto_iris : `int`
+            Auto iris state. 0:OFF, 1:Performed by shutter speed, 2:Performed by global gain
+        h_total : `int`
+            Number of horizontal pixels in the camera.
+        h_start : `int`
+            Start position (horizontal) for image loading.
+        h_effective : `int`
+            Number of horizontal pixels of the image to be read.
+        v_total : `int`
+            Number of vertical pixels in the camera.
+        v_start : `int`
+            Start position (vertical) for image loading.
+        v_effective : `int`
+            Number of vertical pixels of the image to be read.
+        
+        Raise
+        -----
+        ArtCamError :
+            When a function is not executed correctly.
         """
         self.__handler = ArtCam130.__dll.ArtCam_Initialize()
         if self.__handler is None or self.__handler == 0:
@@ -32,8 +57,9 @@ class ArtCam130():
     
     def set_parameter(self, exposure_time, auto_iris=0,
             h_total=1280, h_start=0, h_effective=1280, v_total=1024, v_start=0, v_effective=1024):
-        """ Start capture.
-            Be sure to run this function before executing the `capture()`.
+        """ Set the parameters.
+            It is executed once when the instance is created, so there is no need to execute it again.
+            When executing this function, stop capturing by `close()` beforehand.
         
         Parameters
         ----------
@@ -157,10 +183,8 @@ class ArtCamError(Exception):
 
 if __name__ == "__main__":
 
-    import cv2
-
-    camera = ArtCam130()
-    camera.set_parameter()
+    camera = ArtCam130(exposure_time=5000)
+    camera.open()
     while cv2.waitKey(10) < 0:
         img = camera.capture()
         cv2.imshow('capture', img)
