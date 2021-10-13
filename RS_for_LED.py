@@ -74,7 +74,7 @@ ed=885
 
 #data loading
 name=['wl','bg','sp']
-data=pd.read_csv('data/211007_WH.csv', header=3, index_col=0,names=name)
+data=pd.read_csv('data/211007_GR.csv', header=3, index_col=0,names=name)
 wl=data.loc[st:ed,'wl']*1e-9      # Wavelength
 bg=data.loc[st:ed,'bg']           # Background spectra
 sp=data.loc[st:ed,'sp']           # Sample spectra
@@ -106,7 +106,11 @@ for i in range(len(wl)):
     #light throught the 2nd cellophane
     light2=sp.values[i]*R*T**4*np.sin(one_cycle+phase_diff.values[i]+lp1*2)
 
-    check=(ref+light_sur+light1+light2)**2
+    #Cellophane=1
+    check=(ref+light_sur+light1)**2
+    # #Cellophane=2
+    # check=(ref+light_sur+light1+light2)**2
+
     itf[i]=np.amax(check)
 
 #Interference Graph
