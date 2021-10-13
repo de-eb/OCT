@@ -43,8 +43,7 @@ class PARAMETER(ctypes.Structure):
     ]
 
 class Pma12():
-    """
-    Class for controlling the spectrometer PMA-12 from Hamamatsu Photonics.
+    """ Class to control multichannel spectrometer (PMA-12).
     """
     # External modules loading
     ctypes.windll.LoadLibrary(r'modules\dlls\WnPmaUSB.dll')
@@ -221,7 +220,7 @@ class Pma12():
 
 
 class PmaError(Exception):
-    """Base exception class for this modules.
+    """ Base exception class for this modules.
     
     Attributes
     ----------

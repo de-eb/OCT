@@ -3,7 +3,8 @@ import pyvisa
 
 
 class HP8168F:
-
+    """ Class to control tunable laser source (HP-8168F).
+    """
     c = 2.998e8  #  Speed of light in a vacuum [m/sec].
     wl_ref = 1580  # Reference wavelength [nm].
     freq_init = c / (wl_ref*1e-9) * 1e-9 # Initial frequency [GHz]
@@ -34,6 +35,7 @@ class HP8168F:
         # Set the reference wavelength.
         self.__dev.write(':WAVE {}NM'.format(HP8168F.wl_ref))
         self.__dev.write(':WAVE:REF:DISP')
+        print("HP-8168F is ready.")
     
     def output(self, power: int):
         """ Output laser.

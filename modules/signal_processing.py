@@ -3,8 +3,7 @@ from scipy import special, interpolate
 
 
 class SignalProcessor():
-    """
-    A class that packages various types of signal processing for OCT.
+    """ A class that packages various types of signal processing for OCT.
     """
     c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
 

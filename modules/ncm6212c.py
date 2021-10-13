@@ -3,6 +3,8 @@ import atexit
 import serial
 
 class Ncm6212c:
+    """ Class to control 2-axis piezo stage (NCM6212C).
+    """
 
     def __init__(self, port: str, baudrate=38400, delimiter='\r\n'):
         """ Starts serial communication with the device.
@@ -132,7 +134,7 @@ class Ncm6212c:
 
 
 class Ncm6212cError(Exception):
-    """Base exception class for this modules.
+    """ Base exception class for this modules.
 
     Attributes
     ----------

@@ -3,6 +3,8 @@ import atexit
 import serial
 
 class Fine01r:
+    """ Class to control 1-axis piezo stage (FINE-01r).
+    """
 
     def __init__(self, port: str, baudrate=38400, delimiter='\r\n'):
 

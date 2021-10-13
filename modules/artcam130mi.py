@@ -6,7 +6,7 @@ import cv2
 
 
 class ArtCam130():
-    """
+    """ Class to control CMOS monochrome camera (ARTCAM-130MI-BW).
     """
     __dll = ctypes.windll.LoadLibrary(r'modules\dlls\ArtCamSdk_130MI.dll')
     __dll_type = __dll.ArtCam_GetDllVersion() >> 16
@@ -118,6 +118,11 @@ class ArtCam130():
         -------
         img : `ndarray-uint8`
             Grayscale image data taken.
+        
+        Raise
+        -----
+        ArtCamError :
+            When a function is not executed correctly.
         """
         if not ArtCam130.__dll.ArtCam_SnapShot(self.__handler,
                 self.__img.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
@@ -156,7 +161,7 @@ class ArtCam130():
 
 
 class ArtCamError(Exception):
-    """Base exception class for this modules.
+    """ Base exception class for this modules.
     
     Attributes
     ----------
