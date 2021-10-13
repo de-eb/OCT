@@ -67,14 +67,14 @@ def inverse_ft(freq, itf, xmax, n):
 
 
 #memo
-#GR...st=300 ed=600
-#WH...st=200 ed=900
+#GR...st=201 ed=667 (350~700)
+#WH...st=201 ed=885 (350~860)
 st=201
-ed=667
+ed=885
 
 #data loading
 name=['wl','bg','sp']
-data=pd.read_csv('data/211007_GR.csv', header=3, index_col=0,names=name)
+data=pd.read_csv('data/211007_WH.csv', header=3, index_col=0,names=name)
 wl=data.loc[st:ed,'wl']*1e-9      # Wavelength
 bg=data.loc[st:ed,'bg']           # Background spectra
 sp=data.loc[st:ed,'sp']           # Sample spectra
@@ -122,9 +122,9 @@ re = sp.generate_ascan(itf, bg)
 x = sp.depth
 
 #A-scan Graph
-plt.plot(x, re)
+plt.plot(x*1e6, re)
 plt.title('A-scan',fontsize=18)
-plt.xlabel('Depth [μm]',fontsize=16)
+plt.xlabel('Depth [m]',fontsize=16)
 plt.ylabel('Intensity [-]',fontsize=16)
 plt.show()
 
