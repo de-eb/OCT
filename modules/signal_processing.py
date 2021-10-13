@@ -45,7 +45,7 @@ class SignalProcessor():
 
     @property
     def depth(self):
-        """ Horizontal axis after FFT (depth [μm])
+        """ Horizontal axis after FFT (depth [m])
         """
         return self.__depth
 
