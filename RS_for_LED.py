@@ -69,12 +69,13 @@ def inverse_ft(freq, itf, xmax, n):
 #memo
 #GR...st=201 ed=667 (350~700)
 #WH...st=201 ed=885 (350~860)
-st=201
-ed=885
+#Fl...st=404 ed=613
+st=404
+ed=613
 
 #data loading
 name=['wl','bg','sp']
-data=pd.read_csv('data/211007_GR.csv', header=3, index_col=0,names=name)
+data=pd.read_csv('data/211007_WH.csv', header=3, index_col=0,names=name)
 wl=data.loc[st:ed,'wl']*1e-9      # Wavelength
 bg=data.loc[st:ed,'bg']           # Background spectra
 sp=data.loc[st:ed,'sp']           # Sample spectra
@@ -82,7 +83,7 @@ sp=data.loc[st:ed,'sp']           # Sample spectra
 #constants
 c0=299792458    #speed of light in vacuum[m/sec]
 n1=1.0          #refractive index of air
-n2=1.4          #refractive index of cellophane 
+n2=1.46         #refractive index of cellophane 
 ta=150e-3       #thickness of air
 tc=50e-6        #thickness of cellophane(50µm)
 
@@ -107,9 +108,9 @@ for i in range(len(wl)):
     light2=sp.values[i]*R*T**4*np.sin(one_cycle+phase_diff.values[i]+lp1*2)
 
     #Cellophane=1
-    check=(ref+light_sur+light1)**2
-    # #Cellophane=2
-    # check=(ref+light_sur+light1+light2)**2
+    # check=(ref+light_sur+light1)**2
+    #Cellophane=2
+    check=(ref+light_sur+light1+light2)**2
 
     itf[i]=np.amax(check)
 
