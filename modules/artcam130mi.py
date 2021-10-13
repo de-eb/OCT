@@ -14,15 +14,15 @@ class ArtCam130():
     def __init__(self):
         """
         """
-        self.__camera_handler = ArtCam130.__dll.ArtCam_Initialize()
-        if self.__camera_handler is None or self.__camera_handler == 0:
+        self.__handler = ArtCam130.__dll.ArtCam_Initialize()
+        if self.__handler is None or self.__handler == 0:
             raise ArtCamError(msg="Initialization failed.")
         # Register the exit process
         atexit.register(self.release)
         time.sleep(1)
         print("ArtCam130 is ready.")
     
-    def open(self, exposure_time, width=1280, height=1024):
+    def set_parameter(self, exposure_time, width=1280, height=1024):
         """ Start capture.
             Be sure to run this function before executing the `capture()`.
         
@@ -41,22 +41,22 @@ class ArtCam130():
             When a function is not executed correctly.
         """
         # Device settings
-        if not ArtCam130.__dll.ArtCam_SetCaptureWindowEx(self.__camera_handler,width,0,width,height,0,height):
+        if not ArtCam130.__dll.ArtCam_SetCaptureWindowEx(self.__handler,width,0,width,height,0,height):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
-        if not ArtCam130.__dll.ArtCam_SetColorMode(self.__camera_handler, 8):
+        if not ArtCam130.__dll.ArtCam_SetColorMode(self.__handler, 8):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
-        if not ArtCam130.__dll.ArtCam_SetRealExposureTime(self.__camera_handler, exposure_time):
+        if not ArtCam130.__dll.ArtCam_SetRealExposureTime(self.__handler, exposure_time):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
-        if not ArtCam130.__dll.ArtCam_SetAutoIris(self.__camera_handler, 0):
+        if not ArtCam130.__dll.ArtCam_SetAutoIris(self.__handler, 0):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
         # Data container
         self.__img = np.zeros((height, width), dtype=np.uint8)
         # Start capture
-        if not ArtCam130.__dll.ArtCam_Capture(self.__camera_handler):
+        if not ArtCam130.__dll.ArtCam_Capture(self.__handler):
             raise ArtCamError(msg="Failed to start capture.")
     
     def capture(self):
@@ -68,7 +68,7 @@ class ArtCam130():
         img : `ndarray-uint8`
             Grayscale image data taken.
         """
-        if not ArtCam130.__dll.ArtCam_SnapShot(self.__camera_handler,
+        if not ArtCam130.__dll.ArtCam_SnapShot(self.__handler,
                 self.__img.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
                 self.__img.size, True):
             raise ArtCamError(msg="Failed to capture.")
@@ -83,7 +83,7 @@ class ArtCam130():
         ArtCamError :
             When a function is not executed correctly.
         """
-        if not ArtCam130.__dll.ArtCam_Close(self.__camera_handler):
+        if not ArtCam130.__dll.ArtCam_Close(self.__handler):
             raise ArtCamError(msg="Failed to stop capture.")
 
     def release(self) -> bool:
@@ -95,7 +95,7 @@ class ArtCam130():
         ArtCamError :
             When a function is not executed correctly.
         """
-        if not ArtCam130.__dll.ArtCam_Release(self.__camera_handler):
+        if not ArtCam130.__dll.ArtCam_Release(self.__handler):
             raise ArtCamError(msg="Failed to release.")
 
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     import cv2
 
     camera = ArtCam130()
-    camera.open()
+    camera.set_parameter()
     while cv2.waitKey(10) < 0:
         img = camera.capture()
         cv2.imshow('capture', img)
