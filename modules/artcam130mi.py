@@ -114,6 +114,13 @@ class ArtCam130():
         """ Get an image. Additional image processing can be performed as needed.
             Unprocessed images can be retrieved with `self.raw_image`.
         
+        Parameters
+        ----------
+        scale : `float`
+            Magnification of the image to be acquired.
+        grid : `bool`
+            If True, overrides the grid that marks the center of the image.
+        
         Returns
         -------
         img : `ndarray-uint8`
@@ -188,10 +195,16 @@ class ArtCamError(Exception):
 
 if __name__ == "__main__":
 
-    camera = ArtCam130(exposure_time=5000)
+    camera = ArtCam130(exposure_time=2000)
     camera.open()
-    while cv2.waitKey(10) < 0:
-        img = camera.capture()
+    while True:
+        img = camera.capture(scale=0.8, grid=True)
         cv2.imshow('capture', img)
+        key = cv2.waitKey(1)
+        if key == 32:  # 'Space' key to save image
+            cv2.imwrite('data/image.png', img)
+            print("The image was saved.")
+        elif key == 27:  # ESC key to exit
+            break
     camera.close()
     cv2.destroyAllWindows()
