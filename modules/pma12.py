@@ -182,6 +182,11 @@ class Pma12():
         averaging : `int`
             The number of measurement repetitions. 2 or more, the data is an average value.
         
+        Returns
+        -------
+        `1d-ndarray`
+            Spectra sampled evenly in the wavelength space.
+        
         Raise
         -------
         PmaError :
@@ -285,7 +290,7 @@ if __name__ == "__main__":
 
     # Measure & plot
     pma.set_parameter(shutter=1)
-    while key != 'escape':  # ESC key to exit:
+    while key != 'escape':  # ESC key to exit
         
         try: data = pma.read_spectra(averaging=1)  # Spectral measurement
         except PmaError as e:
