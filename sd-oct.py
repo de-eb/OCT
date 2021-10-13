@@ -31,33 +31,19 @@ ed = 953  # Calculation range (End) of spectrum [nm]
 g_key = None  # Pressed key
 
 
-def profile_beam(q, scale, exposure):
+def profile_beam(q):
 
-    camera = ArtCam130()
-    camera.open(exposure)
-
-    ref = np.zeros_like(camera.capture(), dtype=np.uint8)
-    ref = cv2.resize(ref, (int(ref.shape[1]*scale), int(ref.shape[0]*scale)))
-    centre_v = int(ref.shape[0]/2)
-    centre_h = int(ref.shape[1]/2)
-
+    camera = ArtCam130(exposure_time=2800)
+    camera.open()
     while True:
-        img = camera.capture()
-        img = cv2.resize(img ,(ref.shape[1], ref.shape[0]))
-        sub = img.astype(np.int16) - ref
-        sub = np.where(sub<0, 0, sub)
-        sub = sub.astype(np.uint8)
-        cv2.line(sub, (centre_h, 0), (centre_h, sub.shape[0]), 255, thickness=1, lineType=cv2.LINE_4)
-        cv2.line(sub, (0, centre_v), (sub.shape[1], centre_v), 255, thickness=1, lineType=cv2.LINE_4)
-        cv2.imshow('capture', sub)
+        img = camera.capture(scale=0.8, grid=True)
+        cv2.imshow('capture', img)
         cv2.waitKey(1)
         try: key = q.get(block=False)
         except Empty: pass
         else:
-            if key == 'enter':
-                ref = img
-            elif key == ' ':  # 'Space' key to save image
-                cv2.imwrite('data/image.png', sub)
+            if key == ' ':  # 'Space' key to save image
+                cv2.imwrite('data/image.png', img)
                 print("The image was saved.")
             elif key == 'escape':  # ESC key to exit
                 break
@@ -65,10 +51,11 @@ def profile_beam(q, scale, exposure):
     cv2.destroyAllWindows()
 
 
-def manipulate_stage(q, unit):
+def manipulate_stage(q):
 
     stage_m = Fine01r('COM11')  # piezo stage (mirror side)
     stage_s = Ncm6212c('COM10')  # piezo stage (sample side)
+    unit = 500
     x, y, z = 0, 0, 0
     stage_m.absolute_move(z)
     stage_s.absolute_move(axis='A', position=x)
@@ -108,8 +95,8 @@ if __name__ == "__main__":
     sp = SignalProcessor(pma.wavelength[st:ed], 1.46)
     q0 = Queue()
     q1 = Queue()
-    proc0 = Process(target=manipulate_stage, args=(q0, 500))  # piezo stage
-    proc1 = Process(target=profile_beam, args=(q1, 0.8, 2800))  # Beam profiler
+    proc0 = Process(target=manipulate_stage, args=(q0))  # piezo stage
+    proc1 = Process(target=profile_beam, args=(q1))  # Beam profiler
     proc0.start()
     proc1.start()
 
