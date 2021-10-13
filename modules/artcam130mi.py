@@ -11,7 +11,8 @@ class ArtCam130():
     __dll_type = __dll.ArtCam_GetDllVersion() >> 16
     __dll_ver = __dll.ArtCam_GetDllVersion() & 0x0000FFFF
 
-    def __init__(self):
+    def __init__(self,  exposure_time, auto_iris=0,
+            h_total=1280, h_start=0, h_effective=1280, v_total=1024, v_start=0, v_effective=1024):
         """
         """
         self.__handler = ArtCam130.__dll.ArtCam_Initialize()
@@ -20,48 +21,72 @@ class ArtCam130():
         # Register the exit process
         atexit.register(self.release)
         time.sleep(1)
+        self.set_parameter(exposure_time,auto_iris,h_total,h_start,h_effective,v_total,v_start,v_effective)
         print("ArtCam130 is ready.")
     
-    def set_parameter(self, exposure_time, width=1280, height=1024):
+    @property
+    def raw_image(self):
+        """ Unprocessed image (data immediately after capture).
+        """
+        return self.__img
+    
+    def set_parameter(self, exposure_time, auto_iris=0,
+            h_total=1280, h_start=0, h_effective=1280, v_total=1024, v_start=0, v_effective=1024):
         """ Start capture.
             Be sure to run this function before executing the `capture()`.
         
         Parameters
         ----------
-        width : `int`
-            Horizontal length of the image to be acquired.
-        height : `int`
-            Vertical length of the image to be acquired.
-        exposure_time : `int`
-            Exposure time[μsec] of the camera. Set in units of 100μsec.
+        exposure_time : `int`, required
+            Exposure time [μsec] of the camera. Set in units of 100 μsec.
+        auto_iris : `int`
+            Auto iris state. 0:OFF, 1:Performed by shutter speed, 2:Performed by global gain
+        h_total : `int`
+            Number of horizontal pixels in the camera.
+        h_start : `int`
+            Start position (horizontal) for image loading.
+        h_effective : `int`
+            Number of horizontal pixels of the image to be read.
+        v_total : `int`
+            Number of vertical pixels in the camera.
+        v_start : `int`
+            Start position (vertical) for image loading.
+        v_effective : `int`
+            Number of vertical pixels of the image to be read.
         
         Raise
         -----
         ArtCamError :
             When a function is not executed correctly.
         """
-        # Device settings
-        if not ArtCam130.__dll.ArtCam_SetCaptureWindowEx(self.__handler,width,0,width,height,0,height):
+        if not ArtCam130.__dll.ArtCam_SetRealExposureTime(self.__handler, exposure_time):
+            raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
+        if not ArtCam130.__dll.ArtCam_SetAutoIris(self.__handler, auto_iris):
+            raise ArtCamError(msg="Configuration failed.")
+        time.sleep(0.01)
+        if not ArtCam130.__dll.ArtCam_SetCaptureWindowEx(self.__handler,h_total,h_start,h_effective,v_total,v_start,v_effective):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
         if not ArtCam130.__dll.ArtCam_SetColorMode(self.__handler, 8):
             raise ArtCamError(msg="Configuration failed.")
         time.sleep(0.01)
-        if not ArtCam130.__dll.ArtCam_SetRealExposureTime(self.__handler, exposure_time):
-            raise ArtCamError(msg="Configuration failed.")
-        time.sleep(0.01)
-        if not ArtCam130.__dll.ArtCam_SetAutoIris(self.__handler, 0):
-            raise ArtCamError(msg="Configuration failed.")
-        time.sleep(0.01)
-        # Data container
-        self.__img = np.zeros((height, width), dtype=np.uint8)
-        # Start capture
+        self.__img = np.zeros((v_effective, h_effective), dtype=np.uint8)  # Data container
+    
+    def open(self):
+        """ Start capturing. Be sure to run this function before acquiring images.
+
+        Raise
+        -----
+        ArtCamError :
+            When a function is not executed correctly.
+        """
         if not ArtCam130.__dll.ArtCam_Capture(self.__handler):
             raise ArtCamError(msg="Failed to start capture.")
     
-    def capture(self):
-        """ Take an image.
-            Before using this function, you need to run the `open()`.
+    def capture(self, scale=1.0, grid=False):
+        """ Get an image. Additional image processing can be performed as needed.
+            Unprocessed images can be retrieved with `self.raw_image`.
         
         Returns
         -------
@@ -72,11 +97,16 @@ class ArtCam130():
                 self.__img.ctypes.data_as(ctypes.POINTER(ctypes.c_byte)),
                 self.__img.size, True):
             raise ArtCamError(msg="Failed to capture.")
-        return self.__img
+        img = cv2.resize(self.__img, (int(self.__img.shape[1]*scale), int(self.__img.shape[0]*scale)))
+        if grid:
+            centre_v = int(img.shape[0]/2)
+            centre_h = int(img.shape[1]/2)
+            cv2.line(img, (centre_h, 0), (centre_h, img.shape[0]), 255, thickness=1, lineType=cv2.LINE_4)
+            cv2.line(img, (0, centre_v), (img.shape[1], centre_v), 255, thickness=1, lineType=cv2.LINE_4)
+        return img
     
     def close(self):
-        """ Stop capture.
-            Always execute this function when stopping the camera.
+        """ Stop capturing. Be sure to run this function after acquiring images.
 
         Raise
         -----
