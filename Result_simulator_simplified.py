@@ -6,11 +6,11 @@ from tqdm import tqdm
 from modules.signal_processing import SignalProcessor
 
 #Data loading
-st = 201
-end = 667
-data = pd.read_csv('data/211007_GR.csv', header=3, index_col=0)
-wl = data.values[st:end,0]  # wavelength
-itf = data.values[st:end,2]  # sample spectra
+# st = 201
+# end = 667
+data = pd.read_csv('data/211007_WH.csv', header=3, index_col=0)
+wl = data.values[:,0]  # wavelength
+itf = data.values[:,2]  # sample spectra
 
 sp = SignalProcessor(wl, 1.46)
 re = sp.resample(itf)
