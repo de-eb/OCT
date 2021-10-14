@@ -95,8 +95,8 @@ if __name__ == "__main__":
     sp = SignalProcessor(pma.wavelength[st:ed], 1.46)
     q0 = Queue()
     q1 = Queue()
-    proc0 = Process(target=manipulate_stage, args=(q0))  # piezo stage
-    proc1 = Process(target=profile_beam, args=(q1))  # Beam profiler
+    proc0 = Process(target=manipulate_stage, args=(q0,))  # piezo stage
+    proc1 = Process(target=profile_beam, args=(q1,))  # Beam profiler
     proc0.start()
     proc1.start()
 
