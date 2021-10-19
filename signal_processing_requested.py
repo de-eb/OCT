@@ -23,7 +23,7 @@ n = 1.4  # Refractive index of the sample. cellulose = 1.46
 alpha = 1.5  # design factor of Kaiser window
 
 st = 762
-ed = 953
+ed = 952
 
 
 def inverse_ft(freq, itf, xmax, n):
@@ -47,7 +47,7 @@ def inverse_ft(freq, itf, xmax, n):
         result : `ndarray`
             transformed data[arb. unit]
     """
-    depth_axis = np.linspace(0, xmax, int(1e2))
+    depth_axis = np.linspace(0, xmax, int(1e5))
     time = 2*(n*depth_axis*1e-3)/c
     for i in range(len(freq)):
         if i==0:
@@ -59,14 +59,20 @@ def inverse_ft(freq, itf, xmax, n):
 
 
 if __name__ == "__main__":
-
     # Data loading
-    ref = pd.read_csv('data/210729_ref.csv', header=2, index_col=0)
-    data = pd.read_csv('data/210729.csv', header=2, index_col=0)
+    ref = pd.read_csv('data/210729_ref_memo.csv', header=2, index_col=0)
+    data = pd.read_csv('data/210729_memo.csv', header=2, index_col=0)
     wl = ref.values[st:ed,0]  # wavelength
     bg = ref.values[st:ed,1]  # background spectra
     sp = data.values[st:ed,1:]  # sample spectra
 
+    name=['wl','bg','sp']
+    data=pd.read_csv('data/210924_1.csv', header=3, index_col=0,names=name)
+    wl=data.loc[st:ed,'wl'] # Wavelength
+    bg=data.loc[st:ed,'bg'] # Background spectra
+    sp=data.loc[st:ed,'sp'] # Sample spectra
+    
+    print('old data wl =',len(wl),'bg =',len(bg),'sp =',len(sp))
     # x-axis conversion
     n = len(wl)
     i = np.arange(n)
@@ -96,8 +102,13 @@ if __name__ == "__main__":
 
     # FFT
     fft = np.abs(np.fft.ifft(wnd, axis=0))[centre:]
-    depth_, fft_ = inverse_ft(c/wl_fix*1e-3, wnd[:,0], 1., n)
+    depth_, fft_ = inverse_ft(c/wl_fix*1e-3,abs(wnd[:,0]), 1., n)
 
+    
+    x=np.linspace(0,len(wl_fix),len(wl_fix))
+    plt.plot(c/wl_fix*1e-3,abs(wnd[:,0]))
+    plt.show()
+    
     # Show Graph
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
     ax0 = fig.add_subplot(211, title='Numpy FFT', xlabel='data num.[-]', ylabel='Intensity [-]')
