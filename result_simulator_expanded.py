@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 #model configulation
-width=20e-3 #width of glass[mm] <x-axis>
-depth=0.2  #depth of glass[mm] <y-axis>
-r=5e-3     #radius of bubble in glass[mm]
-split=2500 #[mm^-1]
+width=2 #width of glass[mm] <x-axis>
+depth=3 #depth of glass[mm] <y-axis>
+r=0.5     #radius of bubble in glass[mm]
+split=50 #[mm^-1]
 circle_x=np.linspace(width/2-r,width/2+r,int(r*2*split))
 circle_upper=np.sqrt(abs(r**2-(circle_x-width/2)**2))+depth/2
 circle_lower=-circle_upper+depth
@@ -38,7 +38,6 @@ itf=np.empty_like(freq)
 one_cycle=np.arange(0,1,1e-3)*2*np.pi+np.pi
 R=((n2-n1)/(n1+n2))**2 #reflectace
 T=1-R                 #transmittance
-
 #x-axis calculation
 depth_axis=np.linspace(0,xmax*1e3,len(freq))
 time=2*(n2*depth_axis*1e-3)/c0

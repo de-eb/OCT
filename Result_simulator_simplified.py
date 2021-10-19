@@ -16,7 +16,7 @@ tg=[1e-3,2e-3,2e-3,0.3e-3,0.2e-3]
 fmin=189.7468 #minimum sweep frequency[THz]
 fmax=203.2548 #maximum sweep frequency[THz]
 fstep=0.2e-3  #sweep frequency step[THz]
-xmax=4e-3    #x-axis length[m]
+xmax=20e-3    #x-axis length[m]
 
 c=c0/n2               #speed of light in glass[m/sec]
 freq=np.arange(fmin,fmax,fstep)
@@ -107,6 +107,6 @@ for i in range(1):
     plt.plot(depth,abs(result))
 plt.xlabel('Depth[mm]')
 plt.ylabel('Intensity(arb. unit)')
-plt.xticks(np.arange(0,xmax*1e3,0.5))
+#plt.xticks(np.arange(0,xmax*1e3,0.5))
 plt.ylim(0,0.005)
 plt.show()
