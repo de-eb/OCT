@@ -46,11 +46,11 @@ class Pma12():
     """ Class to control multichannel spectrometer (PMA-12).
     """
     # External modules loading
-    ctypes.windll.LoadLibrary(r'modules\dlls\WnPmaUSB.dll')
-    ctypes.windll.LoadLibrary(r'modules\dlls\StopMsg.dll')
-    ctypes.windll.LoadLibrary(r'modules\dlls\PmaUsbW32.dll')
-    __dev = ctypes.windll.LoadLibrary(r'modules\dlls\pma.dll')
-    __correction_data = r'modules\dlls\320016.sc'
+    ctypes.windll.LoadLibrary(r'modules\tools\WnPmaUSB.dll')
+    ctypes.windll.LoadLibrary(r'modules\tools\StopMsg.dll')
+    ctypes.windll.LoadLibrary(r'modules\tools\PmaUsbW32.dll')
+    __dev = ctypes.windll.LoadLibrary(r'modules\tools\pma.dll')
+    __correction_data = r'modules\tools\320016.sc'
     __channel = [128, 256, 512, 1024]
     __trigger = ([0,0],[1,0],[1,1],[2,0],[0,2],[1,2],[0,3],[1,3])
 

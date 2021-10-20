@@ -8,7 +8,7 @@ import cv2
 class ArtCam130():
     """ Class to control CMOS monochrome camera (ARTCAM-130MI-BW).
     """
-    __dll = ctypes.windll.LoadLibrary(r'modules\dlls\ArtCamSdk_130MI.dll')
+    __dll = ctypes.windll.LoadLibrary(r'modules\tools\ArtCamSdk_130MI.dll')
     __dll_type = __dll.ArtCam_GetDllVersion() >> 16
     __dll_ver = __dll.ArtCam_GetDllVersion() & 0x0000FFFF
 
