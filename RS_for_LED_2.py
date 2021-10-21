@@ -68,9 +68,7 @@ def inverse_ft(freq, itf, xmax, n):
 
 
 # Memo
-#GR...st=201 ed=667 (350~700)
-#WH...st=200 ed=900 (350~860)
-#FL...st=404 ed=613
+#GR...st=201 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
 st=201
 ed=667
 
