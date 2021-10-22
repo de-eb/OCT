@@ -68,7 +68,9 @@ def inverse_ft(freq, itf, xmax, n):
 
 
 # Memo
-#GR...st=201 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
+#GR...st=201 ed=667 (350~700)
+#WH...st=200 ed=900 (350~860)
+#FL...st=404 ed=613
 st=201
 ed=667
 
@@ -107,9 +109,9 @@ for i in range(len(wl)):
     # Light throught the 2nd cellophane
     light2=sp.values[i]*R*T**4*np.sin(one_cycle+phase_diff.values[i]+lp1*2)
     
-    check=(ref+light_sur+light1)**2           # cellophane=1
+    #check=(ref+light_sur+light1)**2           # cellophane=1
     
-    # check=(ref+light_sur+light1+light2)**2     # cellophane=2
+    check=(ref+light_sur+light1+light2)**2     # cellophane=2
 
     itf[i]=np.amax(check)
 
@@ -127,53 +129,48 @@ for i in range(len(wl)):
 #plt.show()
 
 # Descrete Fourier Transform
-freq = fftfreq(len(wl), 1e-3)
-f_max = np.amax(freq)
 F_itf = fft(itf)
-F_itf = F_itf/(len(wl)/2)
-
 F_ref = fft(sp.values)
-F_ref = F_ref/(len(wl)/2)
-
-# Generate ascan & coversion depth
-sigpro = SignalProcessor(wl, 1.46)
-re = sigpro.generate_ascan(itf, sp)
-x = sigpro.depth
+freq = (c0/wl)*1e-12
 
 # Graph Show
-plt.plot(wl*1e9, sp)
-plt.plot(wl*1e9, bg)
-plt.title('Light Source',fontsize=18)
-plt.xlabel('Wavelength [nm]',fontsize=16)
-plt.ylabel('Intensity [-]',fontsize=16)
-plt.legend(["Sample", "BackGround"])
-
 fig = plt.figure(figsize=(7, 7))
-plt.subplots_adjust(wspace=0.4, hspace=0.6)
+plt.subplots_adjust(wspace=0.2, hspace=0.6)
 
-ax1 = fig.add_subplot(221)
-ax1.plot(wl*1e9, itf)
-ax1.set_title('Interference Light',fontsize=18)
+ax1 = fig.add_subplot(511)
+ax1.plot(wl*1e9, bg)
+ax1.plot(wl*1e9, sp)
+ax1.set_title('Light Source',fontsize=18)
 ax1.set_xlabel('Wavelength [nm]',fontsize=16)
 ax1.set_ylabel('Intensity [-]',fontsize=16)
 
-ax2 = fig.add_subplot(222)
-ax2.plot(freq, np.abs(F_itf))
-ax2.set_xlim(0, f_max)
-ax2.set_title('DFT_Interference',fontsize=18)
-ax2.set_xlabel('Frequency [THz]',fontsize=16)
-ax2.set_ylabel('Amplitude',fontsize=16)
+ax2 = fig.add_subplot(512)
+ax2.plot(wl*1e9, itf)
+ax2.set_title('Interference Light',fontsize=18)
+ax2.set_xlabel('Wavelength [nm]',fontsize=16)
+ax2.set_ylabel('Intensity [-]',fontsize=16)
 
-ax3 = fig.add_subplot(223)
-ax3.plot(freq, np.abs(F_ref))
-ax3.set_xlim(0, f_max)
-ax3.set_title('DFT_Reference',fontsize=18)
+ax3 = fig.add_subplot(513)
+ax3.plot(freq, np.abs(F_itf))
+ax3.set_xlim()
+ax3.set_title('DFT_Interference',fontsize=18)
 ax3.set_xlabel('Frequency [THz]',fontsize=16)
 ax3.set_ylabel('Amplitude',fontsize=16)
 
-ax4 = fig.add_subplot(224)
-ax4.plot(x*1e12, re)
-ax4.set_title('A-scan',fontsize=18)
-ax4.set_xlabel('Depth [μm]',fontsize=16)
-ax4.set_ylabel('Intensity [-]',fontsize=16)
+ax4 = fig.add_subplot(514)
+ax4.plot(freq, np.abs(F_ref))
+ax4.set_title('DFT_Reference',fontsize=18)
+ax4.set_xlabel('Frequency [THz]',fontsize=16)
+ax4.set_ylabel('Amplitude',fontsize=16)
+
+# Generate ascan & coversion depth
+sp = SignalProcessor(wl, 1.46)
+re = sp.generate_ascan(itf, bg)
+x = sp.depth
+
+ax5 = fig.add_subplot(515)
+ax5.plot(x*1e12, re)
+ax5.set_title('A-scan',fontsize=18)
+ax5.set_xlabel('Depth [μm]',fontsize=16)
+ax5.set_ylabel('Intensity [-]',fontsize=16)
 plt.show()
