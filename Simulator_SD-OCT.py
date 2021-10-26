@@ -95,7 +95,7 @@ itf = np.empty_like(wl)
 
 # Calculation the interference
 for i in range(len(wl)):
-    light_ref = sp.values[i]*np.sin(one_cycle)
+    light_ref = sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
 
     # Light from surface of 1st cellophane
     light_s1 = sp.values[i]*R*np.sin(one_cycle+phase_diff.values[i]+np.pi)
@@ -105,11 +105,12 @@ for i in range(len(wl)):
     light1 = sp.values[i]*T**2*R*np.sin(one_cycle+phase_diff.values[i]+lp1)
 
     # Light from surface of 2nd cellophane
-    lp2 = (((2*ta2)%wl_c.values[i])/wl_c.values[i])*2*np.pi
-    light_s2 = sp.values[i]*T**4*R*np.sin(one_cycle+2*np.pi+lp1+lp2)
+    lp2 = (((2*ta2)%wl.values[i])/wl.values[i])*2*np.pi
+    light_s2 = sp.values[i]*T**4*R*np.sin(one_cycle+phase_diff.values[i]+np.pi+lp1+lp2)
 
     # Light throught the 2nd cellophane
-    light2 = sp.values[i]*T**6*R*np.sin(one_cycle+2*lp1+lp2)
+    lp3 = (((2*tc)%wl_c.values[i])/wl_c.values[i])*2*np.pi
+    light2 = sp.values[i]*T**6*R*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+lp3)
     
     # check = (light_ref+light_s1+light1)**2           # cellophane=1
     
