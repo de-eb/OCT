@@ -75,11 +75,11 @@ tc = 50e-6                              # thickness of cellophane(50µm)
 # Memo
 # GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
 st = 200
-ed = 900
+ed = 667
 
 # Data loading
 name = ['wl','bg','sp']
-data = pd.read_csv('data/211007_WH.csv', header=3, index_col=0, names=name)
+data = pd.read_csv('data/211007_GR.csv', header=3, index_col=0, names=name)
 wl = data.loc[st:ed,'wl']*1e-9          # wavelength
 bg = data.loc[st:ed,'bg']               # background spectra
 sp = data.loc[st:ed,'sp']               # sample spectras
