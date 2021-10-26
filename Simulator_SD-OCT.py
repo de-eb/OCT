@@ -69,21 +69,21 @@ c0 = 299792458                          # speed of light in vacuum[m/sec]
 n1 = 1.00                               # refractive index of air
 n2 = 1.46                               # refractive index of cellophane 
 ta1 = 150e-3                            # thickness of air
-ta2 = 30e-3                             # thickness of air
+ta2 = 30e-6                             # thickness of air
 tc = 50e-6                              # thickness of cellophane(50µm)
 
 # Memo
 # GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
-st = 178
-ed = 689
+st = 200
+ed = 900
 
 # Data loading
 name = ['wl','bg','sp']
-data = pd.read_csv('data/211007_GR.csv', header=3, index_col=0, names=name)
+data = pd.read_csv('data/211007_WH.csv', header=3, index_col=0, names=name)
 wl = data.loc[st:ed,'wl']*1e-9          # wavelength
 bg = data.loc[st:ed,'bg']               # background spectra
 sp = data.loc[st:ed,'sp']               # sample spectras
-sp = np.sqrt(sp)
+sp = np.sqrt(sp)                        # amplitude
 
 # Calculation base on constants
 R = ((n2-n1)/(n1+n2))**2                # reflectace
@@ -93,85 +93,69 @@ phase_diff = (ta1%wl)/wl*2*np.pi+np.pi
 one_cycle = np.arange(0, 1, 1e-3)*2*np.pi
 itf = np.empty_like(wl)
 
-# # Descrete Fourier Transform
-# freq = np.fft.fftfreq(len(wl), 1e-3)[:len(wl)//2]
-# f_max = np.amax(freq)
-# F = np.fft.fft(sp.values)
-# F = F/(len(wl)/2)
-
 # Calculation the interference
 for i in range(len(wl)):
-    ref = sp.values[i]*np.sin(one_cycle)
-    light_ref = 0.9*sp.values[i]*np.sin(one_cycle)
+    light_ref = sp.values[i]*np.sin(one_cycle)
 
     # Light from surface of 1st cellophane
     light_s1 = sp.values[i]*R*np.sin(one_cycle+phase_diff.values[i]+np.pi)
 
     # Light throught the 1st cellophane
     lp1 = (((2*tc)%wl_c.values[i])/wl_c.values[i])*2*np.pi
-    light1 = sp.values[i]*T*R*np.sin(one_cycle+phase_diff.values[i]+lp1)
+    light1 = sp.values[i]*T**2*R*np.sin(one_cycle+phase_diff.values[i]+lp1)
 
     # Light from surface of 2nd cellophane
     lp2 = (((2*ta2)%wl_c.values[i])/wl_c.values[i])*2*np.pi
-    light_s2 = sp.values[i]*T**2*R*np.sin(one_cycle+2*np.pi+lp1+lp2)
+    light_s2 = sp.values[i]*T**4*R*np.sin(one_cycle+2*np.pi+lp1+lp2)
 
     # Light throught the 2nd cellophane
-    light2 = sp.values[i]*T**3*R*np.sin(one_cycle+2*lp1+lp2)
+    light2 = sp.values[i]*T**6*R*np.sin(one_cycle+2*lp1+lp2)
     
-    #check = (ref+light_sur+light1)**2           # cellophane=1
+    # check = (light_ref+light_s1+light1)**2           # cellophane=1
     
-    check = (ref+light_ref+light_s1+light1+light_s2+light2)**2     # cellophane=2
+    check = (light_ref+light_s1+light1+light_s2+light2)**2     # cellophane=2
 
     itf[i] = np.amax(check)
 
-# Resampling
-freq_fixed,itf_fixed = Resampling(wl,np.sqrt(itf))
-# plt.plot(freq_fixed/1e9,itf_fixed)
-# plt.xlabel('Frequency[THz]',fontsize=16)
-# plt.ylabel('Intensity [arb. unit]',fontsize=16)
-# plt.show()
+# Subtract sample light from interference
+itf_new = itf-sp**2
+
+# Resampling (Conversion the x-axis)
+freq_fixed,itf_fixed = Resampling(wl,itf_new)
 
 # Generate ascan
-depth,result = inverse_ft(freq_fixed*1e-9,itf_fixed,0.2,n2)
+depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.2, n2)
 
+# Generate ascan
 sigpro = SignalProcessor(wl, 1.46)
-re = sigpro.generate_ascan(np.sqrt(itf), sp)
+re = sigpro.generate_ascan(itf, sp)
 x = sigpro.depth
 
-plt.plot(wl*1e9, sp)
-plt.plot(wl*1e9, np.sqrt(itf))
+# Show graphs
+plt.plot(wl*1e9, sp**2)
+plt.plot(wl*1e9, itf)
+plt.title('Interference',fontsize=18)
 plt.xlabel('Wavelength [nm]',fontsize=16)
-plt.ylabel('Amplitude [-]',fontsize=16)
-# plt.legend("Light", "Interference")
+plt.ylabel('Intensity [-]',fontsize=16)
 plt.show()
 
-# Show graphs
-# fig1 = plt.figure(figsize=(7, 7))
-# plt.subplots_adjust(wspace=0.4, hspace=0.4)
-# ax1 = fig1.add_subplot(211)
-# ax1.plot(wl*1e9, sp)
-# ax1.set_title('Light Source',fontsize=18)
-# ax1.set_xlabel('Wavelength [nm]',fontsize=16)
-# ax1.set_ylabel('Intensity [-]',fontsize=16)
+plt.plot(freq_fixed*1e-9,itf_fixed)
+plt.title('Resampling',fontsize=18)
+plt.xlabel('Frequency[THz]',fontsize=16)
+plt.ylabel('Intensity [arb. unit]',fontsize=16)
+plt.show()
 
-# ax2 = fig1.add_subplot(212)
-# ax2.plot(wl*1e9, itf)
-# ax2.set_title('Interference',fontsize=18)
-# ax2.set_xlabel('Wavelength [nm]',fontsize=16)
-# ax2.set_ylabel('Intensity [-]',fontsize=16)
-# plt.show()
-
-fig2 = plt.figure(figsize=(7, 7))
+fig1 = plt.figure(figsize=(7, 7))
 plt.subplots_adjust(wspace=0.4, hspace=0.4)
-ax3 = fig2.add_subplot(211)
-ax3.plot(x*1e12, re)
-ax3.set_title('A-scan',fontsize=18)
-ax3.set_xlabel('Depth [mm]',fontsize=16)
-ax3.set_ylabel('Intensity [-]',fontsize=16)
+ax1 = fig1.add_subplot(211)
+ax1.plot(x*1e12, re)
+ax1.set_title('A-scan',fontsize=18)
+ax1.set_xlabel('Depth [mm]',fontsize=16)
+ax1.set_ylabel('Intensity [-]',fontsize=16)
 
-ax4 = fig2.add_subplot(212)
-ax4.plot(depth, result)
-ax4.set_title('A-scan',fontsize=18)
-ax4.set_xlabel('Depth [mm]',fontsize=16)
-ax4.set_ylabel('Intensity [-]',fontsize=16)
+ax2 = fig1.add_subplot(212)
+ax2.plot(depth, result)
+ax2.set_title('A-scan',fontsize=18)
+ax2.set_xlabel('Depth [mm]',fontsize=16)
+ax2.set_ylabel('Intensity [-]',fontsize=16)
 plt.show()
