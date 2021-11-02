@@ -138,7 +138,7 @@ if __name__ == "__main__":
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed], ref[st:ed])
             ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
-            ax1.set_ylim((0, 1.2*ascan.max()))
+            ax1.set_ylim((0, 0.3*ascan.max()))
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
