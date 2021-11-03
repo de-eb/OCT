@@ -202,8 +202,8 @@ if __name__ == "__main__":
     plt.rcParams['font.size'] = 14
     plt.rcParams['axes.linewidth'] = 1.0
 
-    st = 762  # Calculation range (Start) of spectrum [nm]
-    ed = 953  # Calculation range (End) of spectrum [nm]
+    st = 762  # Calculation range (Start)
+    ed = 953  # Calculation range (End)
 
     # Data loading
     data = pd.read_csv('data/data.csv', header=2, index_col=0)

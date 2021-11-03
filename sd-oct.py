@@ -26,8 +26,8 @@ plt.rcParams['font.size'] = 14
 plt.rcParams['axes.linewidth'] = 1.0
 
 # Globals
-st = 762  # Calculation range (Start) of spectrum [nm]
-ed = 953  # Calculation range (End) of spectrum [nm]
+st = 762  # Calculation range (Start)
+ed = 953  # Calculation range (End)
 g_key = None  # Pressed key
 
 
