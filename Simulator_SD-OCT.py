@@ -92,10 +92,11 @@ wl_c = wl/n2                            # wavelength in cellophane
 phase_diff = (ta1%wl)/wl*2*np.pi+np.pi
 one_cycle = np.arange(0, 1, 1e-3)*2*np.pi
 itf = np.empty_like(wl)
+ref = np.empty_like(wl)
 
 # Calculation the interference
 for i in range(len(wl)):
-    light_ref = 0.9*sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
+    light_ref = R*sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
 
     # Light from surface of 1st cellophane
     light_s1 = sp.values[i]*R*np.sin(one_cycle+phase_diff.values[i]+np.pi)
@@ -115,11 +116,13 @@ for i in range(len(wl)):
     # check = (light_ref+light_s1+light1)**2                     # cellophane=1
     
     check = (light_ref+light_s1+light1+light_s2+light2)**2     # cellophane=2
+    reference = light_ref**2
 
     itf[i] = np.amax(check)
+    ref[i] = np.amax(reference)
 
 # Subtract sample light from interference
-itf_new = itf - (0.9*sp)**2
+itf_new = itf - ref
 
 # Resampling (Conversion the x-axis)
 freq_fixed,itf_fixed = Resampling(wl,itf_new)
