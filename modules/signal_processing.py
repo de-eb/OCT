@@ -108,7 +108,7 @@ class SignalProcessor():
             Data after IFFT.
         """
         magnitude = np.abs(np.fft.ifft(spectra, n=self.__nf, axis=0))
-        return magnitude[self.__ns:]
+        return magnitude[:self.__ns]
     
     def set_reference(self, spectra):
         """ Specify the reference spectra. This spectra will be used in later calculations.
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     itf = data.values[st:ed,2]  # sample spectra
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.46)  # cellulose = 1.46
+    sp = SignalProcessor(wl, 1.0)  # air = 1.0, cellulose = 1.46
     ascan = sp.generate_ascan(itf, ref)
 
     # Show Graph
