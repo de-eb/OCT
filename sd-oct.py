@@ -33,10 +33,10 @@ g_key = None  # Pressed key
 
 def profile_beam(q):
 
-    camera = ArtCam130(exposure_time=2800)
+    camera = ArtCam130(exposure_time=2800, scale=0.8)
     camera.open()
     while True:
-        img = camera.capture(scale=0.8, grid=True)
+        img = camera.capture(grid=True)
         cv2.imshow('capture', img)
         cv2.waitKey(1)
         try: key = q.get(block=False)
