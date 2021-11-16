@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     # Device settings
     pma = Pma12(dev_id=5)  # Spectrometer
-    sp = SignalProcessor(pma.wavelength[st:ed], 1.46)
+    sp = SignalProcessor(pma.wavelength[st:ed], 1.0)
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0,))  # piezo stage
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed], ref[st:ed])
             ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
-            ax1.set_ylim((0, 0.3*ascan.max()))
+            ax1.set_ylim((0, 1.05*ascan.max()))
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
