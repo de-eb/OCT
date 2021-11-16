@@ -254,17 +254,18 @@ def test_spline():
     y = [3.2, 2.7, 6, 5, 6.5]
 
     spline = Spline(x, y)
-    rx = np.arange(-2.0, 4, 0.01)
+    rx = np.arange(-1.0, 10, 0.0001)
     ry = [spline.calc(i) for i in rx]
-    print(ry)
+    print(len(rx))
 
     plt.plot(x, y, "xb")
     plt.plot(rx, ry, "-r")
     plt.grid(True)
-    plt.axis("equal")
+    #plt.axis("equal")
+    plt.xlim(-1,2)
     plt.show()
 
 
 if __name__ == '__main__':
     test_spline()
-    test_spline2d()
+    #test_spline2d()

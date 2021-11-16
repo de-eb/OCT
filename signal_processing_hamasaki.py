@@ -14,7 +14,7 @@ def BGsubtraction(sp,bg):
         Return
         -------
         itf :`ndarray`
-
+            interference light removed background[arb. unit]
 
     """
     itf=sp-bg*(np.amax(sp)/np.amax(bg))
@@ -99,3 +99,8 @@ if __name__ == "__main__":
 
     plt.plot(depth,result)
     plt.show()
+
+    '''クラスの中のinitには一度しか計算が必要ないものを入れる
+    例・窓関数・深さ方向軸・屈折率の記録・参照光のデータ
+    リアルタイム計測に向けて計算は必要最小限に抑える、何度計算しても同じになるものは入れない
+    '''

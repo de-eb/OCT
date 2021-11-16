@@ -4,3 +4,4 @@ env32
 data
 modules/__pycache__
 __pycache__/inverseFourier_hamasaki.cpython-38.pyc
+simulation
