@@ -160,6 +160,7 @@ if __name__ == "__main__":
                     columns=['Wavelength [nm]', 'Reference [-]', 'Interference [-]'],
                     dtype='float')
                 df.to_csv('data/data.csv', mode='a')
+                plt.savefig('data/graph.png')
                 print("The spectra were saved.")
         
         g_key = None
