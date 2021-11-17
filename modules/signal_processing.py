@@ -31,7 +31,6 @@ class SignalProcessor():
         
         # Generating window functions
         x = np.linspace(0, self.__ns, self.__ns)
-        # self.__window = 0.42 - 0.5*np.cos(2*np.pi*x) + 0.08*np.cos(4*np.pi*x)  # Blackman window
         self.__window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
         
         # Axis conversion for FFT
@@ -143,44 +142,6 @@ class SignalProcessor():
         wnd = self.apply_window(rmv)
         ascan = self.apply_ifft(wnd)
         return ascan
-    
-    def remove_autocorrelation(self, ascan0, ascan1):
-        """ Remove the autocorrelation component from the A-scan.
-        Since this method is not common,
-        please carefully examine the data before and after processing before using it.
-        """
-        return np.abs(self.remove_background(ascan0, ascan1))
-
-    # def inverse_ft(freq, itf, xmax, n):
-    #     """Inverse Fourier transform function for oct.
-        
-    #         Parameters
-    #         ----------
-    #         freq : `ndarray`
-    #             frequency data[THz]
-    #         itf : `ndarray`
-    #             measured interference data[arb. unit]
-    #         xmax : `float`
-    #             maximum value of depth axis[mm]
-    #         n : `float`
-    #             refractive index of sample
-            
-    #         Returns
-    #         -------
-    #         depth_axis : `ndarray`
-    #             calculated depth axis[mm]
-    #         result : `ndarray`
-    #             transformed data[arb. unit]
-    #     """
-    #     depth_axis = np.linspace(0, xmax, int(1e5))
-    #     time = 2*(n*depth_axis*1e-3)/SignalProcessor.c
-    #     for i in range(len(freq)):
-    #         if i==0:
-    #             result = itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-    #         else:
-    #             result += itf[i]*np.sin(2*np.pi*time*freq[i]*1e12)
-    #     result /= len(freq)
-    #     return depth_axis, abs(result)
 
 
 if __name__ == "__main__":
@@ -212,7 +173,7 @@ if __name__ == "__main__":
     itf = data.values[st:ed,2]  # sample spectra
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.0)  # air = 1.0, cellulose = 1.46
+    sp = SignalProcessor(wl, 1.0)
     ascan = sp.generate_ascan(itf, ref)
 
     # Show Graph
