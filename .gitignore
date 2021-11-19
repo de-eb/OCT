@@ -1,5 +1,6 @@
 .vscode
 env
 env32
-data
+__pycache__
 modules/__pycache__
+data
