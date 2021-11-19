@@ -69,8 +69,8 @@ c0 = 299792458                          # speed of light in vacuum[m/sec]
 n1 = 1.00                               # refractive index of air
 n2 = 1.29                               # refractive index of cellophane 
 ta1 = 150e-3                            # thickness of air
-ta2 = 10e-6                             # thickness of air
-tc = 30e-6                              # thickness of cellophane(30µm)
+ta2 = 10e-6                             # thickness between samples
+tc = 30e-6                              # thickness of sample
 
 # Memo
 # GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
@@ -96,26 +96,26 @@ ref = np.empty_like(wl)
 
 # Calculation the interference
 for i in range(len(wl)):
-    light_ref = R*sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
+    light_ref = 3*R*sp.values[i]*np.sin(one_cycle+phase_diff.values[i]+0*one_cycle)
 
-    # Light from surface of 1st cellophane
+    # Light from surface of 1st sample
     light_s1 = sp.values[i]*R*np.sin(one_cycle+phase_diff.values[i]+np.pi)
 
-    # Light throught the 1st cellophane
+    # Light throught the 1st sample
     lp1 = (((2*tc)%wl_c.values[i])/wl_c.values[i])*2*np.pi
     light1 = sp.values[i]*T**2*R*np.sin(one_cycle+phase_diff.values[i]+lp1)
 
-    # Light from surface of 2nd cellophane
+    # Light from surface of 2nd sample
     lp2 = (((2*ta2)%wl.values[i])/wl.values[i])*2*np.pi
     light_s2 = sp.values[i]*T**4*R*np.sin(one_cycle+phase_diff.values[i]+np.pi+lp1+lp2)
 
-    # Light throught the 2nd cellophane
+    # Light throught the 2nd sample
     lp3 = (((2*tc)%wl_c.values[i])/wl_c.values[i])*2*np.pi
     light2 = sp.values[i]*T**6*R*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+lp3)
     
-    # check = (light_ref+light_s1+light1)**2                     # cellophane=1
+    # check = (light_ref+light_s1+light1)**2                     # sample=1
     
-    check = (light_ref+light_s1+light1+light_s2+light2)**2     # cellophane=2
+    check = (light_ref+light_s1+light1+light_s2+light2)**2     # sample=2
     reference = light_ref**2
 
     itf[i] = np.amax(check)
@@ -128,7 +128,7 @@ itf_new = itf - ref
 freq_fixed,itf_fixed = Resampling(wl,itf_new)
 
 # Generate ascan
-depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.2, n2)
+depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.1, n2)
 
 # Show graphs
 plt.plot(wl*1e9, sp**2)
@@ -138,11 +138,11 @@ plt.xlabel('Wavelength [nm]',fontsize=16)
 plt.ylabel('Intensity [-]',fontsize=16)
 plt.show()
 
-plt.plot(wl*1e9, itf_new)
-plt.title('Interference',fontsize=18)
-plt.xlabel('Wavelength [nm]',fontsize=16)
-plt.ylabel('Intensity [-]',fontsize=16)
-plt.show()
+# plt.plot(wl*1e9, itf_new)
+# plt.title('Interference',fontsize=18)
+# plt.xlabel('Wavelength [nm]',fontsize=16)
+# plt.ylabel('Intensity [-]',fontsize=16)
+# plt.show()
 
 fig1 = plt.figure(figsize=(7, 7))
 plt.subplots_adjust(wspace=0.4, hspace=0.4)
