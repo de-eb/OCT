@@ -10,7 +10,7 @@ from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
-from modules.signal_processing import SignalProcessor
+from modules.signal_processor import SignalProcessor
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
