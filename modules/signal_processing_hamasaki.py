@@ -1,6 +1,35 @@
 import numpy as np
 from pycubicspline import *
 
+class SignalProcessor_hamasaki():
+    """
+    A class that packages variou types of signal processing for OCT.
+    """
+    def __init__(self,wl,n,xmax):
+        """
+        Initialization and preprocessing of parameters.
+
+        Parameters
+        ----------
+        wl : `1d-ndarray`, required
+            Wavelength axis[nm] The given spectra must be sampled evenly in wavelength space.
+        n : `float`, required
+            Refractive index of the sample .
+        xmax : 'float', required
+            maximum value of depth axis[mm]
+        
+        """
+        # Axis conversion for resampling
+        self.__wl=wl
+        self.__depth=np.linspace(0, xmax, int(1e5))
+        self.__time=2*(n*depth*1e-3)/299792458
+
+
+
+
+
+
+
 def BGsubtraction(sp,bg):
     """Subtract reference light from interference light.
     
