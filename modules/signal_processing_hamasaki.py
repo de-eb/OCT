@@ -5,6 +5,8 @@ class SignalProcessor_hamasaki():
     """
     A class that packages variou types of signal processing for OCT.
     """
+    c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
+
     def __init__(self,wl,n,xmax):
         """
         Initialization and preprocessing of parameters.
@@ -22,7 +24,11 @@ class SignalProcessor_hamasaki():
         # Axis conversion for resampling
         self.__wl=wl
         self.__depth=np.linspace(0, xmax, int(1e5))
-        self.__time=2*(n*depth*1e-3)/299792458
+        self.__time=2*(n*depth*1e-3)/SignalProcessor_hamasaki.c
+        freqmin=(SignalProcessor_hamasaki.c/(1e9*np.amax(self.__wl)))*1e6+1
+        freqmax=(SignalProcessor_hamasaki.c/(1e9*np.amin(self.__wl)))*1e6-1
+        self.__freq=np.linspace(freqmin,freqmax,len(self.__wl))
+        
 
 
 
