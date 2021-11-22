@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 from scipy import special, interpolate
 
@@ -144,9 +145,72 @@ class SignalProcessor():
         return ascan
 
 
+class DatasetHandler():
+    """
+    """
+
+    def __init__(self, sheet, wavelength=None):
+        """
+        """
+        self.__wl_fix = wavelength
+        self.__n,self.__wl_n,self.__k,self.__wl_k,self.__alpha,self.__wl_alpha = None,None,None,None,None,None
+
+        self.__df = pd.read_excel('modules/tools/optical_constants_dataset.xlsx', sheet_name=sheet, header=2, index_col=0)        
+        for i in list(self.__df.columns):
+            if i == 'n':
+                self.__n, self.__wl_n = self.__get_data(i)
+            elif i == 'k' or 'k ' in i:
+                self.__k, self.__wl_k = self.__get_data(i)
+            elif 'alpha' in i:
+                self.__alpha, self.__wl_alpha = self.__get_data(i, normalize=True)
+        print('Loaded the "{}" dataset.'.format(sheet))
+    
+    def __get_data(self, name, normalize=False):
+        """
+        """
+        data = self.__df.loc[:, name].values
+        wl = self.__df.iloc[:, self.__df.columns.get_loc(name)-1].values
+        if normalize:
+            data = data / data.max()
+        if self.__wl_fix is not None:
+            func = interpolate.interp1d(wl, data, kind='cubic')
+            data = func(self.__wl_fix)
+            wl = self.__wl_fix
+        return data, wl
+
+    @property
+    def n(self) -> np.ndarray:
+        """Refractive index against wavelength."""
+        return self.__n
+    
+    @property
+    def wl_n(self) -> np.ndarray:
+        """Wavelength data corresponding to `self.n`."""
+        return self.__wl_n
+    
+    @property
+    def k(self) -> np.ndarray:
+        """Extinction coefficient against wavelength."""
+        return self.__k
+    
+    @property
+    def wl_k(self) -> np.ndarray:
+        """Wavelength data corresponding to `self.k`."""
+        return self.__wl_k
+    
+    @property
+    def alpha(self) -> np.ndarray:
+        """Absorption coefficient against wavelength."""
+        return self.__alpha
+    
+    @property
+    def wl_alpha(self) -> np.ndarray:
+        """Wavelength data corresponding to `self.alpha`."""
+        return self.__wl_alpha
+
+
 if __name__ == "__main__":
 
-    import pandas as pd
     import matplotlib.pyplot as plt
     from matplotlib.ticker import ScalarFormatter
 
@@ -167,26 +231,34 @@ if __name__ == "__main__":
     ed = 953  # Calculation range (End)
 
     # Data loading
-    data = pd.read_csv('data/data.csv', header=2, index_col=0)
+    data = pd.read_csv('data/211116_1.csv', header=2, index_col=0)
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2]  # sample spectra
 
     # Signal processing
     sp = SignalProcessor(wl, 1.0)
-    ascan = sp.generate_ascan(itf, ref)
+    cellulose = DatasetHandler('Cellulose', wl)
+    pet = DatasetHandler('PET', wl)
+    # ascan = sp.generate_ascan(itf, ref)
 
     # Show Graph
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
-    ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
-    ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0_0, = ax0.plot(wl, itf, label='interference')
-    ax0_1, = ax0.plot(wl, ref, label='reference')
-    ax0.legend(borderaxespad=0.2)
-    ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
-    ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
-    ax1.legend(borderaxespad=0.2)
+    # ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+    # ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    # ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    # ax0_0, = ax0.plot(wl, itf, label='interference')
+    # ax0_1, = ax0.plot(wl, ref, label='reference')
+    # ax0.legend(borderaxespad=0.2)
+    # ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
+    # ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    # ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    # ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
+    # ax1.legend(borderaxespad=0.2)
+    ax2 = fig.add_subplot(111, title='Dataset', xlabel='Wavelength [nm]', ylabel='alpha [-]')
+    ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax2.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    ax2_0, = ax2.plot(pet.wl_alpha, pet.alpha, label='PET')
+    ax2_1, = ax2.plot(cellulose.wl_alpha, cellulose.alpha, label='Cellulose')
+    ax2.legend(borderaxespad=0.2)
     plt.show()
