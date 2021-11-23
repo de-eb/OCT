@@ -211,21 +211,10 @@ class DatasetHandler():
 
 if __name__ == "__main__":
 
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import ScalarFormatter
-
-    # Graph settings
-    plt.rcParams['font.family'] ='sans-serif'
-    plt.rcParams['xtick.direction'] = 'in'
-    plt.rcParams['ytick.direction'] = 'in'
-    plt.rcParams["xtick.minor.visible"] = True
-    plt.rcParams["ytick.minor.visible"] = True
-    plt.rcParams['xtick.major.width'] = 1.0
-    plt.rcParams['ytick.major.width'] = 1.0
-    plt.rcParams["xtick.minor.width"] = 0.5
-    plt.rcParams["ytick.minor.width"] = 0.5
-    plt.rcParams['font.size'] = 14
-    plt.rcParams['axes.linewidth'] = 1.0
+    import chart_studio
+    import chart_studio.plotly as py
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
 
     st = 762  # Calculation range (Start)
     ed = 953  # Calculation range (End)
@@ -237,28 +226,32 @@ if __name__ == "__main__":
     itf = data.values[st:ed,2]  # sample spectra
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.0)
-    cellulose = DatasetHandler('Cellulose', wl)
-    pet = DatasetHandler('PET', wl)
-    # ascan = sp.generate_ascan(itf, ref)
+    sp = SignalProcessor(wl, 1.5)
 
-    # Show Graph
-    fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
-    # ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
-    # ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    # ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    # ax0_0, = ax0.plot(wl, itf, label='interference')
-    # ax0_1, = ax0.plot(wl, ref, label='reference')
-    # ax0.legend(borderaxespad=0.2)
-    # ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
-    # ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    # ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    # ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
-    # ax1.legend(borderaxespad=0.2)
-    ax2 = fig.add_subplot(111, title='Dataset', xlabel='Wavelength [nm]', ylabel='alpha [-]')
-    ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax2.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax2_0, = ax2.plot(pet.wl_alpha, pet.alpha, label='PET')
-    ax2_1, = ax2.plot(cellulose.wl_alpha, cellulose.alpha, label='Cellulose')
-    ax2.legend(borderaxespad=0.2)
-    plt.show()
+    ascan = sp.generate_ascan(itf, ref)
+
+    # plot
+    fig = make_subplots(subplot_titles=('Spectra','A-scan'), rows=2, cols=1, vertical_spacing=0.2)
+    fig.add_trace(go.Scatter(x=wl, y=ref, name='reference', mode='lines', legendgroup='1'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=wl, y=itf, name='interference', mode='lines', legendgroup='1'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=sp.depth*1e6, y=ascan, name='raw', mode='lines', legendgroup='2'), row=2, col=1)
+    # styling
+    fig.update_xaxes(row=1, col=1, title_text='Wavelength [nm]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside')
+    fig.update_yaxes(row=1, col=1, title_text='Intensity [-]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_xaxes(row=2, col=1, title_text='Depth [μm]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside')
+    fig.update_yaxes(row=2, col=1, title_text='Intensity [-]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.for_each_xaxis(lambda axis: axis.title.update(font=dict(family='Arial', size=18, color='#554D51')))
+    fig.for_each_yaxis(lambda axis: axis.title.update(font=dict(family='Arial', size=18, color='#554D51')))
+    fig.update_annotations(font=dict(family='Arial', size=18, color='#554D51'))
+    fig.update_layout(
+        template='simple_white', width=1000, height=800,
+        font=dict(family='Arial', size=18, color='#554D51'),
+        title=dict(text='', font=dict(family='Arial', size=18, color='#554D51'),),
+        legend=dict(orientation='v', xanchor='right', yanchor='top', x=1, y=1, tracegroupgap = 330, font=dict(family='Arial', size=18, color='#554D51'), bgcolor='rgba(0,0,0,0)')
+    )
+    
+    # Upload to https://chart-studio.plotly.com (only when online)
+    chart_studio.tools.set_credentials_file(username='YOUR_ACCOUNT_NAME', api_key='YOUR_API_KEY')
+    py.plot(fig, filename='Hello Chart Studio', auto_open=True)
+
+    # fig.show()  # View offline
