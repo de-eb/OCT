@@ -24,11 +24,47 @@ class SignalProcessor_hamasaki():
         # Axis conversion for resampling
         self.__wl=wl
         self.__depth=np.linspace(0, xmax, int(1e5))
-        self.__time=2*(n*depth*1e-3)/SignalProcessor_hamasaki.c
+        self.__time=2*(n*self.__depth*1e-3)/SignalProcessor_hamasaki.c
         freqmin=(SignalProcessor_hamasaki.c/(1e9*np.amax(self.__wl)))*1e6+1
         freqmax=(SignalProcessor_hamasaki.c/(1e9*np.amin(self.__wl)))*1e6-1
         self.__freq=np.linspace(freqmin,freqmax,len(self.__wl))
         
+        #initialize data container
+        self.__ref=None
+
+    @property
+    def depth(self):
+        """ Horizontal axis after FFT (depth [m])
+        """
+        return self.__depth
+
+    def set_reference(self,ref):
+        """ Specify the reference spectra. This spectra will be used in later calculations.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
+        """
+        self.__ref=ref
+
+
+    def BGsubtraction(self,sp):
+        """Subtract reference light from interference light.
+    
+        Parameters
+        ----------
+        sp : `1d-ndarray`, required
+            Spectra. Normally, specify the interference spectra after resampling.
+
+        
+        Return
+        -------
+        `1d-ndarray`
+            interference light removed background[arb. unit]
+    """
+        return sp-self.__ref*(np.amax(sp)/np.amax(self.__ref))
+
 
 
 
