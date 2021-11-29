@@ -5,9 +5,9 @@ class SignalProcessor_hamasaki():
     """
     A class that packages variou types of signal processing for OCT.
     """
-    c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
+    c = 2.99792458e8  # Speed of light in vacuum [m/sec].
 
-    def __init__(self,wl,n,xmax):
+    def __init__(self,wl,n,xmax,sl):
         """
         Initialization and preprocessing of parameters.
 
@@ -19,15 +19,20 @@ class SignalProcessor_hamasaki():
             Refractive index of the sample .
         xmax : 'float', required
             maximum value of depth axis[mm]
-        
+        sl :  `float`, required
+            Signal length.
+            The calculation result always be periodic function. 
+            This parameter controls the length of the cycle.
+            The higher this parameter, the longer the period, but also the longer the time required for the calculation.
+
         """
         # Axis conversion for resampling
         self.__wl=wl
         self.__depth=np.linspace(0, xmax, int(1e5))
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessor_hamasaki.c
-        freqmin=(SignalProcessor_hamasaki.c/(1e9*np.amax(self.__wl)))*1e6+1
-        freqmax=(SignalProcessor_hamasaki.c/(1e9*np.amin(self.__wl)))*1e6-1
-        self.__freq=np.linspace(freqmin,freqmax,len(self.__wl))
+        freqmin=(SignalProcessor_hamasaki.c/(1e9*np.amax(self.__wl)))*1e6-1
+        freqmax=(SignalProcessor_hamasaki.c/(1e9*np.amin(self.__wl)))*1e6+1
+        self.__freq=np.linspace(freqmin,freqmax,int(len(self.__wl)*sl))
         
         #initialize data container
         self.__ref=None
@@ -38,6 +43,24 @@ class SignalProcessor_hamasaki():
         """
         return self.__depth
 
+    def Resampling(self,sp):
+        """Resampling function for OCT.
+    
+        Parameters
+        ----------
+        sp : `1d-ndarray`
+            measured interference data[arb. unit]
+        
+        Returns
+        -------
+        `1d-ndarray`
+        Spectra resampled evenly in the frequency space.
+        
+        Requirement
+        -------
+        pycubicspline.py (from pycubicspline import *)
+        """
+
     def set_reference(self,ref):
         """ Specify the reference spectra. This spectra will be used in later calculations.
 
@@ -46,7 +69,7 @@ class SignalProcessor_hamasaki():
         spectra : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
         """
-        self.__ref=ref
+        self.__ref=self.Resampling(ref)
 
 
     def BGsubtraction(self,sp):
@@ -62,15 +85,23 @@ class SignalProcessor_hamasaki():
         -------
         `1d-ndarray`
             interference light removed background[arb. unit]
-    """
+        """
         return sp-self.__ref*(np.amax(sp)/np.amax(self.__ref))
 
+    def inverse_ft(self,sp):
+        """Apply inverse ft to the spectra and convert it to time domain data
 
+        Parameters
+        ----------
+        sp : `1d-ndarray`, required
+            spectra(After applying resampling)
 
-
-
-
-
+        Returns
+        ----------
+        `1d-array`
+            Data after IFFT
+        
+        """
 
 def BGsubtraction(sp,bg):
     """Subtract reference light from interference light.
@@ -92,6 +123,14 @@ def BGsubtraction(sp,bg):
     return itf
 
 def Resampling(wl,itf):
+
+    freq=(299792458/(wl*1e9))*1e6
+    spline=Spline(np.flipud(freq),np.flipud(itf))
+    freq_fixed=np.linspace(np.amin(freq)-1,np.amax(freq)+1,len(wl)*3)
+    itf_fixed=[spline.calc(i) for i in freq_fixed]
+    for i in range(len(itf_fixed)):
+        if itf_fixed[i]==None:
+            itf_fixed[i]=0
     """Resampling function for OCT.
     
         Parameters
@@ -112,13 +151,6 @@ def Resampling(wl,itf):
         -------
         pycubicspline.py (from pycubicspline import *)
     """
-    freq=(299792458/(wl*1e9))*1e6
-    spline=Spline(np.flipud(freq),np.flipud(itf))
-    freq_fixed=np.linspace(np.amin(freq)-1,np.amax(freq)+1,len(wl)*3)
-    itf_fixed=[spline.calc(i) for i in freq_fixed]
-    for i in range(len(itf_fixed)):
-        if itf_fixed[i]==None:
-            itf_fixed[i]=0
     return freq_fixed,itf_fixed
 
 def inverse_ft(freq, itf, xmax, n):
