@@ -102,7 +102,7 @@ ref = np.empty_like(wl)
 
 # Calculation the interference
 for i in range(len(wl)):
-    light_ref = 30*R0*sp.values[i]*np.sin(one_cycle+phase_diff.values[i]+0*one_cycle)
+    light_ref = 30*R0*sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
 
     # Light from surface of 1st sample
     light_s1 = sp.values[i]*R0*np.sin(one_cycle+phase_diff.values[i]+np.pi)
