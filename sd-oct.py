@@ -55,7 +55,7 @@ def manipulate_stage(q):
 
     stage_m = Fine01r('COM11')  # piezo stage (mirror side)
     stage_s = Ncm6212c('COM10')  # piezo stage (sample side)
-    unit = 500
+    unit = 100
     x, y, z = 0, 0, 0
     stage_m.absolute_move(z)
     stage_s.absolute_move(axis='A', position=x)
@@ -65,14 +65,15 @@ def manipulate_stage(q):
         try: key = q.get(block=False)
         except Empty: pass
         else:
-            if key in ['up', 'down', 'right', 'left', 'o', 'p', '0']:
-                if key == 'up': y += unit
-                elif key == 'down': y -= unit
-                elif key == 'right': x += unit
-                elif key == 'left': x -= unit
-                elif key == 'o': z -= unit
-                elif key == 'p': z += unit
-                elif key == '0': x, y, z = 0, 0, 0
+            if key in ['8', '2', '6', '4', '+', '-', '5', '0']:
+                if key == '8': y += unit
+                elif key == '2': y -= unit
+                elif key == '6': x += unit
+                elif key == '4': x -= unit
+                elif key == '-': z -= unit
+                elif key == '+': z += unit
+                elif key == '5': x, y = 0, 0
+                elif key == '0': z = 0
                 stage_m.absolute_move(z)
                 stage_s.absolute_move(axis='A', position=x)
                 stage_s.absolute_move(axis='B', position=y)
