@@ -224,24 +224,17 @@ if __name__ == "__main__":
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2]  # sample spectra
-    
-    cellulose = DatasetHandler('Cellulose', wl)
-    itf_cellulose = itf*cellulose.alpha
 
     # Signal processing
     sp = SignalProcessor(wl, 1.0)
-
     ascan = sp.generate_ascan(itf, ref)
-    ascan_cellulose = sp.generate_ascan(itf_cellulose, ref)
 
     # plot
     palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
     fig = make_subplots(subplot_titles=('Spectra','A-scan'), rows=2, cols=1, vertical_spacing=0.2)
     fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=ref, name='reference', mode='lines', line=dict(color=palette['gray'], dash='solid'), legendgroup='1'))
     fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=itf, name='interference', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='1'))
-    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=itf_cellulose, name='weighted by cellulose', mode='lines', line=dict(color=palette['green'], dash='solid'), legendgroup='1'))
-    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan, name='raw', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='2'))
-    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan_cellulose, name='weighted by cellulose', mode='lines', line=dict(color=palette['green'], dash='solid'), legendgroup='2'))
+    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan, name='Numpy IFFT', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='2'))
     # styling
     fig.update_xaxes(row=1, col=1, title_text='Wavelength [nm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
     fig.update_yaxes(row=1, col=1, title_text='Intensity [-]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
