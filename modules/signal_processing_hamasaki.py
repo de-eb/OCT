@@ -9,6 +9,24 @@ class SignalProcessor_hamasaki():
     c = 2.99792458e8  # Speed of light in vacuum [m/sec].
 
     def __init__(self,wl,n,xmax,sl):
+        """
+        Initialization and preprocessing of parameters.
+
+        Parameters
+        ----------
+        wl : `1d-ndarray`, required
+            Wavelength axis[nm] The given spectra must be sampled evenly in wavelength space.
+        n : `float`, required
+            Refractive index of the sample .
+        xmax : 'float', required
+            maximum value of depth axis[mm]
+        sl :  `float`, required
+            Signal length.(3 is recomended)
+            The calculation result always be periodic function. 
+            This parameter controls the length of the cycle.
+            The higher this parameter, the longer the period, but also the longer the time required for the calculation.
+
+        """
         # Axis conversion for resampling
         self.__wl=wl
         self.__depth=np.linspace(0, xmax, int(1e5))
@@ -20,9 +38,27 @@ class SignalProcessor_hamasaki():
 
     @property
     def depth(self):
+        """ Horizontal axis after FFT (depth [m])
+        """
         return self.__depth
 
     def Resampling(self,sp):
+        """Resampling function for OCT.
+    
+        Parameters
+        ----------
+        sp : `1d-ndarray`
+            measured interference data[arb. unit]
+        
+        Returns
+        -------
+        itf_fixed : `1d-ndarray`
+            Spectra resampled evenly in the frequency space.
+        
+        Requirement
+        -------
+        pycubicspline.py (from pycubicspline import *)
+        """
         spline=Spline(np.flipud(self.__freq),np.flipud(sp))
         itf_fixed=[spline.calc(i) for i in self.__freq_fixed]
         for i in range(len(itf_fixed)):
@@ -31,12 +67,45 @@ class SignalProcessor_hamasaki():
         return itf_fixed
 
     def set_reference(self,ref):
+        """ Specify the reference spectra. This spectra will be used in later calculations.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
+        """
         self.__ref=self.Resampling(ref)
 
     def BGsubtraction(self,sp):
+        """Subtract reference light from interference light.
+    
+        Parameters
+        ----------
+        sp : `1d-ndarray`, required
+            Spectra. Normally, specify the interference spectra after resampling.
+
+        
+        Return
+        -------
+        `1d-ndarray`
+            interference light removed background[arb. unit]
+        """
         return sp-np.multiply(self.__ref,(np.amax(sp)/np.amax(self.__ref)))
 
     def inverse_ft(self,sp):
+        """Apply inverse ft to the spectra and convert it to distance data
+
+        Parameters
+        ----------
+        sp : `1d-ndarray`, required
+            spectra(After applying resampling)
+
+        Returns
+        ----------
+        `1d-array`
+            Data after IFFT
+        
+        """
         for  i in range(len(self.__freq_fixed)):
             if i==0:
                 result=sp[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
@@ -46,6 +115,21 @@ class SignalProcessor_hamasaki():
         return abs(result)
 
     def generate_ascan(self,interference,reference):
+        """ Performs a series of signal processing in one step.
+
+        Parameters
+        ----------
+        interference : `1d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+        reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
+
+        Returns
+        -------
+        ascan : `1d-ndarray`
+            Light intensity data in the time domain (i.e. A-scan).
+            The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
+        """
         if self.__ref==None:
             self.set_reference(reference)
         itf=self.Resampling(interference)
