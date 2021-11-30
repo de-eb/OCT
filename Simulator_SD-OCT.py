@@ -70,7 +70,7 @@ n0 = 1.00                               # refractive index of air
 n1 = 1.29                               # refractive index of csample1
 n2 = 1.29                               # refractive index of csample2
 ta1 = 150e-3                            # thickness of air
-ta2 = 20e-6                             # thickness between samples
+ta2 = 30e-6                             # thickness between samples
 tc1 = 30e-6                             # thickness of sample1
 tc2 = 30e-6                             # thickness of sample2
 
@@ -109,15 +109,15 @@ for i in range(len(wl)):
 
     # Light throught the 1st sample
     lp1 = (((2*tc1)%wl_1.values[i])/wl_1.values[i])*2*np.pi
-    light1 = sp.values[i]*T0**2*R0*np.sin(one_cycle+phase_diff.values[i]+lp1)
+    light1 = sp.values[i]*T0**2*R0*np.sin(one_cycle+phase_diff.values[i]+lp1)*0.99
 
     # Light from surface of 2nd sample
     lp2 = (((2*ta2)%wl.values[i])/wl.values[i])*2*np.pi
-    light_s2 = sp.values[i]*(T0**2)*(T0**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+np.pi)
+    light_s2 = sp.values[i]*(T0**2)*(T0**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+np.pi)*0.9
 
     # Light throught the 2nd sample
     lp3 = (((2*tc2)%wl_2.values[i])/wl_2.values[i])*2*np.pi
-    light2 = sp.values[i]*(T0**4)*(T2**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+lp3)
+    light2 = sp.values[i]*(T0**4)*(T2**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+lp3)*0.5
     
     # check = (light_ref+light_s1+light1)**2                     # sample=1
     
