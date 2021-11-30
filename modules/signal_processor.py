@@ -235,26 +235,27 @@ if __name__ == "__main__":
     ascan_cellulose = sp.generate_ascan(itf_cellulose, ref)
 
     # plot
+    palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
     fig = make_subplots(subplot_titles=('Spectra','A-scan'), rows=2, cols=1, vertical_spacing=0.2)
-    fig.add_trace(go.Scatter(x=wl, y=ref, name='reference', mode='lines', legendgroup='1'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=wl, y=itf, name='interference', mode='lines', legendgroup='1'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=wl, y=itf_cellulose, name='weighted by cellulose', mode='lines', legendgroup='1'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=sp.depth*1e6, y=ascan, name='raw', mode='lines', legendgroup='2'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=sp.depth*1e6, y=ascan_cellulose, name='weighted by cellulose', mode='lines', legendgroup='2'), row=2, col=1)
+    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=ref, name='reference', mode='lines', line=dict(color=palette['gray'], dash='solid'), legendgroup='1'))
+    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=itf, name='interference', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='1'))
+    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=itf_cellulose, name='weighted by cellulose', mode='lines', line=dict(color=palette['green'], dash='solid'), legendgroup='1'))
+    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan, name='raw', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='2'))
+    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan_cellulose, name='weighted by cellulose', mode='lines', line=dict(color=palette['green'], dash='solid'), legendgroup='2'))
     # styling
-    fig.update_xaxes(row=1, col=1, title_text='Wavelength [nm]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=1, col=1, title_text='Intensity [-]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_xaxes(row=2, col=1, title_text='Depth [μm]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=2, col=1, title_text='Intensity [-]', linewidth=1, linecolor='#554D51', mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.for_each_xaxis(lambda axis: axis.title.update(font=dict(family='Arial', size=18, color='#554D51')))
-    fig.for_each_yaxis(lambda axis: axis.title.update(font=dict(family='Arial', size=18, color='#554D51')))
-    fig.update_annotations(font=dict(family='Arial', size=18, color='#554D51'))
+    fig.update_xaxes(row=1, col=1, title_text='Wavelength [nm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_yaxes(row=1, col=1, title_text='Intensity [-]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_xaxes(row=2, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_yaxes(row=2, col=1, title_text='Intensity [-]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
     fig.update_layout(
-        template='simple_white', width=1000, height=800,
-        font=dict(family='Arial', size=18, color='#554D51'),
-        title=dict(text='', font=dict(family='Arial', size=18, color='#554D51'),),
-        legend=dict(orientation='v', xanchor='right', yanchor='top', x=1, y=1, tracegroupgap = 270, font=dict(family='Arial', size=18, color='#554D51'), bgcolor='rgba(0,0,0,0)')
+        template='simple_white', autosize=True,
+        margin=dict(t=20, b=60, l=10, r=10),
+        font=dict(family='Arial', size=14, color=palette['black']),
+        legend=dict(bgcolor='rgba(0,0,0,0)', orientation='v', xanchor='right', yanchor='top', x=1, y=1, tracegroupgap=170)
     )
+    fig.for_each_xaxis(lambda axis: axis.title.update(font=dict(size=14,)))
+    fig.for_each_yaxis(lambda axis: axis.title.update(font=dict(size=14,)))
+    fig.update_annotations(font=dict(size=14,))
     
     # Upload to https://chart-studio.plotly.com (only when online)
     chart_studio.tools.set_credentials_file(username='YOUR_ACCOUNT_NAME', api_key='YOUR_API_KEY')
