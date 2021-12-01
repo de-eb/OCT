@@ -55,6 +55,7 @@ def on_key(event, q):
     global g_key
     g_key = event.key
     q.put(g_key)
+    print(g_key)
 
 
 if __name__ == "__main__":
@@ -69,10 +70,11 @@ if __name__ == "__main__":
     proc1.start()
 
     # Parameter initialization
-    step = 100  # Stage operation interval [nm]
+    step = 1000  # Stage operation interval [nm]
+    limit = 300000  # Stage operation limit [nm]
     x, y, z = 0, 0, 0  # Stage position
     ref = None  # Reference spectra
-    itf = np.zeros((pma.wavelength.size, 10), dtype=float)  # Interference spectra
+    itf = np.zeros((pma.wavelength.size, 300), dtype=float)  # Interference spectra
     err = False
 
     # Graph initialization
@@ -102,14 +104,14 @@ if __name__ == "__main__":
         # Manual operation of Piezo stages
         if g_key in ['8', '2', '6', '4', '+', '-', '5', '0']:
             # Sample
-            if g_key == '8': y += step  # Up
-            elif g_key == '2': y -= step  # Down
-            elif g_key == '6': x += step  # Right
-            elif g_key == '4': x -= step  # Left
+            if g_key == '8': y += 100*step  # Up
+            elif g_key == '2': y -= 100*step  # Down
+            elif g_key == '6': x += 100*step  # Right
+            elif g_key == '4': x -= 100*step  # Left
             elif g_key == '5': x, y = 0, 0  # Return to origin
             # Reference mirror
-            elif g_key == '-': z -= step  # Backward
-            elif g_key == '+': z += step  # Forward
+            elif g_key == '-': z -= 100*step  # Backward
+            elif g_key == '+': z += 100*step  # Forward
             elif g_key == '0': z = 0  # Return to origin
             # Drive
             stage_m.absolute_move(z)
@@ -133,7 +135,7 @@ if __name__ == "__main__":
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
             ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
-            ax1.set_ylim((0, 1.05*ascan.max()))
+            ax1.set_ylim((0, 0.3*ascan.max()))
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
@@ -141,6 +143,17 @@ if __name__ == "__main__":
             sp.set_reference(ref[st:ed])
             print("Reference data updated.")
             ax0_1.set_data(pma.wavelength[st:ed], ref[st:ed])
+        
+        if g_key == 'alt':  # 'Alt' key to save single data
+            data = pma.read_spectra(averaging=100)
+            with open('data/data.csv', mode='w') as f:
+                f.write('date,{}\nmemo,\n'.format(datetime.datetime.now()))
+            df = pd.DataFrame(
+                data=np.vstack((pma.wavelength, data)).T,
+                columns=['Wavelength [nm]', 'Intensity [-]'],
+                dtype='float')
+            df.to_csv('data/data.csv', mode='a')
+            print("The spectra were saved.")
 
         # 'Space' key to Start measurement
         elif g_key == ' ':
@@ -150,7 +163,7 @@ if __name__ == "__main__":
                 print("Measurement start.")
                 for i in range(itf.shape[1]):
                     print("Stage position [nm]: x={}".format(x))
-                    itf[:,i] = pma.read_spectra(averaging=100)  # update interference data
+                    itf[:,i] = pma.read_spectra(averaging=5)  # update interference data
                     x += step
                     stage_s.absolute_move('A', x)
                 print("Measurement complete.")
