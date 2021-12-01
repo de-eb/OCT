@@ -163,6 +163,8 @@ class DatasetHandler():
                 self.__k, self.__wl_k = self.__get_data(i)
             elif 'alpha' in i:
                 self.__alpha, self.__wl_alpha = self.__get_data(i, normalize=True)
+            elif 'T [%]' in i:
+                self.__t, self.__wl_t = self.__get_data(i)
         print('Loaded the "{}" dataset.'.format(sheet))
     
     def __get_data(self, name, normalize=False):
@@ -207,6 +209,16 @@ class DatasetHandler():
     def wl_alpha(self) -> np.ndarray:
         """Wavelength data corresponding to `self.alpha`."""
         return self.__wl_alpha
+    
+    @property
+    def t(self) -> np.ndarray:
+        """Transmittance against wavelength."""
+        return self.__t
+    
+    @property
+    def wl_t(self) -> np.ndarray:
+        """Wavelength data corresponding to `self.t`."""
+        return self.__wl_t
 
 
 if __name__ == "__main__":
