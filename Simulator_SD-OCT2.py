@@ -81,8 +81,8 @@ ed = 953
 name = ['wl','bg','sp']
 data = pd.read_csv('data/211116_cellophane tape on PET(bottle).csv', header=3, index_col=0, names=name)
 wl = data.loc[st:ed,'wl']*1e-9          # wavelength
-bg = data.loc[st:ed,'sp']               # background spectra
-sp = data.loc[st:ed,'bg']               # sample spectras
+bg = data.loc[st:ed,'bg']               # background spectra
+sp = data.loc[st:ed,'sp']               # sample spectras
 sp = np.sqrt(sp)                        # amplitude
 
 # Calculation base on constants
