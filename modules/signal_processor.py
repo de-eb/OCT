@@ -53,16 +53,27 @@ class SignalProcessor():
 
         Parameters
         ----------
-        spectra : `1d-ndarray`, required
+        spectra : `ndarray`, required
             Spectra sampled evenly in the wavelength space.
+            For arrays of 2 or more dimensions, use axis0 as the wavelength axis.
 
         Returns
         -------
-        `1d-ndarray`
+        `ndarray`
             Spectra resampled evenly in the frequency space.
+            It has the same shape as the array given to `spectra`.
         """
+        resampled = np.zeros_like(spectra)
         func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
-        return func(self.wl_fix)
+        resampled = func(self.wl_fix)
+        # if spectra.ndim == 1:
+        #     func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
+        #     resampled = func(self.wl_fix)
+        # elif spectra.ndim == 2:
+        #     for i in range(spectra.shape[1]):
+        #         func = interpolate.interp1d(self.__wl, spectra[:,i], kind='cubic')
+        #         resampled[:,i] = func(self.wl_fix)
+        return resampled
 
     def remove_background(self, spectra):
         """ Removes the reference spectra from the interference spectra.
@@ -119,6 +130,13 @@ class SignalProcessor():
             Spectra of reference light only, sampled evenly in wavelength space.
         """
         self.__ref_fix = self.resample(spectra)
+    
+    def normalize(self, x, axis=None):
+        """ Min-Max Normalization.
+        """
+        min = x.min(axis=axis, keepdims=True)
+        max = x.max(axis=axis, keepdims=True)
+        return (x-min)/(max-min)
     
     def generate_ascan(self, interference, reference):
         """ Performs a series of signal processing in one step.
@@ -235,23 +253,22 @@ if __name__ == "__main__":
     data = pd.read_csv('data/data.csv', header=2, index_col=0)
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
-    itf = data.values[st:ed,2]  # sample spectra
+    itf = data.values[st:ed,2:]  # sample spectra
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.0)
-    ascan = sp.generate_ascan(itf, ref)
+    sp = SignalProcessor(wl, 1.5)
+    bscan = np.zeros_like(itf)
+    for i in range(bscan.shape[1]):
+        bscan[:,i] = sp.generate_ascan(itf[:,i], ref)
 
     # plot
     palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
-    fig = make_subplots(subplot_titles=('Spectra','A-scan'), rows=2, cols=1, vertical_spacing=0.2)
-    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=ref, name='reference', mode='lines', line=dict(color=palette['gray'], dash='solid'), legendgroup='1'))
-    fig.add_trace(row=1, col=1, trace=go.Scatter(x=wl, y=itf, name='interference', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='1'))
-    fig.add_trace(row=2, col=1, trace=go.Scatter(x=sp.depth*1e6, y=ascan, name='Numpy IFFT', mode='lines', line=dict(color=palette['red'], dash='solid'), legendgroup='2'))
+    fig = make_subplots(subplot_titles=('refrected',), rows=1, cols=1, vertical_spacing=0.2)
+    fig.add_trace(row=1, col=1, trace=go.Heatmap( z=bscan, x=np.arange(300), y=sp.depth*1e6, colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
+    
     # styling
-    fig.update_xaxes(row=1, col=1, title_text='Wavelength [nm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=1, col=1, title_text='Intensity [-]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_xaxes(row=2, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=2, col=1, title_text='Intensity [-]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_xaxes(row=1, col=1, title_text='Scanning length [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_yaxes(row=1, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
     fig.update_layout(
         template='simple_white', autosize=True,
         margin=dict(t=20, b=60, l=10, r=10),
@@ -263,6 +280,6 @@ if __name__ == "__main__":
     fig.update_annotations(font=dict(size=14,))
     
     # Upload to https://chart-studio.plotly.com (only when online)
-    chart_studio.tools.set_credentials_file(username='YOUR_ACCOUNT_NAME', api_key='YOUR_API_KEY')
-    py.plot(fig, filename='graph', auto_open=True)
-    # fig.show()  # View offline
+    # chart_studio.tools.set_credentials_file(username='YOUR_ACCOUNT_NAME', api_key='YOUR_API_KEY')
+    # py.plot(fig, filename='211201_4', auto_open=True)
+    fig.show()  # View offline
