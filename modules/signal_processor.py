@@ -28,19 +28,19 @@ class SignalProcessor():
         self.__ns = len(self.__wl)  # Number of samples after resampling
         i = np.arange(self.__ns)
         s = (self.__ns-1)/(self.__wl.max()-self.__wl.min()) * (1/(1/self.__wl.max()+i/(self.__ns-1)*(1/self.__wl.min()-1/self.__wl.max())) - self.__wl.min())
-        self.wl_fix = self.__wl.min() + s*(self.__wl.max()-self.__wl.min())/(self.__ns-1)  # Fixed Wavelength
+        self.__wl_fix = self.__wl.min() + s*(self.__wl.max()-self.__wl.min())/(self.__ns-1)  # Fixed Wavelength
         
         # Generating window functions
         x = np.linspace(0, self.__ns, self.__ns)
         self.__window = special.iv(0, np.pi*alpha*np.sqrt(1-(2*x/len(x)-1)**2)) / special.iv(0, np.pi*alpha)  # Kaiser window
-        
+        self.__window = np.reshape(self.__window, [self.__window.shape[0],1])
+
         # Axis conversion for FFT
-        freq = SignalProcessor.c / (self.wl_fix*1e-9*n)
+        freq = SignalProcessor.c / (self.__wl_fix*1e-9*n)
         fs = 2*freq.max()  # Nyquist frequency
         self.__nf = self.__ns * 2 # Number of samples after IFFT
         t = self.__nf / fs  # Maximum value of time axis after IFFT
         self.__depth = np.linspace(0, SignalProcessor.c*t/2, self.__ns)
-        # depth = c*(1/(c/(wl_fix*n)))/(2*n)
 
     @property
     def depth(self):
@@ -48,7 +48,7 @@ class SignalProcessor():
         """
         return self.__depth
 
-    def resample(self, spectra):
+    def resample(self, spectra, kind='cubic'):
         """ Resamples the spectra.
 
         Parameters
@@ -64,16 +64,19 @@ class SignalProcessor():
             It has the same shape as the array given to `spectra`.
         """
         resampled = np.zeros_like(spectra)
-        func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
-        resampled = func(self.wl_fix)
-        # if spectra.ndim == 1:
-        #     func = interpolate.interp1d(self.__wl, spectra, kind='cubic')
-        #     resampled = func(self.wl_fix)
-        # elif spectra.ndim == 2:
-        #     for i in range(spectra.shape[1]):
-        #         func = interpolate.interp1d(self.__wl, spectra[:,i], kind='cubic')
-        #         resampled[:,i] = func(self.wl_fix)
-        return resampled
+        if spectra.ndim == 1:
+            func = interpolate.interp1d(self.__wl, spectra, kind)
+            resampled = np.reshape(func(self.__wl_fix), [spectra.shape[0],1])
+        elif spectra.ndim == 2:
+            for i in range(spectra.shape[1]):
+                func = interpolate.interp1d(self.__wl, spectra[:,i], kind)
+                resampled[:,i] = func(self.__wl_fix)
+        elif spectra.ndim == 3:
+            for j in range(spectra.shape[2]):
+                for i in range(spectra.shape[1]):
+                    func = interpolate.interp1d(self.__wl, spectra[:,i,j], kind)
+                    resampled[:,i,j] = func(self.__wl_fix)
+        return self.normalize(resampled, axis=0)
 
     def remove_background(self, spectra):
         """ Removes the reference spectra from the interference spectra.
@@ -88,7 +91,7 @@ class SignalProcessor():
         `1d-ndarray`
             Spectra after reference spectra removal.
         """
-        return spectra/spectra.max() - self.__ref_fix/self.__ref_fix.max()
+        return spectra - self.__ref_fix
     
     def apply_window(self, spectra):
         """ Multiply the spectra by the window function.
@@ -130,6 +133,7 @@ class SignalProcessor():
             Spectra of reference light only, sampled evenly in wavelength space.
         """
         self.__ref_fix = self.resample(spectra)
+        return self.__ref_fix
     
     def normalize(self, x, axis=None):
         """ Min-Max Normalization.
@@ -250,21 +254,19 @@ if __name__ == "__main__":
     ed = 953  # Calculation range (End)
 
     # Data loading
-    data = pd.read_csv('data/data.csv', header=2, index_col=0)
+    data = pd.read_csv('data/211201_4.csv', header=2, index_col=0)
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2:]  # sample spectra
 
     # Signal processing
     sp = SignalProcessor(wl, 1.5)
-    bscan = np.zeros_like(itf)
-    for i in range(bscan.shape[1]):
-        bscan[:,i] = sp.generate_ascan(itf[:,i], ref)
+    ascan = sp.generate_ascan(itf, ref)
 
     # plot
     palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
     fig = make_subplots(subplot_titles=('refrected',), rows=1, cols=1, vertical_spacing=0.2)
-    fig.add_trace(row=1, col=1, trace=go.Heatmap( z=bscan, x=np.arange(300), y=sp.depth*1e6, colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
+    fig.add_trace(row=1, col=1, trace=go.Heatmap(z=ascan, x=np.arange(300), y=sp.depth*1e6, colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
     
     # styling
     fig.update_xaxes(row=1, col=1, title_text='Scanning length [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
