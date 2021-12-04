@@ -245,10 +245,9 @@ class DatasetHandler():
 
 if __name__ == "__main__":
 
-    import chart_studio
-    import chart_studio.plotly as py
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
+    import datapane as dp
 
     st = 762  # Calculation range (Start)
     ed = 953  # Calculation range (End)
@@ -265,12 +264,12 @@ if __name__ == "__main__":
 
     # plot
     palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
-    fig = make_subplots(subplot_titles=('refrected',), rows=1, cols=1, vertical_spacing=0.2)
-    fig.add_trace(row=1, col=1, trace=go.Heatmap(z=ascan, x=np.arange(300), y=sp.depth*1e6, colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
+    fig = make_subplots(subplot_titles=('B-scan',), rows=1, cols=1, vertical_spacing=0.2)
+    fig.add_trace(row=1, col=1, trace=go.Heatmap(z=ascan.T, x=sp.depth*1e6, y=np.arange(300), colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
     
     # styling
-    fig.update_xaxes(row=1, col=1, title_text='Scanning length [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=1, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_xaxes(row=1, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
+    fig.update_yaxes(row=1, col=1, title_text='Scanning length [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
     fig.update_layout(
         template='simple_white', autosize=True,
         margin=dict(t=20, b=60, l=10, r=10),
@@ -281,7 +280,6 @@ if __name__ == "__main__":
     fig.for_each_yaxis(lambda axis: axis.title.update(font=dict(size=14,)))
     fig.update_annotations(font=dict(size=14,))
     
-    # Upload to https://chart-studio.plotly.com (only when online)
-    # chart_studio.tools.set_credentials_file(username='YOUR_ACCOUNT_NAME', api_key='YOUR_API_KEY')
-    # py.plot(fig, filename='211201_4', auto_open=True)
-    fig.show()  # View offline
+    # Upload to https://datapane.com (only when online)
+    dp.Report(dp.Plot(fig),).upload(name="B-scan test", open=True)
+    # fig.show()  # View offline
