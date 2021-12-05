@@ -247,6 +247,29 @@ class DataHandler():
         df.to_csv(file_path, mode='a')
         print("Saved the spectra to {} .".format(file_path))
     
+    def load_spectra(self, file_path):
+        """ Load the spectra. The data format is the same as the one saved by `self.save_spectra`.
+
+        file_path : `str`, required
+            Where to load the file.
+        
+        Returns
+        -------
+        dataset : `dict`
+            Data name-value pairs.
+        """
+        data = {}
+        df = pd.read_csv(file_path, header=2, index_col=0)
+        if 'Wavelength [nm]' in df.columns:
+            data['wavelength'] = df.loc[:, 'Wavelength [nm]'].values
+        if 'Reference [-]' in df.columns:
+            data['reference'] = df.loc[:, 'Reference [-]'].values
+        if 'Spectra [-]' in df.columns:
+            data['spectra'] = df.loc[:, 'Spectra [-]'].values
+        elif 'Spectra0 [-]' in df.columns:
+            data['spectra'] = df.iloc[:, df.columns.get_loc('Spectra0 [-]'):].values
+        return data
+    
     def load_dataset(self, sheet_name, new_wl=None):
         """ Load optical constants from the dataset.
         See `modules/tools/optical_constants_dataset.xlsx` for details.
@@ -291,13 +314,13 @@ if __name__ == "__main__":
     ed = 953  # Calculation range (End)
 
     # Data loading
-    data = pd.read_csv('data/211201_4.csv', header=2, index_col=0)
+    data = pd.read_csv('data/data.csv', header=2, index_col=0)
     wl = data.values[st:ed,0]  # wavelength
     ref = data.values[st:ed,1]  # background spectra
     itf = data.values[st:ed,2:]  # sample spectra
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.5)
+    sp = SignalProcessor(wl, 1.0)
     ascan = sp.generate_ascan(itf, ref)
 
     # plot
