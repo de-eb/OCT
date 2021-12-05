@@ -7,11 +7,11 @@ from scipy import special, interpolate
 
 
 class SignalProcessor():
-    """ A class that packages various types of signal processing for OCT.
+    """ Class that summarizes the various types of signal processing for OCT.
     """
     c = 2.99792458e8  # Speed of light in a vacuum [m/sec].
 
-    def __init__(self, wavelength, n, alpha=1.5):
+    def __init__(self, wavelength, n, alpha=1.5) -> None:
         """ Initialization and preprocessing of parameters.
 
         Parameters
@@ -46,25 +46,27 @@ class SignalProcessor():
         self.__depth = np.linspace(0, SignalProcessor.c*t/2, self.__ns)
 
     @property
-    def depth(self):
+    def depth(self) -> np.ndarray:
         """ Horizontal axis after FFT (depth [m])
         """
         return self.__depth
 
-    def resample(self, spectra, kind='cubic'):
+    def resample(self, spectra, kind='cubic') -> np.ndarray:
         """ Resamples the spectra.
 
         Parameters
         ----------
         spectra : `ndarray`, required
             Spectra sampled evenly in the wavelength space.
-            For arrays of 2 or more dimensions, use axis0 as the wavelength axis.
+            For data in 2 or more dimensions, use axis0 as the wavelength axis.
+        kind : `str`
+            Data interpolation methods. For more information, see
+            https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
 
         Returns
         -------
         `ndarray`
             Spectra resampled evenly in the frequency space.
-            It has the same shape as the array given to `spectra`.
         """
         resampled = np.zeros_like(spectra)
         if spectra.ndim == 1:
@@ -81,83 +83,103 @@ class SignalProcessor():
                     resampled[:,i,j] = func(self.__wl_fix)
         return self.normalize(resampled, axis=0)
 
-    def remove_background(self, spectra):
+    def remove_background(self, spectra) -> np.ndarray:
         """ Removes the reference spectra from the interference spectra.
 
         Parameters
         ----------
-        spectra : `1d-ndarray`, required
+        spectra : `ndarray`, required
             Spectra. Normally, specify the interference spectra after resampling.
+            For data in 2 or more dimensions, use axis0 as the wavelength axis.
 
         Returns
         -------
-        `1d-ndarray`
+        `ndarray`
             Spectra after reference spectra removal.
         """
         return spectra - self.__ref_fix
     
-    def apply_window(self, spectra):
+    def apply_window(self, spectra) -> np.ndarray:
         """ Multiply the spectra by the window function.
 
         Parameters
         ----------
-        spectra : `1d-ndarray`, required
-            Spectra. (After removing the background.)
+        spectra : `ndarray`, required
+            Spectra after removing the background.
 
         Returns
         -------
-        `1d-ndarray`
+        `ndarray`
             Spectra after applying the window function.
         """
         return spectra*self.__window
     
-    def apply_ifft(self, spectra):
+    def apply_ifft(self, spectra) -> np.ndarray:
         """ Apply IFFT to the spectra and convert it to time domain data (i.e. A-scan).
 
         Parameters
         ----------
-        spectra : `1d-ndarray`, required
-            Spectra. (After applying the window function.)
+        spectra : `ndarray`, required
+            Spectra after applying the window function.
 
         Returns
         -------
-        `1d-ndarray`
+        `ndarray`
             Data after IFFT.
         """
         magnitude = np.abs(np.fft.ifft(spectra, n=self.__nf, axis=0))
         return magnitude[:self.__ns]
     
-    def set_reference(self, spectra):
+    def set_reference(self, spectra) -> np.ndarray:
         """ Specify the reference spectra. This spectra will be used in later calculations.
 
         Parameters
         ----------
         spectra : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
+        
+        Returns
+        -------
+        `1d-ndarray`
+            Reference spectra after resampling.
         """
         self.__ref_fix = self.resample(spectra)
         return self.__ref_fix
     
-    def normalize(self, x, axis=None):
+    def normalize(self, x, axis=None) -> np.ndarray:
         """ Min-Max Normalization.
+
+        Parameters
+        ----------
+        x : `ndarray`, required
+            Array to be normalized.
+        
+        axis : `int`
+            If specified, normalization is performed according to the maximum and minimum values along this axis.
+            Otherwise, normalization is performed by the maximum and minimum values of the entire array.
+        
+        Returns
+        -------
+        `1d-ndarray`
+            An array normalized between a minimum value of 0 and a maximum value of 1.
         """
         min = x.min(axis=axis, keepdims=True)
         max = x.max(axis=axis, keepdims=True)
         return (x-min)/(max-min)
     
-    def generate_ascan(self, interference, reference):
+    def generate_ascan(self, interference, reference) -> np.ndarray:
         """ Performs a series of signal processing in one step.
 
         Parameters
         ----------
-        interference : `1d-ndarray`, required
+        interference : `ndarray`, required
             Spectra of interference light only, sampled evenly in wavelength space.
-        reference : `1d-ndarray`, required
+        reference : `ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
 
         Returns
         -------
-        ascan : `1d-ndarray`
+        ascan : `ndarray`
             Light intensity data in the time domain (i.e. A-scan).
             The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
@@ -171,7 +193,7 @@ class SignalProcessor():
 
 
 class DataHandler():
-    """
+    """ Class for reading, writing, and visualizing data.
     """
 
     def __init__(self):
