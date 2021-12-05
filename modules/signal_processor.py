@@ -167,80 +167,47 @@ class SignalProcessor():
         return ascan
 
 
-class DatasetHandler():
+class DataHandler():
     """
     """
 
-    def __init__(self, sheet, wavelength=None):
+    def __init__(self):
         """
         """
-        self.__wl_fix = wavelength
-        self.__n,self.__wl_n,self.__k,self.__wl_k,self.__alpha,self.__wl_alpha = None,None,None,None,None,None
+        pass
+    
+    def load_dataset(self, sheet_name, new_wl=None):
+        """ Load optical constants from the data set.
+        See `modules/tools/optical_constants_dataset.xlsx` for details on the dataset.
 
-        self.__df = pd.read_excel('modules/tools/optical_constants_dataset.xlsx', sheet_name=sheet, header=2, index_col=0)        
-        for i in list(self.__df.columns):
-            if i == 'n':
-                self.__n, self.__wl_n = self.__get_data(i)
-            elif i == 'k' or 'k ' in i:
-                self.__k, self.__wl_k = self.__get_data(i)
-            elif 'alpha' in i:
-                self.__alpha, self.__wl_alpha = self.__get_data(i, normalize=True)
-            elif 'T [%]' in i:
-                self.__t, self.__wl_t = self.__get_data(i)
-        print('Loaded the "{}" dataset.'.format(sheet))
-    
-    def __get_data(self, name, normalize=False):
-        """
-        """
-        data = self.__df.loc[:, name].values
-        wl = self.__df.iloc[:, self.__df.columns.get_loc(name)-1].values
-        if normalize:
-            data = data / data.max()
-        if self.__wl_fix is not None:
-            func = interpolate.interp1d(wl, data, kind='cubic')
-            data = func(self.__wl_fix)
-            wl = self.__wl_fix
-        return data, wl
+        Parameters
+        ----------
+        sheet_name : `str`, required
+            Name of the dataset you want to load (sheet name in xlsx file).
+        new_wl : `1d-ndarray`
+            Wavelength axis data for resampling.
+            If not specified, the original raw data will be returned.
 
-    @property
-    def n(self) -> np.ndarray:
-        """Refractive index against wavelength."""
-        return self.__n
-    
-    @property
-    def wl_n(self) -> np.ndarray:
-        """Wavelength data corresponding to `self.n`."""
-        return self.__wl_n
-    
-    @property
-    def k(self) -> np.ndarray:
-        """Extinction coefficient against wavelength."""
-        return self.__k
-    
-    @property
-    def wl_k(self) -> np.ndarray:
-        """Wavelength data corresponding to `self.k`."""
-        return self.__wl_k
-    
-    @property
-    def alpha(self) -> np.ndarray:
-        """Absorption coefficient against wavelength."""
-        return self.__alpha
-    
-    @property
-    def wl_alpha(self) -> np.ndarray:
-        """Wavelength data corresponding to `self.alpha`."""
-        return self.__wl_alpha
-    
-    @property
-    def t(self) -> np.ndarray:
-        """Transmittance against wavelength."""
-        return self.__t
-    
-    @property
-    def wl_t(self) -> np.ndarray:
-        """Wavelength data corresponding to `self.t`."""
-        return self.__wl_t
+        Returns
+        -------
+        dataset : `dict`
+            Available data and the corresponding wavelengths.
+            Note that even if the data name is the same, the units may be different,
+            so be careful when evaluating the data.
+        """
+        dataset = {}
+        df = pd.read_excel('modules/tools/optical_constants_dataset.xlsx', sheet_name, header=3, index_col=0)
+        for col in list(df.columns):
+            if 'wl' not in col:
+                val = df.loc[:, col].dropna().values
+                wl = df.iloc[:, df.columns.get_loc(col)-1].dropna().values
+                if new_wl is not None:
+                    func = interpolate.interp1d(wl, val, kind='cubic')
+                    val = func(new_wl)
+                    wl = new_wl
+                dataset[col] = val
+                dataset['wl_'+col] = wl
+        return dataset
 
 
 if __name__ == "__main__":
