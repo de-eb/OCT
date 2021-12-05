@@ -1,3 +1,6 @@
+import os
+import glob
+import datetime
 import pandas as pd
 import numpy as np
 from scipy import special, interpolate
@@ -175,15 +178,61 @@ class DataHandler():
         """
         """
         pass
+
+    def save_spectra(self, wavelength, reference=None, spectra=None, file_path=None, memo=''):
+        """ Save the spectral data in a uniform format.
+
+        Parameters
+        ----------
+        wavelength : `1d-ndarray`, required
+            Wavelength [nm] data corresponding to spectra.
+        reference : `1d-ndarray`
+            Spectra of reference light only. If it is not specified, it will not be recorded.
+        spectra : `ndarray`
+            Spectra, such as interference light.
+            When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
+        file_path : `str`
+            Where file is stored.
+            If not specified, the file will be automatically numbered and saved in `data/`.
+        memo : `str`
+            Additional information to be included in the header of the file.
+        """
+        # Data formatting
+        columns = ['Wavelength [nm]']
+        data = wavelength.reshape([wavelength.size,1])
+        if reference is not None:
+            columns.append('Reference [-]')
+            data = np.hstack((data,reference.reshape([wavelength.size,1])))
+        if spectra is not None:
+            if spectra.ndim == 1:
+                columns.append('Spectra [-]')
+                spectra = spectra.reshape([wavelength.size,1])
+            elif spectra.ndim == 2:
+                columns += ['Spectra{} [-]'.format(i) for i in range(spectra.shape[1])]
+            data = np.hstack((data,spectra))
+        df = pd.DataFrame(data=data, columns=columns, dtype='float')
+        # File numbering
+        timestamp = datetime.datetime.now()
+        if file_path is None:
+            files = [os.path.basename(p) for p in glob.glob('data/*') if os.path.isfile(p)]
+            tag = timestamp.strftime('%y%m%d')
+            i = 0
+            while tag + '_{}.csv'.format(i) in files: i+=1
+            file_path = 'data/' + tag + '_{}.csv'.format(i)
+        # Save
+        with open(file_path, mode='w') as f:
+            f.write('date,{}\nmemo,{}\n'.format(timestamp.strftime('%Y-%m-%d %H:%M:%S'), memo))
+        df.to_csv(file_path, mode='a')
+        print("Saved the spectra to {} .".format(file_path))
     
     def load_dataset(self, sheet_name, new_wl=None):
-        """ Load optical constants from the data set.
-        See `modules/tools/optical_constants_dataset.xlsx` for details on the dataset.
+        """ Load optical constants from the dataset.
+        See `modules/tools/optical_constants_dataset.xlsx` for details.
 
         Parameters
         ----------
         sheet_name : `str`, required
-            Name of the dataset you want to load (sheet name in xlsx file).
+            Name of the dataset (sheet name in xlsx file) you want to load.
         new_wl : `1d-ndarray`
             Wavelength axis data for resampling.
             If not specified, the original raw data will be returned.
