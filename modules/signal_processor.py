@@ -1,10 +1,13 @@
 import os
 import glob
 import datetime
+from re import X
 import pandas as pd
 import numpy as np
 from scipy import special, interpolate
-
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import datapane as dp
 
 class SignalProcessor():
     """ Class that summarizes the various types of signal processing for OCT.
@@ -270,7 +273,7 @@ class DataHandler():
             data['spectra'] = df.iloc[:, df.columns.get_loc('Spectra0 [-]'):].values
         return data
     
-    def load_dataset(self, sheet_name, new_wl=None):
+    def load_dataset(self, sheet_name, wavelength=None):
         """ Load optical constants from the dataset.
         See `modules/tools/optical_constants_dataset.xlsx` for details.
 
@@ -278,7 +281,7 @@ class DataHandler():
         ----------
         sheet_name : `str`, required
             Name of the dataset (sheet name in xlsx file) you want to load.
-        new_wl : `1d-ndarray`
+        wavelength : `1d-ndarray`
             Wavelength axis data for resampling.
             If not specified, the original raw data will be returned.
 
@@ -295,20 +298,59 @@ class DataHandler():
             if 'wl' not in col:
                 val = df.loc[:, col].dropna().values
                 wl = df.iloc[:, df.columns.get_loc(col)-1].dropna().values
-                if new_wl is not None:
+                if wavelength is not None:
                     func = interpolate.interp1d(wl, val, kind='cubic')
-                    val = func(new_wl)
-                    wl = new_wl
+                    val = func(wavelength)
+                    wl = wavelength
                 dataset[col] = val
                 dataset['wl_'+col] = wl
         return dataset
+    
+    def draw_graph(self, mode, upload_name=None, **kwargs):
+        """
+        """
+        # Plot
+        if mode == 'Spectra' or mode == 'A-scan':
+            fig = make_subplots(rows=1, cols=1)
+            for i in range(len(kwargs['y'])):
+                fig.add_trace(
+                    trace=go.Scatter(
+                        x=kwargs['x'][i], y=kwargs['y'][i], name=kwargs['label'][i], mode='lines'),
+                    row=1, col=1)
+            if mode == 'Spectra': xaxis = 'Wavelength [nm]'
+            if mode == 'A-scan': xaxis = 'Depth [μm]'
+            yaxis, ticksdir = 'Intensity [-]', 'inside'
+        elif mode == 'B-scan':
+            fig = go.Figure(
+                data=go.Heatmap(
+                    z=kwargs['z'], x=kwargs['x'], y=kwargs['y'],
+                    zsmooth='fast', zmin=0, zmax=kwargs['zmax'],
+                    colorbar=dict(
+                        title=dict(text='Intensity [-]', side='right'),
+                        exponentformat='SI', showexponent='last'),
+                    colorscale='gray',))
+            xaxis, yaxis, ticksdir = 'Depth [μm]', 'Scanning length [μm]', 'outside'
+        # Styling
+        fig.update_xaxes(
+            title_text=xaxis, title_font=dict(size=14,), color='#554D51', mirror=True,
+            ticks=ticksdir, exponentformat='SI', showexponent='last')
+        fig.update_yaxes(
+            title_text=yaxis, title_font=dict(size=14,), color='#554D51', mirror=True,
+            ticks=ticksdir, exponentformat='SI', showexponent='last')
+        fig.update_layout(
+            template='simple_white', autosize=True, margin=dict(t=20, b=60, l=20, r=0),
+            font=dict(family='Arial', size=14, color='#554D51'),
+            legend=dict(
+                bgcolor='rgba(0,0,0,0)', orientation='v',
+                xanchor='right', yanchor='top', x=1, y=1))
+        # Output
+        if upload_name is not None:  # Upload to https://datapane.com (only when online)
+            dp.Report(dp.Plot(fig),).upload(name=upload_name, open=True)
+        else:  # View offline
+            fig.show()
 
 
 if __name__ == "__main__":
-
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    import datapane as dp
 
     st = 762  # Calculation range (Start)
     ed = 953  # Calculation range (End)
@@ -323,24 +365,10 @@ if __name__ == "__main__":
     sp = SignalProcessor(wl, 1.0)
     ascan = sp.generate_ascan(itf, ref)
 
-    # plot
-    palette = {'black':'#554D51', 'gray':'#90868B', 'red':'#E07772', 'green':'#B5DF6A', 'blue':'#48CAD6'}
-    fig = make_subplots(subplot_titles=('B-scan',), rows=1, cols=1, vertical_spacing=0.2)
-    fig.add_trace(row=1, col=1, trace=go.Heatmap(z=ascan.T, x=sp.depth*1e6, y=np.arange(300), colorbar=dict(len=0.8, title=dict(text='Intensity [-]', side='right')), zmin=0, zmax=0.003))
-    
-    # styling
-    fig.update_xaxes(row=1, col=1, title_text='Depth [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_yaxes(row=1, col=1, title_text='Scanning length [μm]',color=palette['black'], mirror=True, ticks='inside', showexponent='last', exponentformat='SI')
-    fig.update_layout(
-        template='simple_white', autosize=True,
-        margin=dict(t=20, b=60, l=10, r=10),
-        font=dict(family='Arial', size=14, color=palette['black']),
-        legend=dict(bgcolor='rgba(0,0,0,0)', orientation='v', xanchor='right', yanchor='top', x=1, y=1, tracegroupgap=170)
-    )
-    fig.for_each_xaxis(lambda axis: axis.title.update(font=dict(size=14,)))
-    fig.for_each_yaxis(lambda axis: axis.title.update(font=dict(size=14,)))
-    fig.update_annotations(font=dict(size=14,))
-    
-    # Upload to https://datapane.com (only when online)
-    dp.Report(dp.Plot(fig),).upload(name="B-scan test", open=True)
-    # fig.show()  # View offline
+    dh = DataHandler()
+    # dh.draw_graph(mode='A-scan', upload_name='test',
+    #     y=[ascan[:,0], ascan[:,-1]],
+    #     x=[sp.depth*1e6, sp.depth*1e6],
+    #     label=['Cellophane', 'PET'])
+    dh.draw_graph(mode='B-scan', upload_name='test',
+        x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
