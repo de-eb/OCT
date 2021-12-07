@@ -10,7 +10,7 @@ from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
-from modules.signal_processing import SignalProcessor
+from modules.signal_processing_hamasaki import SignalProcessor
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -26,8 +26,6 @@ plt.rcParams['font.size'] = 14
 plt.rcParams['axes.linewidth'] = 1.0
 
 # Globals
-st = 762  # Calculation range (Start) of spectrum [nm]
-ed = 953  # Calculation range (End) of spectrum [nm]
 g_key = None  # Pressed key
 
 
@@ -89,10 +87,17 @@ def on_key(event, q0, q1):
 
 
 if __name__ == "__main__":
+    #Constants
+    n = 1.4 # Refractive index
+    xmax = 0.2 # maximum value of depth axis[mm]
+    sl = 3 #Signal length
+    st = 762  # Calculation range (Start) of spectrum [nm]
+    ed = 953  # Calculation range (End) of spectrum [nm]
+
 
     # Device settings
     pma = Pma12(dev_id=5)  # Spectrometer
-    sp = SignalProcessor(pma.wavelength[st:ed], 1.46)
+    sp = SignalProcessor(pma.wavelength[st:ed],n,xmax,sl)
     q0 = Queue()
     q1 = Queue()
     proc0 = Process(target=manipulate_stage, args=(q0,))  # piezo stage
