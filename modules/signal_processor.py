@@ -338,21 +338,24 @@ class DataHandler():
         z : `any`
             Data to be used as the z-axis of the graph. If 'spectra' or 'ascan', it will not be used.
             If 'bscan', specify a `2d-ndarray` corresponding to the x-axis and y-axis, respectively.
-        label : `any`
-            A label for each data. If 'spectra' or 'ascan', specify a `list` of `str` to display the legend.
+        name : `any`
+            Data name. If 'spectra' or 'ascan', specify a `list` of `str` to display the legend.
             If 'bscan', it will not be used.
+        xlabel : `str`
+            If specified, x-axis name will be changed from the default.
+        ylabel : `str`
+            If specified, y-axis name will be changed from the default.
         """
         # Plot
         if format == 'spectra' or format == 'ascan':
             fig = make_subplots(rows=1, cols=1)
-            for i in range(len(kwargs['label'])):
+            for i in range(len(kwargs['name'])):
                 fig.add_trace(
                     trace=go.Scatter(
-                        x=kwargs['x'][i], y=kwargs['y'][i], name=kwargs['label'][i], mode='lines'),
+                        x=kwargs['x'][i], y=kwargs['y'][i], name=kwargs['name'][i], mode='lines'),
                     row=1, col=1)
-            if format == 'spectra': xaxis = 'Wavelength [nm]'
-            if format == 'ascan': xaxis = 'Depth [μm]'
-            yaxis, ticksdir = 'Intensity [-]', 'inside'
+            xlabel, ylabel, ticksdir = 'Wavelength [nm]', 'Intensity [-]', 'inside'
+            if format == 'ascan': xlabel = 'Depth [μm]'
         elif format == 'bscan':
             fig = go.Figure(
                 data=go.Heatmap(
@@ -362,20 +365,20 @@ class DataHandler():
                         title=dict(text='Intensity [-]', side='right'),
                         exponentformat='SI', showexponent='last'),
                     colorscale='gray',))
-            xaxis, yaxis, ticksdir = 'Depth [μm]', 'Scanning length [μm]', 'outside'
+            xlabel, ylabel, ticksdir = 'Depth [μm]', 'Scanning length [μm]', 'outside'
+        if 'xlabel' in kwargs: xlabel = kwargs['xlabel']
+        if 'ylabel' in kwargs: ylabel = kwargs['ylabel']
         # Styling
         fig.update_xaxes(
-            title_text=xaxis, title_font=dict(size=14,), color='#554D51', mirror=True,
+            title_text=xlabel, title_font=dict(size=14,), color='#554D51', mirror=True,
             ticks=ticksdir, exponentformat='SI', showexponent='last')
         fig.update_yaxes(
-            title_text=yaxis, title_font=dict(size=14,), color='#554D51', mirror=True,
+            title_text=ylabel, title_font=dict(size=14,), color='#554D51', mirror=True,
             ticks=ticksdir, exponentformat='SI', showexponent='last')
         fig.update_layout(
             template='simple_white', autosize=True, margin=dict(t=20, b=60, l=20, r=0),
             font=dict(family='Arial', size=14, color='#554D51'),
-            legend=dict(
-                bgcolor='rgba(0,0,0,0)', orientation='v',
-                xanchor='right', yanchor='top', x=1, y=1))
+            legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
         # Output
         if upload_name is not None:  # Upload to https://datapane.com (only when online)
             dp.Report(dp.Plot(fig),).upload(name=upload_name, open=True)
@@ -395,5 +398,5 @@ if __name__ == "__main__":
     ascan = sp.generate_ascan(data['spectra'], data['reference'])
 
     # Show Graph
-    dh.draw_graph(format='A-scan', y=[ascan,], x=[sp.depth*1e6], label=['Numpy IFFT',])
+    dh.draw_graph(format='A-scan', y=[ascan,], x=[sp.depth*1e6], name=['Numpy IFFT',])
     # dh.draw_graph(mode='B-scan', x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
