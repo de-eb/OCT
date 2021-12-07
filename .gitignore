@@ -4,4 +4,4 @@ env32
 __pycache__
 modules/__pycache__
 data
-temp
+temp*
