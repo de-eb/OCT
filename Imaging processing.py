@@ -66,15 +66,15 @@ def inverse_ft(freq, itf, xmax, n):
     return depth_axis, abs(result)
 
 # refractive index of sample
-n = 1.46                               
+n = 1.55                               
 
 # Memo : GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
-st = 320
-ed = 532
+st = 782
+ed = 944
 
 # Data loading
 name = ['wl','bg','sp']
-data = pd.read_csv('data/211103_cell+air.csv', header=3, index_col=0, names=name)
+data = pd.read_csv('data/211116_PET(bottle).csv', header=3, index_col=0, names=name)
 wl = data.loc[st:ed,'wl']*1e-9          # wavelength
 bg = data.loc[st:ed,'bg']               # background spectra
 sp = data.loc[st:ed,'sp']               # sample spectras
