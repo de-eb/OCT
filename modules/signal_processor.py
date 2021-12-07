@@ -72,7 +72,7 @@ class SignalProcessor():
             Spectra resampled evenly in the frequency space.
         """
         resampled = np.zeros_like(spectra)
-        if spectra.ndim == 1:
+        if spectra.ndim <= 1:
             func = interpolate.interp1d(self.__wl, spectra, kind)
             resampled = np.reshape(func(self.__wl_fix), [spectra.shape[0],1])
         elif spectra.ndim == 2:
@@ -192,6 +192,8 @@ class SignalProcessor():
         rmv = self.remove_background(itf)
         wnd = self.apply_window(rmv)
         ascan = self.apply_ifft(wnd)
+        if interference.ndim <= 1:
+            ascan = ascan.reshape([ascan.size,])
         return ascan
 
 
@@ -250,19 +252,25 @@ class DataHandler():
         df.to_csv(file_path, mode='a')
         print("Saved the spectra to {} .".format(file_path))
     
-    def load_spectra(self, file_path):
+    def load_spectra(self, file_path, wavelength_range=[0,2000]):
         """ Load the spectra. The data format is the same as the one saved by `self.save_spectra`.
 
+        Parameters
+        ----------
         file_path : `str`, required
             Where to load the file.
+        wavelengrh_range : `list`
+            Wavelength range [nm] of the spectra to be loaded.
+            Specify the lower limit in the first element and the upper limit in the next element.
         
         Returns
         -------
-        dataset : `dict`
+        data : `dict`
             Data name-value pairs.
         """
         data = {}
         df = pd.read_csv(file_path, header=2, index_col=0)
+        df = df[(df['Wavelength [nm]']>wavelength_range[0]) & (df['Wavelength [nm]']<wavelength_range[1])]
         if 'Wavelength [nm]' in df.columns:
             data['wavelength'] = df.loc[:, 'Wavelength [nm]'].values
         if 'Reference [-]' in df.columns:
@@ -306,21 +314,46 @@ class DataHandler():
                 dataset['wl_'+col] = wl
         return dataset
     
-    def draw_graph(self, mode, upload_name=None, **kwargs):
-        """
+    def draw_graph(self, format, upload_name=None, **kwargs):
+        """ Draw a graph.
+
+        Parameters
+        ----------
+        format : `str`, required
+            Graph format. Specify the following.
+                'spectra' : Line chart with wavelength[nm] vs intensity[-].
+                'ascan' : Line chart with depth[μm] vs intensity[-].
+                'bscan' : Heatmap with depth[μm] vs scanning distance[μm]  vs intensity[-].
+        upload_name : `str`
+            Upload the graph with this name to https://datapane.com.
+            If not specified, the graph will be displayed offline.
+        x : `any`
+            Data to be used as the x-axis of the graph.
+            If 'spectra' or 'ascan', specify a `list` of `1d-ndarray` to display multiple charts.
+            If 'bscan', specify a `1d-ndarray`.
+        y : `any`
+            Data to be used as the y-axis of the graph.
+            If 'spectra' or 'ascan', specify a `list` of `1d-ndarray` to display multiple charts.
+            If 'bscan', specify a `1d-ndarray`.
+        z : `any`
+            Data to be used as the z-axis of the graph. If 'spectra' or 'ascan', it will not be used.
+            If 'bscan', specify a `2d-ndarray` corresponding to the x-axis and y-axis, respectively.
+        label : `any`
+            A label for each data. If 'spectra' or 'ascan', specify a `list` of `str` to display the legend.
+            If 'bscan', it will not be used.
         """
         # Plot
-        if mode == 'Spectra' or mode == 'A-scan':
+        if format == 'spectra' or format == 'ascan':
             fig = make_subplots(rows=1, cols=1)
-            for i in range(len(kwargs['y'])):
+            for i in range(len(kwargs['label'])):
                 fig.add_trace(
                     trace=go.Scatter(
                         x=kwargs['x'][i], y=kwargs['y'][i], name=kwargs['label'][i], mode='lines'),
                     row=1, col=1)
-            if mode == 'Spectra': xaxis = 'Wavelength [nm]'
-            if mode == 'A-scan': xaxis = 'Depth [μm]'
+            if format == 'spectra': xaxis = 'Wavelength [nm]'
+            if format == 'ascan': xaxis = 'Depth [μm]'
             yaxis, ticksdir = 'Intensity [-]', 'inside'
-        elif mode == 'B-scan':
+        elif format == 'bscan':
             fig = go.Figure(
                 data=go.Heatmap(
                     z=kwargs['z'], x=kwargs['x'], y=kwargs['y'],
@@ -352,23 +385,15 @@ class DataHandler():
 
 if __name__ == "__main__":
 
-    st = 762  # Calculation range (Start)
-    ed = 953  # Calculation range (End)
-
     # Data loading
-    data = pd.read_csv('data/data.csv', header=2, index_col=0)
-    wl = data.values[st:ed,0]  # wavelength
-    ref = data.values[st:ed,1]  # background spectra
-    itf = data.values[st:ed,2:]  # sample spectra
+    dh = DataHandler()
+    data = dh.load_spectra('data/data.csv', wavelength_range=[770,910])
+    # dataset = dh.load_dataset('PET', data['wavelength'])
 
     # Signal processing
-    sp = SignalProcessor(wl, 1.0)
-    ascan = sp.generate_ascan(itf, ref)
+    sp = SignalProcessor(data['wavelength'], 1.0)
+    ascan = sp.generate_ascan(data['spectra'], data['reference'])
 
-    dh = DataHandler()
-    # dh.draw_graph(mode='A-scan', upload_name='test',
-    #     y=[ascan[:,0], ascan[:,-1]],
-    #     x=[sp.depth*1e6, sp.depth*1e6],
-    #     label=['Cellophane', 'PET'])
-    dh.draw_graph(mode='B-scan', upload_name='test',
-        x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
+    # Show Graph
+    dh.draw_graph(format='A-scan', y=[ascan,], x=[sp.depth*1e6], label=['Numpy IFFT',])
+    # dh.draw_graph(mode='B-scan', x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
