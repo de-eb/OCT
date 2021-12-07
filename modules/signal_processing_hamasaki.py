@@ -1,26 +1,25 @@
 import numpy as np
-from numpy.lib.type_check import asscalar
 from pycubicspline import *
 
-class SignalProcessor_hamasaki():
+class SignalProcessorHamasaki():
     """
     A class that packages various types of signal processing for OCT.
     """
     c = 2.99792458e8  # Speed of light in vacuum [m/sec].
 
-    def __init__(self,wl,n,xmax,sl):
+    def __init__(self,wavelength,n,xmax,signal_length):
         """
         Initialization and preprocessing of parameters.
 
         Parameters
         ----------
-        wl : `1d-ndarray`, required
+        wavelength : `1d-ndarray`, required
             Wavelength axis[nm] The given spectra must be sampled evenly in wavelength space.
         n : `float`, required
             Refractive index of the sample .
         xmax : 'float', required
             maximum value of depth axis[mm]
-        sl :  `float`, required
+        signal_length :  `float`, required
             Signal length.(3 is recomended)
             The calculation result always be periodic function. 
             This parameter controls the length of the cycle.
@@ -28,11 +27,11 @@ class SignalProcessor_hamasaki():
 
         """
         # Axis conversion for resampling
-        self.__wl=wl
+        self.__wl=wavelength
         self.__depth=np.linspace(0, xmax, int(1e5))
-        self.__time=2*(n*self.__depth*1e-3)/SignalProcessor_hamasaki.c
-        self.__freq=(SignalProcessor_hamasaki.c/(self.__wl*1e9))*1e6
-        self.__freq_fixed=np.linspace(np.amin(self.__freq)-1,np.amax(self.__freq)+1,int(len(self.__wl)*sl))
+        self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
+        self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
+        self.__freq_fixed=np.linspace(np.amin(self.__freq)-1,np.amax(self.__freq)+1,int(len(self.__wl)*signal_length))
         #initialize data container
         self.__ref=None
 
@@ -42,7 +41,7 @@ class SignalProcessor_hamasaki():
         """
         return self.__depth
 
-    def Resampling(self,sp):
+    def resample(self,sp):
         """Resampling function for OCT.
     
         Parameters
@@ -58,6 +57,9 @@ class SignalProcessor_hamasaki():
         Requirement
         -------
         pycubicspline.py (from pycubicspline import *)
+        
+        If pycubicspline.py isn't in the same directory, this program won't works.
+        If you don't have the file, you can download from https://github.com/AtsushiSakai/pycubicspline 
         """
         spline=Spline(np.flipud(self.__freq),np.flipud(sp))
         itf_fixed=[spline.calc(i) for i in self.__freq_fixed]
@@ -66,7 +68,7 @@ class SignalProcessor_hamasaki():
                 itf_fixed[i]=0
         return itf_fixed
 
-    def set_reference(self,ref):
+    def set_reference(self,reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
 
         Parameters
@@ -74,9 +76,9 @@ class SignalProcessor_hamasaki():
         spectra : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
         """
-        self.__ref=self.Resampling(ref)
+        self.__ref=self.Resampling(reference)
 
-    def BGsubtraction(self,sp):
+    def remove_background(self,sp):
         """Subtract reference light from interference light.
     
         Parameters
@@ -92,7 +94,7 @@ class SignalProcessor_hamasaki():
         """
         return sp-np.multiply(self.__ref,(np.amax(sp)/np.amax(self.__ref)))
 
-    def inverse_ft(self,sp):
+    def apply_inverse_ft(self,sp):
         """Apply inverse ft to the spectra and convert it to distance data
 
         Parameters
@@ -132,9 +134,9 @@ class SignalProcessor_hamasaki():
         """
         if self.__ref==None:
             self.set_reference(reference)
-        itf=self.Resampling(interference)
-        rmv=self.BGsubtraction(itf)
-        ascan=self.inverse_ft(rmv)
+        itf=self.resample(interference)
+        rmv=self.remove_background(itf)
+        ascan=self.apply_inverse_ft(rmv)
         return self.__depth,ascan
 
 if __name__=="__main__":
@@ -149,7 +151,7 @@ if __name__=="__main__":
     bg=data.loc[st:ed,'bg'] # Background spectra
     sp=data.loc[st:ed,'sp'] # Sample spectra
 
-    SigPro=SignalProcessor_hamasaki(wl,1.4,0.2,3)
+    SigPro=SignalProcessorHamasaki(wl,1.4,0.2,3)
     depth,result=SigPro.generate_ascan(sp,bg)
     plt.plot(depth,result)
     plt.show()
