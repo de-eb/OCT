@@ -1,5 +1,5 @@
 import numpy as np
-from pycubicspline import *
+from pycubicspline import Spline
 
 class SignalProcessorHamasaki():
     """
@@ -7,7 +7,7 @@ class SignalProcessorHamasaki():
     """
     c = 2.99792458e8  # Speed of light in vacuum [m/sec].
 
-    def __init__(self,wavelength,n,xmax,signal_length):
+    def __init__(self,wavelength,n,depth_max,signal_length):
         """
         Initialization and preprocessing of parameters.
 
@@ -28,7 +28,7 @@ class SignalProcessorHamasaki():
         """
         # Axis conversion for resampling
         self.__wl=wavelength
-        self.__depth=np.linspace(0, xmax, int(1e5))
+        self.__depth=np.linspace(0, depth_max, int(1e5))
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq)-1,np.amax(self.__freq)+1,int(len(self.__wl)*signal_length))
@@ -41,7 +41,7 @@ class SignalProcessorHamasaki():
         """
         return self.__depth
 
-    def resample(self,sp):
+    def resample(self,spectra):
         """Resampling function for OCT.
     
         Parameters
@@ -56,12 +56,12 @@ class SignalProcessorHamasaki():
         
         Requirement
         -------
-        pycubicspline.py (from pycubicspline import *)
+        `pycubicspline.py`
         
-        If pycubicspline.py isn't in the same directory, this program won't works.
-        If you don't have the file, you can download from https://github.com/AtsushiSakai/pycubicspline 
+        If pycubicspline.py isn't in the same directory, this program(siganl_processing_hamasaki.py) won't works.
+        If you don't have the file, you can download it from https://github.com/AtsushiSakai/pycubicspline 
         """
-        spline=Spline(np.flipud(self.__freq),np.flipud(sp))
+        spline=Spline(np.flipud(self.__freq),np.flipud(spectra))
         itf_fixed=[spline.calc(i) for i in self.__freq_fixed]
         for i in range(len(itf_fixed)):
             if itf_fixed[i]==None:
@@ -76,9 +76,9 @@ class SignalProcessorHamasaki():
         spectra : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
         """
-        self.__ref=self.Resampling(reference)
+        self.__ref=self.resample(reference)
 
-    def remove_background(self,sp):
+    def remove_background(self,spectra):
         """Subtract reference light from interference light.
     
         Parameters
@@ -92,9 +92,9 @@ class SignalProcessorHamasaki():
         `1d-ndarray`
             interference light removed background[arb. unit]
         """
-        return sp-np.multiply(self.__ref,(np.amax(sp)/np.amax(self.__ref)))
+        return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
 
-    def apply_inverse_ft(self,sp):
+    def apply_inverse_ft(self,spectra):
         """Apply inverse ft to the spectra and convert it to distance data
 
         Parameters
@@ -110,9 +110,9 @@ class SignalProcessorHamasaki():
         """
         for  i in range(len(self.__freq_fixed)):
             if i==0:
-                result=sp[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
+                result=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
             else:
-                result+=sp[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
+                result+=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
         result/=np.amax(result)
         return abs(result)
 
