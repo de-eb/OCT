@@ -69,19 +69,19 @@ c0 = 299792458                          # speed of light in vacuum[m/sec]
 n0 = 1.00                               # refractive index of air
 n1 = 1.46                               # refractive index of csample1
 n2 = 1.55                               # refractive index of csample2
-ta1 = 150e-3                            # thickness of air
-tc1 = 40e-6                             # thickness of sample1
+ta = 150e-3                             # thickness of air
+tc1 = 45e-6                             # thickness of sample1
 tc2 = 106e-6                             # thickness of sample2
 
 # Memo : GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
-st = 762
-ed = 953
+st = 200
+ed = 667
 
 # Data loading
 name = ['wl','bg','sp']
-data = pd.read_csv('data/211116_cellophane tape on PET(bottle).csv', header=3, index_col=0, names=name)
+data = pd.read_csv('data/211007_GR.csv', header=3, index_col=0, names=name)
 wl = data.loc[st:ed,'wl']*1e-9          # wavelength
-bg = data.loc[st:ed,'bg']               # background spectra
+bg = data.loc[st:ed,'bg']              # background spectra
 sp = data.loc[st:ed,'sp']               # sample spectras
 sp = np.sqrt(sp)                        # amplitude
 
@@ -94,7 +94,7 @@ R2 = ((n0-n2)/(n2+n0))**2                # reflectance air and sample2
 T2 = 1-R2                                # transmittance
 wl_1 = wl/n1                             # wavelength in sample1
 wl_2 = wl/n2                             # wavelength in sample2
-phase_diff = (ta1%wl)/wl*2*np.pi+np.pi
+phase_diff = (ta%wl)/wl*2*np.pi+np.pi
 one_cycle = np.arange(0, 1, 1e-3)*2*np.pi
 itf = np.empty_like(wl)
 ref = np.empty_like(wl)
