@@ -64,18 +64,13 @@ def inverse_ft(freq, itf, xmax, n):
             result += itf[i*10]*np.sin(2*np.pi*time*freq[i*10]*1e12)
     result /= len(freq)
     return depth_axis, abs(result)
-# Constants
-c0 = 299792458                          # speed of light in vacuum[m/sec]
-n0 = 1.00                               # refractive index of air
-n1 = 1.46                               # refractive index of csample1
-n2 = 1.55                               # refractive index of csample2
-ta1 = 150e-3                            # thickness of air
-tc1 = 40e-6                             # thickness of sample1
-tc2 = 106e-6                             # thickness of sample2
+
+# refractive index of sample
+n = 1.46                               
 
 # Memo : GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
-st = 346
-ed = 506
+st = 320
+ed = 532
 
 # Data loading
 name = ['wl','bg','sp']
@@ -91,7 +86,7 @@ itf_new = sp - bg
 freq_fixed,itf_fixed = Resampling(wl,itf_new)
 
 # Generate ascan
-depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.2, n1)
+depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.2, n)
 
 # Show graphs
 plt.plot(wl*1e9, sp)
