@@ -1,5 +1,6 @@
 import numpy as np
 from pycubicspline import Spline
+from scipy import interpolate
 
 class SignalProcessorHamasaki():
     """
@@ -32,6 +33,7 @@ class SignalProcessorHamasaki():
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq)-1,np.amax(self.__freq)+1,int(len(self.__wl)*signal_length))
+        self.__freq_fixed2=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
         #initialize data container
         self.__ref=None
 
@@ -67,6 +69,22 @@ class SignalProcessorHamasaki():
             if itf_fixed[i]==None:
                 itf_fixed[i]=0
         return itf_fixed
+
+    def resample2(self, spectra):
+        """ Resamples the spectra.
+
+        Parameters
+        ----------
+        spectra : `1d-ndarray`, required
+            Spectra sampled evenly in the wavelength space.
+
+        Returns
+        -------
+        `1d-ndarray`
+            Spectra resampled evenly in the frequency space.
+        """
+        func = interpolate.interp1d(self.__freq, spectra, kind='cubic')
+        return func(self.__freq_fixed2)
 
     def set_reference(self,reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
@@ -143,10 +161,10 @@ if __name__=="__main__":
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    st = 333
-    ed = 533
+    st = 762
+    ed = 953
     name=['wl','bg','sp']
-    data=pd.read_csv('data/211103_0.csv', header=3, index_col=0,names=name)
+    data=pd.read_csv('data/210924_0.csv', header=3, index_col=0,names=name)
     wl=data.loc[st:ed,'wl'] # Wavelength
     bg=data.loc[st:ed,'bg'] # Background spectra
     sp=data.loc[st:ed,'sp'] # Sample spectra
@@ -154,4 +172,6 @@ if __name__=="__main__":
     SigPro=SignalProcessorHamasaki(wl,1.4,0.2,3)
     depth,result=SigPro.generate_ascan(sp,bg)
     plt.plot(depth,result)
+    plt.xlabel('depth[mm]',fontsize=17)
+    plt.ylabel('intensity[arb. unit]',fontsize=17)
     plt.show()
