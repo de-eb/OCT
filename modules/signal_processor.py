@@ -149,7 +149,8 @@ class SignalProcessor():
         self.__ref_fix = self.resample(spectra)
         return self.__ref_fix
     
-    def normalize(self, x, axis=None) -> np.ndarray:
+    @staticmethod
+    def normalize(array, axis=None) -> np.ndarray:
         """ Min-Max Normalization.
 
         Parameters
@@ -166,9 +167,26 @@ class SignalProcessor():
         `1d-ndarray`
             An array normalized between a minimum value of 0 and a maximum value of 1.
         """
-        min = x.min(axis=axis, keepdims=True)
-        max = x.max(axis=axis, keepdims=True)
-        return (x-min)/(max-min)
+        min = array.min(axis=axis, keepdims=True)
+        max = array.max(axis=axis, keepdims=True)
+        return (array-min)/(max-min)
+    
+    @staticmethod
+    def moving_average(array, filter_size):
+        """ Moving average filter with convolutional integration
+        """
+        v = np.ones(filter_size)/filter_size
+        return np.convolve(array, v, mode='same')
+    
+    @staticmethod
+    def median(array, filter_size):
+        """ 1-dimensional median filter
+        """
+        w = len(array)
+        idx = np.fromfunction(lambda i, j: i + j, (filter_size, w), dtype=np.int) - filter_size // 2
+        idx[idx < 0] = 0
+        idx[idx > w - 1] = w - 1
+        return np.median(array[idx], axis=0)
     
     def generate_ascan(self, interference, reference) -> np.ndarray:
         """ Performs a series of signal processing in one step.
@@ -376,7 +394,7 @@ class DataHandler():
             title_text=ylabel, title_font=dict(size=14,), color='#554D51', mirror=True,
             ticks=ticksdir, exponentformat='SI', showexponent='last')
         fig.update_layout(
-            template='simple_white', autosize=True, margin=dict(t=20, b=60, l=20, r=0),
+            template='simple_white', autosize=True, margin=dict(t=10, b=60, l=20, r=20),
             font=dict(family='Arial', size=14, color='#554D51'),
             legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
         # Output
@@ -398,5 +416,5 @@ if __name__ == "__main__":
     ascan = sp.generate_ascan(data['spectra'], data['reference'])
 
     # Show Graph
-    dh.draw_graph(format='A-scan', y=[ascan,], x=[sp.depth*1e6], name=['Numpy IFFT',])
-    # dh.draw_graph(mode='B-scan', x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
+    dh.draw_graph(format='ascan', y=[ascan,], x=[sp.depth*1e6], name=['Numpy IFFT',])
+    # dh.draw_graph(format='bscan', x=sp.depth*1e6, y=np.arange(300), z=ascan.T, zmax=0.004)
