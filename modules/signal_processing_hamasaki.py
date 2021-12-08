@@ -32,8 +32,7 @@ class SignalProcessorHamasaki():
         self.__depth=np.linspace(0, depth_max, int(1e5))
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
-        self.__freq_fixed=np.linspace(np.amin(self.__freq)-1,np.amax(self.__freq)+1,int(len(self.__wl)*signal_length))
-        self.__freq_fixed2=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
+        self.__freq_fixed=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
         #initialize data container
         self.__ref=None
 
@@ -43,34 +42,7 @@ class SignalProcessorHamasaki():
         """
         return self.__depth
 
-    def resample(self,spectra):
-        """Resampling function for OCT.
-    
-        Parameters
-        ----------
-        sp : `1d-ndarray`
-            measured interference data[arb. unit]
-        
-        Returns
-        -------
-        itf_fixed : `1d-ndarray`
-            Spectra resampled evenly in the frequency space.
-        
-        Requirement
-        -------
-        `pycubicspline.py`
-        
-        If pycubicspline.py isn't in the same directory, this program(siganl_processing_hamasaki.py) won't works.
-        If you don't have the file, you can download it from https://github.com/AtsushiSakai/pycubicspline 
-        """
-        spline=Spline(np.flipud(self.__freq),np.flipud(spectra))
-        itf_fixed=[spline.calc(i) for i in self.__freq_fixed]
-        for i in range(len(itf_fixed)):
-            if itf_fixed[i]==None:
-                itf_fixed[i]=0
-        return itf_fixed
-
-    def resample2(self, spectra):
+    def resample(self, spectra):
         """ Resamples the spectra.
 
         Parameters
@@ -84,7 +56,7 @@ class SignalProcessorHamasaki():
             Spectra resampled evenly in the frequency space.
         """
         func = interpolate.interp1d(self.__freq, spectra, kind='cubic')
-        return func(self.__freq_fixed2)
+        return func(self.__freq_fixed)
 
     def set_reference(self,reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
