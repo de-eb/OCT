@@ -1,13 +1,12 @@
 import os
 import glob
 import datetime
-from re import X
 import pandas as pd
 import numpy as np
 from scipy import special, interpolate
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import datapane as dp
+# import datapane as dp
 
 class SignalProcessor():
     """ Class that summarizes the various types of signal processing for OCT.
@@ -399,7 +398,8 @@ class DataHandler():
             legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
         # Output
         if upload_name is not None:  # Upload to https://datapane.com (only when online)
-            dp.Report(dp.Plot(fig),).upload(name=upload_name, open=True)
+            # dp.Report(dp.Plot(fig),).upload(name=upload_name, open=True)
+            pass
         else:  # View offline
             fig.show()
 
