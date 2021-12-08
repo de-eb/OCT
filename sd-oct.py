@@ -10,7 +10,7 @@ from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
-from modules.signal_processor import SignalProcessor
+from modules.signal_processor import SignalProcessor, DataHandler
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -42,7 +42,7 @@ def profile_beam(q):
         try: key = q.get(block=False)
         except Empty: pass
         else:
-            if key == ' ':  # 'Space' key to save image
+            if key == 'alt':  # 'Alt' key to save image
                 cv2.imwrite('data/image.png', img)
                 print("The image was saved.")
             elif key == 'escape':  # ESC key to exit
@@ -65,6 +65,7 @@ if __name__ == "__main__":
     stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
     pma = Pma12(dev_id=5)  # Spectrometer
     sp = SignalProcessor(pma.wavelength[st:ed], 1.0)
+    dh = DataHandler()
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     limit = 300000  # Stage operation limit [nm]
     x, y, z = 0, 0, 0  # Stage position
     ref = None  # Reference spectra
-    itf = np.zeros((pma.wavelength.size, 300), dtype=float)  # Interference spectra
+    itf = np.zeros((pma.wavelength.size, 1), dtype=float)  # Interference spectra
     err = False
 
     # Graph initialization
@@ -146,14 +147,8 @@ if __name__ == "__main__":
         
         if g_key == 'alt':  # 'Alt' key to save single data
             data = pma.read_spectra(averaging=100)
-            with open('data/data.csv', mode='w') as f:
-                f.write('date,{}\nmemo,\n'.format(datetime.datetime.now()))
-            df = pd.DataFrame(
-                data=np.vstack((pma.wavelength, data)).T,
-                columns=['Wavelength [nm]', 'Intensity [-]'],
-                dtype='float')
-            df.to_csv('data/data.csv', mode='a')
-            print("The spectra were saved.")
+            dh.save_spectra(wavelength=pma.wavelength, spectra=data)
+            plt.savefig('data/graph.png')
 
         # 'Space' key to Start measurement
         elif g_key == ' ':
@@ -169,15 +164,7 @@ if __name__ == "__main__":
                 print("Measurement complete.")
 
                 # Save data
-                with open('data/data.csv', mode='w') as f:
-                    f.write('date,{}\nmemo,Stage step = {}nm\n'.format(datetime.datetime.now(), step))
-                df = pd.DataFrame(
-                    data=np.hstack((np.vstack((pma.wavelength, ref)).T, itf)),
-                    columns=['Wavelength [nm]','Reference [-]']+['Interference{} [-]'.format(i) for i in range(itf.shape[1])],
-                    dtype='float')
-                df.to_csv('data/data.csv', mode='a')
-                plt.savefig('data/graph.png')
-                print("The spectra were saved.")
+                dh.save_spectra(wavelength=pma.wavelength, reference=ref, spectra=itf)
 
         g_key = None
         plt.pause(0.0001)
