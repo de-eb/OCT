@@ -241,7 +241,7 @@ class SignalProcessorHamasaki():
         """
         # Axis conversion for resampling
         self.__wl=wavelength
-        self.__depth=np.linspace(0, depth_max, int(1e5))
+        self.__depth=np.linspace(0, depth_max, int(200))
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
@@ -252,7 +252,7 @@ class SignalProcessorHamasaki():
     def depth(self):
         """ Horizontal axis after FFT (depth [m])
         """
-        return self.__depth
+        return self.__depth*1e-3
 
     def resample(self, spectra):
         """ Resamples the spectra.
@@ -334,12 +334,12 @@ class SignalProcessorHamasaki():
             Light intensity data in the time domain (i.e. A-scan).
             The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
-        if self.__ref==None:
+        if self.__ref is None:
             self.set_reference(reference)
         itf=self.resample(interference)
         rmv=self.remove_background(itf)
         ascan=self.apply_inverse_ft(rmv)
-        return self.__depth,ascan
+        return ascan
 
 
 class DataHandler():

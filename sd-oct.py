@@ -25,8 +25,6 @@ plt.rcParams['font.size'] = 14
 plt.rcParams['axes.linewidth'] = 1.0
 
 # Globals
-st = 762  # Calculation range (Start)
-ed = 953  # Calculation range (End)
 g_key = None  # Pressed key
 
 
@@ -54,14 +52,10 @@ def on_key(event, q):
     global g_key
     g_key = event.key
     q.put(g_key)
-    print(g_key)
 
 
 if __name__ == "__main__":
     #Constants
-    n = 1.4 # Refractive index
-    xmax = 0.2 # maximum value of depth axis[mm]
-    sl = 3 #Signal length
     st = 762  # Calculation range (Start) of spectrum [nm]
     ed = 953  # Calculation range (End) of spectrum [nm]
 
@@ -82,6 +76,7 @@ if __name__ == "__main__":
     x, y, z = 0, 0, 0  # Stage position
     ref = None  # Reference spectra
     itf = np.zeros((pma.wavelength.size, 1), dtype=float)  # Interference spectra
+    ascan = np.zeros_like(sp.depth)
     err = False
 
     # Graph initialization
@@ -96,7 +91,7 @@ if __name__ == "__main__":
     ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*1e6, itf[st:ed,0], label='Numpy fft')
+    ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
     ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     
     # Device initialization
