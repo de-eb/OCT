@@ -11,7 +11,6 @@ from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
 from modules.signal_processor import SignalProcessor, DataHandler
-
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
 plt.rcParams['xtick.direction'] = 'in'
@@ -59,6 +58,13 @@ def on_key(event, q):
 
 
 if __name__ == "__main__":
+    #Constants
+    n = 1.4 # Refractive index
+    xmax = 0.2 # maximum value of depth axis[mm]
+    sl = 3 #Signal length
+    st = 762  # Calculation range (Start) of spectrum [nm]
+    ed = 953  # Calculation range (End) of spectrum [nm]
+
 
     # Device settings
     stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
