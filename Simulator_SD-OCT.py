@@ -67,8 +67,8 @@ def inverse_ft(freq, itf, xmax, n):
 # Constants
 c0 = 299792458                          # speed of light in vacuum[m/sec]
 n0 = 1.00                               # refractive index of air
-n1 = 1.38                               # refractive index of csample1
-n2 = 1.33                               # refractive index of csample2
+n1 = 1.46                               # refractive index of csample1
+n2 = 1.51                               # refractive index of csample2
 ta1 = 150e-3                            # thickness of air
 ta2 = 10e-6                             # thickness between samples
 tc1 = 20e-6                             # thickness of sample1
@@ -137,12 +137,13 @@ freq_fixed,itf_fixed = Resampling(wl,itf_new)
 depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.1, n1)
 
 # Show graphs
-plt.plot(wl*1e9, sp**2, lw=1)
-plt.plot(wl*1e9, itf, lw=1)
+plt.plot(wl*1e9, sp**2, lw=2)
+plt.plot(wl*1e9, itf, lw=2)
 plt.title('Interference',fontsize=20)
 plt.xlabel('Wavelength [nm]',fontsize=20)
 plt.ylabel('Intensity [a.u.]',fontsize=20)
 plt.xticks(np.arange(400, 701, 100), fontsize=15)
+plt.yticks(np.arange(0, 1801, 500), fontsize=15)
 plt.show()
 
 fig1 = plt.figure(figsize=(7, 7))
