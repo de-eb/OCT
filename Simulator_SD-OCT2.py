@@ -65,15 +65,15 @@ def inverse_ft(freq, itf, xmax, n):
     result /= len(freq)
     return depth_axis, abs(result)
 # Constants
-c0 = 299792458                          # speed of light in vacuum[m/sec]
-n0 = 1.00                               # refractive index of air
+c0 = 299792458                           # speed of light in vacuum[m/sec]
+n0 = 1.00                                # refractive index of air
 n1 = 1.336                               # refractive index of csample1
 n2 = 1.370                               # refractive index of csample2
 n3 = 1.337                               # refractive index of csample3
-ta = 150e-3                             # thickness of air
-tc1 = 10e-6                             # thickness of sample1
-tc2 = 30e-6                             # thickness of sample2
-tc3 = 45e-6                             # thickness of sample3
+ta = 150e-3                              # thickness of air
+tc1 = 10e-6                              # thickness of sample1
+tc2 = 30e-6                              # thickness of sample2
+tc3 = 45e-6                              # thickness of sample3
 
 # Memo : GR...st=200 ed=667 (350~700) WH...st=200 ed=900 (350~860) FL...st=404 ed=613
 st = 200
@@ -82,10 +82,10 @@ ed = 667
 # Data loading
 name = ['wl','bg','sp']
 data = pd.read_csv('data/211007_GR.csv', header=3, index_col=0, names=name)
-wl = data.loc[st:ed,'wl']*1e-9          # wavelength
-bg = data.loc[st:ed,'bg']              # background spectra
-sp = data.loc[st:ed,'sp']               # sample spectras
-sp = np.sqrt(sp)                        # amplitude
+wl = data.loc[st:ed,'wl']*1e-9           # wavelength
+bg = data.loc[st:ed,'bg']                # background spectra
+sp = data.loc[st:ed,'sp']                # sample spectras
+sp = np.sqrt(sp)                         # amplitude
 
 # Calculation base on constants
 R0 = ((n1-n0)/(n0+n1))**2                # reflectance air and sample1
@@ -113,17 +113,17 @@ for i in range(len(wl)):
 
     # Light throught the 1st sample
     lp1 = (((2*tc1)%wl_1.values[i])/wl_1.values[i])*2*np.pi
-    light1 = sp.values[i]*T0**2*R1*np.sin(one_cycle+phase_diff.values[i]+lp1+np.pi)
+    light1 = sp.values[i]*T0**2*R1*np.sin(one_cycle+phase_diff.values[i]+lp1+np.pi)*0.95
 
     # Light throught the 2nd sample
     lp2 = (((2*tc2)%wl_2.values[i])/wl_2.values[i])*2*np.pi
-    light2 = sp.values[i]*(T0**2)*(T1**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2)*0.97
+    light2 = sp.values[i]*(T0**2)*(T1**2)*R2*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2)*0.7
 
     # Light throught the 3rd sample
     lp3 = (((2*tc3)%wl_3.values[i])/wl_3.values[i])*2*np.pi
     light3 = sp.values[i]*(T0**2)*(T1**2)*(T2**2)*R3*np.sin(one_cycle+phase_diff.values[i]+lp1+lp2+lp3)*0.3
 
-    check = (light_ref+light_s1+light1+light2+light3)**2     # sample=2
+    check = (light_ref+light_s1+light1+light2+light3)**2     
     reference = light_ref**2
 
     itf[i] = np.amax(check)
@@ -139,24 +139,26 @@ freq_fixed,itf_fixed = Resampling(wl,itf_new)
 depth,result = inverse_ft(freq_fixed*1e-9, itf_fixed, 0.1, n1)
 
 # Show graphs
-plt.plot(wl*1e9, sp**2)
-plt.plot(wl*1e9, itf)
-plt.title('Interference',fontsize=18)
-plt.xlabel('Wavelength [nm]',fontsize=16)
-plt.ylabel('Intensity [-]',fontsize=16)
+plt.plot(wl*1e9, sp**2, lw=1)
+# plt.plot(wl*1e9, itf, lw=1)
+plt.title('Interference',fontsize=20)
+plt.xlabel('Wavelength [nm]',fontsize=20)
+plt.ylabel('Intensity [a.u.]',fontsize=20)
+plt.xticks(np.arange(400, 701, 100), fontsize=15)
+plt.tick_params(labelsize=15)
 plt.show()
 
 fig1 = plt.figure(figsize=(7, 7))
 plt.subplots_adjust(wspace=0.4, hspace=0.4)
 ax1 = fig1.add_subplot(211)
 ax1.plot(freq_fixed*1e-9, itf_fixed)
-ax1.set_title('Resampling',fontsize=18)
-ax1.set_xlabel('Frequency [THz]',fontsize=16)
-ax1.set_ylabel('Intensity [-]',fontsize=16)
+ax1.set_title('Resampling',fontsize=20)
+ax1.set_xlabel('Frequency [THz]',fontsize=20)
+ax1.set_ylabel('Intensity [a.u.]',fontsize=20)
 
 ax2 = fig1.add_subplot(212)
-ax2.plot(depth, result)
-ax2.set_title('A-scan',fontsize=18)
-ax2.set_xlabel('Depth [mm]',fontsize=16)
-ax2.set_ylabel('Intensity [-]',fontsize=16)
+ax2.plot(depth*1e3, result)
+ax2.set_xlabel('Depth [μm]',fontsize=20)
+ax2.set_ylabel('Intensity [a.u.]',fontsize=20)
+ax2.tick_params(labelsize=15)
 plt.show()
