@@ -6,7 +6,6 @@ import numpy as np
 from scipy import special, interpolate
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-# import datapane as dp
 
 class SignalProcessor():
     """ Class that summarizes the various types of signal processing for OCT.
@@ -351,7 +350,7 @@ class DataHandler():
         """
         pass
 
-    def save_spectra(self, wavelength, reference=None, spectra=None, file_path=None, memo=''):
+    def save_spectra(self, wavelength, reference=None, spectra=None, file_name=None, memo=''):
         """ Save the spectral data in a uniform format.
 
         Parameters
@@ -383,19 +382,12 @@ class DataHandler():
                 columns += ['Spectra{} [-]'.format(i) for i in range(spectra.shape[1])]
             data = np.hstack((data,spectra))
         df = pd.DataFrame(data=data, columns=columns, dtype='float')
-        # File numbering
-        timestamp = datetime.datetime.now()
-        if file_path is None:
-            files = [os.path.basename(p) for p in glob.glob('data/*') if os.path.isfile(p)]
-            tag = timestamp.strftime('%y%m%d')
-            i = 0
-            while tag + '_{}.csv'.format(i) in files: i+=1
-            file_path = 'data/' + tag + '_{}.csv'.format(i)
         # Save
-        with open(file_path, mode='w') as f:
-            f.write('date,{}\nmemo,{}\n'.format(timestamp.strftime('%Y-%m-%d %H:%M:%S'), memo))
-        df.to_csv(file_path, mode='a')
-        print("Saved the spectra to {} .".format(file_path))
+        file_name = self.generate_filename('csv')
+        with open(file_name, mode='w') as f:
+            f.write('date,{}\nmemo,{}\n'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), memo))
+        df.to_csv(file_name, mode='a')
+        print("Saved the spectra to {} .".format(file_name))
     
     def load_spectra(self, file_path, wavelength_range=[0,2000]):
         """ Load the spectra. The data format is the same as the one saved by `self.save_spectra`.
@@ -459,7 +451,7 @@ class DataHandler():
                 dataset['wl_'+col] = wl
         return dataset
     
-    def draw_graph(self, format, upload_name=None, **kwargs):
+    def draw_graph(self, format, **kwargs):
         """ Draw a graph.
 
         Parameters
@@ -525,11 +517,32 @@ class DataHandler():
             font=dict(family='Arial', size=14, color='#554D51'),
             legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
         # Output
-        if upload_name is not None:  # Upload to https://datapane.com (only when online)
-            # dp.Report(dp.Plot(fig),).upload(name=upload_name, open=True)
-            pass
-        else:  # View offline
-            fig.show()
+        file_name = self.generate_filename('html')
+        fig.write_html(file_name, include_plotlyjs='cdn')
+
+    @staticmethod
+    def generate_filename(extension, directory='data'):
+        """ Automatically generates unique file name that include relative path and extension.
+        This prevents overwriting of already existing measurement data, etc.
+
+        Parameters
+        ----------
+        extension : `str`, required
+            File extension to be added to file name.
+        directory : `str`
+            Relative path to be appended to the file name.
+        
+        Returns
+        -------
+        filename : `str`
+            File name containing relative path and extension.
+        """
+        timestamp = datetime.datetime.now()
+        files = [os.path.basename(p) for p in glob.glob('{}/*'.format(directory)) if os.path.isfile(p)]
+        tag = timestamp.strftime('%y%m%d')
+        i = 0
+        while '{}_{}.{}'.format(tag,i,extension) in files: i+=1
+        return '{}{}_{}.{}'.format(directory,tag,i,extension)
 
 
 if __name__ == "__main__":
