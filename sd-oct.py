@@ -3,14 +3,15 @@ from multiprocessing import Process, Queue
 from queue import Empty
 import numpy as np
 import cv2
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
 from modules.ncm6212c import Ncm6212c
 from modules.artcam130mi import ArtCam130
-from modules.signal_processor import SignalProcessor, DataHandler
+from modules.signal_processor import SignalProcessor as Processor
+import modules.data_handler as dh
+
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
 plt.rcParams['xtick.direction'] = 'in'
@@ -40,8 +41,9 @@ def profile_beam(q):
         except Empty: pass
         else:
             if key == 'alt':  # 'Alt' key to save image
-                cv2.imwrite('data/image.png', img)
-                print("The image was saved.")
+                file_path = dh.generate_filename('jpg')
+                cv2.imwrite(file_path, img)
+                print("Saved the image to {}.".format(file_path))
             elif key == 'escape':  # ESC key to exit
                 break
     camera.close()
@@ -64,8 +66,7 @@ if __name__ == "__main__":
     stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
     stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
     pma = Pma12(dev_id=5)  # Spectrometer
-    sp = SignalProcessor(pma.wavelength[st:ed], 1.0)
-    dh = DataHandler()
+    sp = Processor(pma.wavelength[st:ed], 1.0)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -149,7 +150,9 @@ if __name__ == "__main__":
         if g_key == 'alt':  # 'Alt' key to save single data
             data = pma.read_spectra(averaging=100)
             dh.save_spectra(wavelength=pma.wavelength, spectra=data)
-            plt.savefig('data/graph.png')
+            file_path = dh.generate_filename('png')
+            plt.savefig(file_path)
+            print("Saved the graph to {}.".format(file_path))
 
         # 'Space' key to Start measurement
         elif g_key == ' ':

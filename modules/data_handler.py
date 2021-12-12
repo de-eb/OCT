@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def save_spectra(wavelength, reference=None, spectra=None, file_name=None, memo=''):
+def save_spectra(wavelength, reference=None, spectra=None, file_path=None, memo=''):
     """ Save the spectral data in a uniform format.
 
     Parameters
@@ -44,11 +44,11 @@ def save_spectra(wavelength, reference=None, spectra=None, file_name=None, memo=
         data = np.hstack((data,spectra))
     df = pd.DataFrame(data=data, columns=columns, dtype='float')
     # Save
-    file_name = generate_filename('csv')
-    with open(file_name, mode='w') as f:
+    file_path = generate_filename('csv')
+    with open(file_path, mode='w') as f:
         f.write('date,{}\nmemo,{}\n'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), memo))
-    df.to_csv(file_name, mode='a')
-    print("Saved the spectra to {} .".format(file_name))
+    df.to_csv(file_path, mode='a')
+    print("Saved the spectra to {} .".format(file_path))
 
 
 def load_spectra(file_path, wavelength_range=[0,2000]):
