@@ -1,4 +1,3 @@
-import datetime
 from multiprocessing import Process, Queue
 from queue import Empty
 import numpy as np
