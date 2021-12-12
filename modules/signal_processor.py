@@ -156,7 +156,7 @@ class SignalProcessor():
         
         Returns
         -------
-        `1d-ndarray`
+        `ndarray`
             An array normalized between a minimum value of 0 and a maximum value of 1.
         """
         min = array.min(axis=axis, keepdims=True)
