@@ -180,6 +180,17 @@ class SignalProcessor():
         idx[idx > w - 1] = w - 1
         return np.median(array[idx], axis=0)
     
+    @staticmethod
+    def low_pass(array, cutoff):
+        """ Digital low pass filter
+        """
+        n = len(array)
+        fft = np.fft.fft(array)
+        fft = fft/(n/2)
+        fft[0] = fft[0]/2
+        fft[(np.arange(n)>cutoff)] = 0 + 0j
+        return np.real(np.fft.ifft(fft)*n)
+    
     def generate_ascan(self, interference, reference) -> np.ndarray:
         """ Performs a series of signal processing in one step.
 
