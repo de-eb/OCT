@@ -115,7 +115,7 @@ def load_dataset(sheet_name, wavelength=None):
     return dataset
 
 
-def draw_graph(format, **kwargs):
+def draw_graph(format, save=False, file_path=None, **kwargs):
     """ Draw a graph.
 
     Parameters
@@ -178,8 +178,12 @@ def draw_graph(format, **kwargs):
         font=dict(family='Arial', size=14, color='#554D51'),
         legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
     # Output
-    file_name = generate_filename('html')
-    fig.write_html(file_name, include_plotlyjs='cdn', auto_open=True)
+    if save:
+        if file_path is None:
+            file_path = generate_filename('html')
+        fig.write_html(file_path, include_plotlyjs='cdn', auto_open=True)
+    else:
+        fig.show()
 
 
 def generate_filename(extension, directory='data'):
