@@ -1,3 +1,4 @@
+import time
 from multiprocessing import Process, Queue
 from queue import Empty
 import numpy as np
@@ -60,7 +61,6 @@ if __name__ == "__main__":
     st = 762  # Calculation range (Start) of spectrum [nm]
     ed = 953  # Calculation range (End) of spectrum [nm]
 
-
     # Device settings
     stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
     stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
@@ -71,11 +71,11 @@ if __name__ == "__main__":
     proc1.start()
 
     # Parameter initialization
-    step = 1000  # Stage operation interval [nm]
+    step = 10000  # Stage operation interval [nm]
     limit = 300000  # Stage operation limit [nm]
-    x, y, z = 0, 0, 0  # Stage position
+    x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
-    itf = np.zeros((pma.wavelength.size, 1), dtype=float)  # Interference spectra
+    itf = np.zeros((pma.wavelength.size, int((limit-x)/step)), dtype=float)  # Interference spectra
     ascan = np.zeros_like(sp.depth)
     err = False
 
@@ -106,18 +106,18 @@ if __name__ == "__main__":
         # Manual operation of Piezo stages
         if g_key in ['8', '2', '6', '4', '+', '-', '5', '0']:
             # Sample
-            if g_key == '8': y += 100*step  # Up
-            elif g_key == '2': y -= 100*step  # Down
-            elif g_key == '6': x += 100*step  # Right
-            elif g_key == '4': x -= 100*step  # Left
-            elif g_key == '5': x, y = 0, 0  # Return to origin
+            if g_key == '8': y += step  # Up
+            elif g_key == '2': y -= step  # Down
+            elif g_key == '6': x += step  # Right
+            elif g_key == '4': x -= step  # Left
+            elif g_key == '5': x, y = 100000, 0  # Return to origin
             # Reference mirror
-            elif g_key == '-': z -= 100*step  # Backward
-            elif g_key == '+': z += 100*step  # Forward
+            elif g_key == '-': z -= step  # Backward
+            elif g_key == '+': z += step  # Forward
             elif g_key == '0': z = 0  # Return to origin
             # Drive
             stage_m.absolute_move(z)
-            stage_s.absolute_move('A', x)
+            print(stage_s.absolute_move('A', x))
             stage_s.absolute_move('B', y)
             print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
 
@@ -158,12 +158,16 @@ if __name__ == "__main__":
             if ref is None:
                 print("No reference data available.")
             else:
+                x = 100000
                 print("Measurement start.")
                 for i in range(itf.shape[1]):
-                    print("Stage position [nm]: x={}".format(x))
-                    itf[:,i] = pma.read_spectra(averaging=5)  # update interference data
-                    x += step
                     stage_s.absolute_move('A', x)
+                    print("Stage position [nm]: x={}".format(x))
+                    x += step
+                    time.sleep(0.1)
+                    itf[:,i] = pma.read_spectra(averaging=100)  # update interference data
+                x = 100000
+                stage_s.absolute_move('A', x)
                 print("Measurement complete.")
 
                 # Save data
