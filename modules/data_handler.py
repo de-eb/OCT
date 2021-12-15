@@ -125,42 +125,50 @@ def draw_graph(format, save=False, file_path=None, **kwargs):
             'spectra' : Line chart with wavelength[nm] vs intensity[-].
             'ascan' : Line chart with depth[μm] vs intensity[-].
             'bscan' : Heatmap with depth[μm] vs scanning distance[μm]  vs intensity[-].
-    x : `any`
-        Data to be used as the x-axis of the graph.
-        If 'spectra' or 'ascan', specify a `list` of `1d-ndarray` to display multiple charts.
-        If 'bscan', specify a `1d-ndarray`.
-    y : `any`
-        Data to be used as the y-axis of the graph.
-        If 'spectra' or 'ascan', specify a `list` of `1d-ndarray` to display multiple charts.
-        If 'bscan', specify a `1d-ndarray`.
-    z : `any`
-        Data to be used as the z-axis of the graph. If 'spectra' or 'ascan', it will not be used.
-        If 'bscan', specify a `2d-ndarray` corresponding to the x-axis and y-axis, respectively.
-    name : `any`
-        Data name. If 'spectra' or 'ascan', specify a `list` of `str` to display the legend.
-        If 'bscan', it will not be used.
+    save : `bool`
+        If True, the graph will be saved as an HTML file. Otherwise, the graph will just be displayed.
+    file_path : `str`
+        Where to save the graph. If not specified, it will be automatically numbered and stored in /data.
+    plot : `dict` or `list` of `dict`
+        Specifies the data to be plotted as a dictionary type.
+        If 'spectra' or 'ascan', multiple charts will be plotted by specifying a list of dictionaries.
+            x : `1d-ndarray`
+                Data to be used as the x-axis of the graph.
+            y : `1d-ndarray`
+                Data to be used as the y-axis of the graph.
+            z : `2d-ndarray`
+                Data to be used as the z-axis of the graph. If 'spectra' or 'ascan', it will not be used.
+            name : `any`
+                Data name. If 'spectra' or 'ascan', specify a `list` of `str` to display the legend.
+                If 'bscan', it will not be used.
+    plot2 : `dict` or `list` of `dict`
+        Specifies the data (using the 2nd axis) to be plotted as a dictionary type.
+        The usage is the same as for `plot`.
     xlabel : `str`
         If specified, x-axis name will be changed from the default.
     ylabel : `str`
         If specified, y-axis name will be changed from the default.
+    y2label : `str`
+        If specified, the 2nd y-axis name will be set.
     """
     # Plot
     if format == 'spectra' or format == 'ascan':
-        fig = make_subplots(rows=1, cols=1)
-        for i in range(len(kwargs['name'])):
-            fig.add_trace(
-                trace=go.Scatter(
-                    x=kwargs['x'][i], y=kwargs['y'][i], name=kwargs['name'][i], mode='lines'),
-                row=1, col=1)
-        xlabel, ylabel, ticksdir = 'Wavelength [nm]', 'Intensity [-]', 'inside'
+        fig = make_subplots(rows=1, cols=1, specs=[[{'secondary_y': ('plot2' in kwargs)}]])
+        for plot in kwargs['plot']:
+            fig.add_trace(trace=go.Scatter(x=plot['x'], y=plot['y'], name=plot['name'], mode='lines'), row=1, col=1)
+        if 'plot2' in kwargs:
+            for plot in kwargs['plot2']:
+                fig.add_trace(trace=go.Scatter(x=plot['x'], y=plot['y'], name=plot['name'], mode='lines'), row=1, col=1, secondary_y=True)
+        xlabel, ylabel, ticksdir = 'Wavelength [nm]', 'Intensity [a.u.]', 'inside'
         if format == 'ascan': xlabel = 'Depth [μm]'
     elif format == 'bscan':
+        plot = kwargs['plot']
         fig = go.Figure(
             data=go.Heatmap(
-                z=kwargs['z'], x=kwargs['x'], y=kwargs['y'],
-                zsmooth='fast', zmin=0, zmax=kwargs['zmax'],
+                z=plot['z'], x=plot['x'], y=plot['y'],
+                zsmooth='fast', zmin=0, zmax=plot['zmax'],
                 colorbar=dict(
-                    title=dict(text='Intensity [-]', side='right'),
+                    title=dict(text='Intensity [a.u.]', side='right'),
                     exponentformat='SI', showexponent='last'),
                 colorscale='gray',))
         xlabel, ylabel, ticksdir = 'Depth [μm]', 'Scanning length [μm]', 'outside'
@@ -173,15 +181,20 @@ def draw_graph(format, save=False, file_path=None, **kwargs):
     fig.update_yaxes(
         title_text=ylabel, title_font=dict(size=14,), color='#554D51', mirror=True,
         ticks=ticksdir, exponentformat='SI', showexponent='last')
+    if 'y2label' in kwargs:
+        fig.update_yaxes(
+            title_text=kwargs['y2label'], title_font=dict(size=14,), color='#554D51', mirror=True,
+            ticks=ticksdir, exponentformat='SI', showexponent='last', secondary_y=True)
     fig.update_layout(
         template='simple_white', autosize=True, margin=dict(t=30, b=30, l=30, r=30),
         font=dict(family='Arial', size=14, color='#554D51'),
-        legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=1, y=1))
+        legend=dict(bgcolor='rgba(0,0,0,0)', xanchor='right', yanchor='top', x=(0.9 if 'plot2' in kwargs else 1), y=1))
     # Output
     if save:
         if file_path is None:
             file_path = generate_filename('html')
         fig.write_html(file_path, include_plotlyjs='cdn', auto_open=True)
+        print("Saved the graph to {} .".format(file_path))
     else:
         fig.show()
 
