@@ -102,7 +102,7 @@ ref = np.empty_like(wl)
 
 # Calculation the interference
 for i in range(len(wl)):
-    light_ref = 30*R0*sp.values[i]*np.sin(one_cycle+phase_diff.values[i])
+    light_ref = 30*R0*sp.values[i]*np.sin(one_cycle+phase_diff.values[i]+np.pi)
 
     # Light from surface of 1st sample
     light_s1 = sp.values[i]*R0*np.sin(one_cycle+phase_diff.values[i]+np.pi)
@@ -142,8 +142,9 @@ plt.plot(wl*1e9, itf, lw=2)
 plt.title('Interference',fontsize=20)
 plt.xlabel('Wavelength [nm]',fontsize=20)
 plt.ylabel('Intensity [a.u.]',fontsize=20)
-plt.xticks(np.arange(400, 701, 100), fontsize=15)
-plt.yticks(np.arange(0, 1801, 500), fontsize=15)
+plt.xticks(np.arange(400, 801, 100), fontsize=18)
+# plt.yticks(np.arange(0, 1801, 500), fontsize=15)
+plt.yticks([])
 plt.show()
 
 fig1 = plt.figure(figsize=(7, 7))
