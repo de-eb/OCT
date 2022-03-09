@@ -213,7 +213,7 @@ class ArtCamError(Exception):
 
 if __name__ == "__main__":
 
-    camera = ArtCam130(exposure_time=2000, scale=0.8)
+    camera = ArtCam130(exposure_time=2000, scale=0.8, auto_iris=1)
     camera.open()
     while True:
         img = camera.capture(grid=True)

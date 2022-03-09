@@ -31,7 +31,7 @@ g_key = None  # Pressed key
 
 def profile_beam(q):
 
-    camera = ArtCam130(exposure_time=2800, scale=0.8)
+    camera = ArtCam130(exposure_time=100000, scale=0.8, auto_iris=0)
     camera.open()
     while True:
         img = camera.capture(grid=True)
@@ -58,8 +58,8 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     #Constants
-    st = 762  # Calculation range (Start) of spectrum [nm]
-    ed = 953  # Calculation range (End) of spectrum [nm]
+    st = 762  # Calculation range (Start) of spectrum
+    ed = 953  # Calculation range (End) of spectrum
 
     # Device settings
     stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     proc1.start()
 
     # Parameter initialization
-    step = 10000  # Stage operation interval [nm]
+    step = 1000  # Stage operation interval [nm]
     limit = 300000  # Stage operation limit [nm]
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
@@ -165,7 +165,7 @@ if __name__ == "__main__":
                     print("Stage position [nm]: x={}".format(x))
                     x += step
                     time.sleep(0.1)
-                    itf[:,i] = pma.read_spectra(averaging=100)  # update interference data
+                    itf[:,i] = pma.read_spectra(averaging=10)  # update interference data
                 x = 100000
                 stage_s.absolute_move('A', x)
                 print("Measurement complete.")
