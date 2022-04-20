@@ -1,0 +1,3 @@
+ArtCamSdk_130Ml.dll　…　赤外線アライメント用カメラ用
+pma.dll, WnPmaUSB.dll, StopMsg.dll, PmaUsbW32.dll  …　分光器
+3200016.sc　…　分光器校正用データ？
