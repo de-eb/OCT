@@ -1,10 +1,4 @@
-import pyvisa
-import time
+import ctypes
 
-rm=pyvisa.ResourceManager()
-print(rm.list_resources('?*'))
+test=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
-inst=rm.open_resource('USB0::0x1313::0x8087::M00801544::RAW')
-inst.write("*idn?")
-out=inst.read()
-print(out)
