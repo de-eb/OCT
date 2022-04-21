@@ -1,4 +1,5 @@
 import ctypes
 
-test=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
+resMgr=None
 
+dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
