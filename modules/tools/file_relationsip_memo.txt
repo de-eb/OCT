@@ -1,3 +1,496 @@
 ArtCamSdk_130Ml.dll　…　赤外線アライメント用カメラ用
 pma.dll, WnPmaUSB.dll, StopMsg.dll, PmaUsbW32.dll  …　分光器
 3200016.sc　…　分光器校正用データ？
+
+/*===========================================================================
+
+ GLOBAL USER-CALLABLE FUNCTION DECLARATIONS (Exportable Functions)
+
+===========================================================================*/
+/*===========================================================================
+
+
+ Init/close
+
+
+===========================================================================*/
+/*---------------------------------------------------------------------------
+   Function:   Initialize
+   Purpose:    This function initializes the instrument driver session and
+               returns an instrument handle which is used in subsequent calls.
+
+   Input Parameters:
+   ViRsrc rsrcName:           Instrument Description
+   ViBoolean id_query:        Boolean to query the ID or not
+   ViBoolean reset_instr:     Boolean to reset the device or not
+
+   Output Parameters:
+   ViPSession vi:             Instrument Handle
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_init (ViRsrc rsrcName, ViBoolean id_query,
+                              ViBoolean reset_instr, ViPSession vi);
+
+/*---------------------------------------------------------------------------
+   Function:   Close
+   Purpose:    This function close an instrument driver session.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_close (ViSession vi);
+
+
+/*===========================================================================
+
+
+ Class: Configuration Functions.
+
+
+===========================================================================*/
+/*---------------------------------------------------------------------------
+   Function:   Set Integration Time
+   Purpose:    This function set the optical integration time in seconds.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViReal64 integrationTime:  The optical integration time.
+                              Min: TLCCS_MIN_INT_TIME (1.0E-5)
+                              Max: TLCCS_MAX_INT_TIME (6.0E+1)
+                              Default value: 1.0E-3.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_setIntegrationTime (ViSession vi, ViReal64 integrationTime);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get Integration Time
+   Purpose:    This function returns the optical integration time in seconds.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViPReal64 integrationTime: The optical integration time.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getIntegrationTime (ViSession vi, ViPReal64 integrationTime);
+
+/*===========================================================================
+
+
+ Class: Action/Status Functions.
+
+
+===========================================================================*/
+/*---------------------------------------------------------------------------
+   Function:   Start Scan
+   Purpose:    This function triggers the the CCS to take one single scan.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Note:
+   The scan data can be read out with the function 'Get Scan Data'
+   Use 'Get Device Status' to check the scan status.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_startScan (ViSession vi);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Start Continuous Scan
+   Purpose:    This function starts the CCS scanning continuously.
+               Any other function except 'Get Scan Data' and 'Get Device Status'
+               will stop the scanning.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Note:
+   The scan data can be read out with the function 'Get Scan Data'
+   Use 'Get Device Status' to check the scan status.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_startScanCont (ViSession vi);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Start Extern Scan
+   Purpose:    This function arms the external trigger of the CCS. A
+               following low to high transition at the trigger input of the
+               CCS then starts a scan.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Note:
+   When you issue a read command 'Get Scan Data' before the CCS was
+   triggered you will get a timeout error. Use 'Get Device Status' to check
+   the scan status.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_startScanExtTrg (ViSession vi);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Start Continuous Extern Scan
+   Purpose:    This function arms the CCS for scanning after an external
+               trigger. A following low to high transition at the trigger input
+               of the CCS then starts a scan. The CCS will rearm immediately
+               after the scan data is readout. Any other function except
+               'Get Scan Data' or 'Get Device Status' will stop the scanning.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Note:
+   The scan data can be read out with the function 'Get Scan Data'
+
+   Note:
+   When you issue a read command 'Get Scan Data' before the CCS was triggered
+   you will get a timeout error. Use 'Get Device Status' to check the scan status.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_startScanContExtTrg (ViSession vi);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get Device Status
+   Purpose:    This function returns the device status. Use macros to mask
+               out single bits.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViPInt32 deviceStatus:     The device status returned from the instrument
+---------------------------------------------------------------------------*/
+#define TLCCS_STATUS_SCAN_IDLE         0x0002      // CCS waits for new scan to execute
+#define TLCCS_STATUS_SCAN_TRIGGERED    0x0004      // scan in progress
+#define TLCCS_STATUS_SCAN_START_TRANS  0x0008      // scan starting
+#define TLCCS_STATUS_SCAN_TRANSFER     0x0010      // scan is done, waiting for data transfer to PC
+#define TLCCS_STATUS_WAIT_FOR_EXT_TRIG 0x0080      // same as IDLE except that external trigger is armed
+
+ViStatus _VI_FUNC tlccs_getDeviceStatus (ViSession vi, ViPInt32 deviceStatus);
+
+
+
+/*===========================================================================
+
+
+ Class: Data Functions.
+
+
+===========================================================================*/
+/*---------------------------------------------------------------------------
+   Function:   Get Scan Data
+   Purpose:    This function reads out the processed scan data.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViReal64 data[]:           The measurement array (TLCCS_NUM_PIXELS elements).
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getScanData (ViSession vi, ViReal64 data[]);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get Raw Scan Data
+   Purpose:    This function reads out the raw scan data.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViInt32 scanDataArray[]:   The measurement array (TLCCS_NUM_RAW_PIXELS elements).
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getRawScanData (ViSession vi, ViInt32 scanDataArray[]);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Set Wavelength Data
+   Purpose:    This function stores data for user-defined pixel-wavelength
+               correlation to the instrument's nonvolatile memory.
+
+               The given data pair arrays are used to interpolate the
+               pixel-wavelength correlation array returned by the
+               TLCCS_getWavelengthData function.
+
+   Note: In case the interpolated pixel-wavelength correlation
+   contains negative values, or the values are not strictly
+   increasing the function returns with error VI_ERROR_INV_USER_DATA.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViInt32 pixelDataArray[]:  The pixel data.
+   ViReal64 wavelengthDataArray[]:The wavelength data.
+   ViInt32 bufferLength:      The length of both arrays.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_setWavelengthData (ViSession vi, ViInt32 pixelDataArray[],
+                                           ViReal64 wavelengthDataArray[], ViInt32 bufferLength);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get Wavelength Data
+   Purpose:    This function returns data for the pixel-wavelength correlation.
+               The maximum and the minimum wavelength are additionally provided
+               in two separate return values.
+
+   Note:
+   If you do not need either of these values you may pass NULL.
+
+   The value returned in Wavelength_Data_Array[0] is the wavelength
+   at pixel 0, this is also the minimum wavelength, the value
+   returned in Wavelength_Data_Array[1] is the wavelength at pixel
+   1 and so on until Wavelength_Data_Array[TLCCS_NUM_PIXELS-1]
+   which provides the wavelength at pixel TLCCS_NUM_PIXELS-1
+   (3647). This is the maximum wavelength.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViInt16 dataSet:           The pixel data selection according to macros below.
+
+   Output Parameters:
+   ViReal64 wavelengthDataArray[]:  The wavelength data.
+   ViPReal64 minimumWavelength:     The minimum wavelength.
+   ViPReal64 maximumWavelength:     The maximum wavelength.
+---------------------------------------------------------------------------*/
+#define TLCCS_CAL_DATA_SET_FACTORY     0
+#define TLCCS_CAL_DATA_SET_USER        1
+
+ViStatus _VI_FUNC tlccs_getWavelengthData (ViSession vi, ViInt16 dataSet, ViReal64 wavelengthDataArray[],
+                                           ViPReal64 minimumWavelength, ViPReal64 maximumWavelength);
+
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get User Calibration Points
+   Purpose:    This function returns the user-defined pixel-wavelength
+               correlation supporting points. These given data pair arrays are
+               used by the driver to interpolate the pixel-wavelength
+               correlation array returned by the tlccs_getWavelengthData
+               function.
+
+   Note:
+   If you do not need either of these values you may pass NULL.
+   The function returns with error VI_ERROR_NO_USER_DATA if no user
+   calibration data is present in the instruments nonvolatile
+   memory.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViInt32 pixelDataArray[]:        The pixel data array.
+   ViReal64 wavelengthDataArray[]:  The wavelength data array.
+   ViPInt32 bufferLength:           The number of user calibration points.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getUserCalibrationPoints (ViSession vi, ViInt32 pixelDataArray[],
+                                                  ViReal64 wavelengthDataArray[], ViPInt32 bufferLength);
+
+/*---------------------------------------------------------------------------
+   Function:   Set Amplitude Data
+   Purpose:    This function stores data for user-defined amplitude
+               correction factors to nonvolatile memory of CCD device.
+
+               The given data array can be used to correct the
+               amplitude information returned by the
+               tlccs_getScanDataData function.
+
+   Note: In case the correction factors are out of the range
+   TLCCS_AMP_CORR_FACT_MIN (0.001) ... TLCCS_AMP_CORR_FACT_MAX (1000.0)
+   the function returns with error VI_ERROR_TLCCS_INV_USER_DATA. 
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViReal64 AmpCorrFact[]:    The array with amplitude correction factors
+   ViInt32 bufferLength:      The length of the array.
+   ViInt32 bufferStart:       The start index for the array.
+   ViInt32 mode               With mode one can select if the new data will be applied to current measurements
+                              only (ACOR_APPLY_TO_MEAS) or additionally goes to non volatile memory of the
+                              device too (ACOR_APPLY_TO_MEAS_NVMEM).
+                              If mode is not one of the two predefined macros the function returns VI_ERROR_INV_PARAMETER
+---------------------------------------------------------------------------*/
+#define ACOR_APPLY_TO_MEAS          1     // macro for parameter mode
+#define ACOR_APPLY_TO_MEAS_NVMEM    2     // macro for parameter mode
+
+ViStatus _VI_FUNC tlccs_setAmplitudeData (ViSession vi, ViReal64 AmpCorrFact[], ViInt32 bufferLength, ViInt32 bufferStart, ViInt32 mode);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get Amplitude Data
+   Purpose:    This function retrieves data for user-defined amplitude
+               correction factors from nonvolatile memory of CCD device.
+
+               The given data array can be used to correct the
+               amplitude information returned by the
+               tlccs_getScanDataData function.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViInt32 bufferLength:      The length of the array.
+   ViInt32 bufferStart:       The start index for the array.
+   ViInt32 mode               With mode one can select if the data will be a copy of the currently used
+                              amplitude correction factors (ACOR_FROM_CURRENT) or if the data is read out from the
+                              device non volatile memory (ACOR_FROM_NVMEM)
+                              If mode is not one of the two predefined macros the function returns VI_ERROR_INV_PARAMETER
+
+   Output Parameters:
+   ViReal64 _VI_FAR AmpCorrFact[]:  The array with amplitude correction factors
+---------------------------------------------------------------------------*/
+#define ACOR_FROM_CURRENT           1     // macro for parameter mode
+#define ACOR_FROM_NVMEM             2     // macro for parameter mode
+
+ViStatus _VI_FUNC tlccs_getAmplitudeData (ViSession vi, ViReal64 AmpCorrFact[], ViInt32 bufferStart, ViInt32 bufferLength, ViInt32 mode);
+
+/*===========================================================================
+
+
+ Class: Utility Functions.
+
+
+===========================================================================*/
+/*---------------------------------------------------------------------------
+   Function:   Identification Query
+   Purpose:    This function returns the device identification information.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViString manufacturerName: The manufacturers name.
+   ViString deviceName:       The device name.
+   ViString serialNumber:     The serial number.
+   ViString firmwareRevision: The firmware revision.
+   ViString instrumentDriverRevision:The instrument driver revision.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_identificationQuery (ViSession vi,
+                                             ViString manufacturerName,
+                                             ViString deviceName,
+                                             ViString serialNumber,
+                                             ViString firmwareRevision,
+                                             ViString instrumentDriverRevision);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Revision Query
+   Purpose:    This function returns the revision of the instrument driver
+               and the firmware revision of the instrument being used.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViString driver_rev:       Instrument driver revision
+   ViString instr_rev:        Instrument firmware revision
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_revision_query (ViSession vi, ViString driver_rev, ViString instr_rev);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Reset
+   Purpose:    This function resets the device.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_reset (ViSession vi);
+
+/*---------------------------------------------------------------------------
+   Function:   Self Test
+   Purpose:    This function resets the device.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViPInt16 test_result:      Numeric result from self-test operation
+                              0 = no error (test passed)
+   ViString test_message:     Self-test status message
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_self_test (ViSession vi, ViPInt16 test_result, ViString test_message);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Error Query
+   Purpose:    This function queries the instrument and returns instrument-
+               specific error information.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViPInt32 error_code:       Instrument error code
+   ViString error_message:    Error message
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_error_query(ViSession vi, ViPInt32 error_code, ViString error_message);
+
+/*---------------------------------------------------------------------------
+   Function:   Error Message
+   Purpose:    This function translates the error return value from a
+               VXIplug&play instrument driver function to a user-readable
+               string.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViStatus status_code:      Instrument driver error code
+
+   Output Parameters:
+   ViString message:          VISA or instrument driver Error message
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_error_message(ViSession vi, ViStatus status_code, ViString message);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Set Attribute
+   Purpose:    This function sets a specified attribute.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViAttr attribute:          The attribute to set. See "Driver attributes"
+                              section for available attributes and further
+                              information.
+   ViAttrState value:         The attribute value.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_setAttribute (ViSession vi, ViAttr attribute, ViAttrState value);
+
+/*---------------------------------------------------------------------------
+   Function:   Get Attribute
+   Purpose:    This function returns a specified attribute.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViAttr attribute:          The attribute to get. See "Driver attributes"
+                              section for available attributes and further
+                              information.
+
+   Output Parameters:
+   ViAttrState value:         The attribute value.
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getAttribute (ViSession vi, ViAttr attribute, ViAttrState *value);
+
+/*---------------------------------------------------------------------------
+   Function:   Set User Text
+   Purpose:    This function writes the given string to the novolatile memory of
+               the spectrometer.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+   ViString userText:         The new user text
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_setUserText (ViSession vi, ViString userText);
+
+
+/*---------------------------------------------------------------------------
+   Function:   Get User Text
+   Purpose:    This function reads the user text from the novolatile memory of
+               the spectrometer.
+
+   Input Parameters:
+   ViSession vi:              Instrument Handle
+
+   Output Parameters:
+   ViString userText:         The user text read out from device
+---------------------------------------------------------------------------*/
+ViStatus _VI_FUNC tlccs_getUserText (ViSession vi, ViString userText);
+
+#if defined(__cplusplus) || defined(__cplusplus__)
+}
+#endif
+
+#endif  /* __TLCCS_H__ */
