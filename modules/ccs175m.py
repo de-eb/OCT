@@ -2,56 +2,38 @@ import ctypes
 import pyvisa
 
 class CcsError(Exception):
-    """ Base exception class for this modules.
-    
+    """Base exception describing for this module.
+    See 'class pyvisa.constants.StatusCode(value)[source]' in this site for error details.
+    https://pyvisa.readthedocs.io/en/latest/api/constants.html
+
     Attributes
     ----------
-    msg : `str`
-        Human readable string describing the exception.
-    
+    err: 'int'
+        Status codes that VISA driver-level operations can return. 
     """
+    def __init__(self, status_code:int):
+        self.err=status_code
 
-    def __init__(self, msg: str):
-        """Set the error message.
-    
-        Parameters
-        ----------
-        msg : `str`
-            Human readable string describing the exception.
-        
-        """
-        self.msg =msg
-    
     def __str__(self):
-        """Return the error message."""
-        return self.msg
+        return str(pyvisa.constants.StatusCode(self.err))
 
 
+
+#dllファイル　ロード
 dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
-#instr=ctypes.c_int()
-#rscStr=ctypes.c_wchar_p('USB0::0x1313::0x8087::M00801544::RAW')
 
+#分光器とのセッション確立、セッション番号(アドレス？)の取得
 rm=pyvisa.ResourceManager()
 inst=rm.open_resource('USB0::0x1313::0x8087::M00801544::RAW')
-
 inst_handle=inst.session
-print(inst_handle)
+
+
+
 integration_time=ctypes.c_double(2.0e-3)
 print(integration_time)
 err=dev.tlccs_SetIntegrationTime(inst_handle,integration_time)
-print(err)
-
-
-
-#rscStr='USB0::0x1313::0x8087::M00801544::RAW'
-#enc_rscStr=str.encode('utf-8')
-#rscStr=ctypes.create_string_buffer(enc_rscStr)
-#print(enc_rscStr)
-
-#dev.tlccs_Init.argtypes=(ctypes.c_wchar_p,ctypes.c_bool,ctypes.c_bool,ctypes.c_int64)
-
-#if dev.tlccs_init(rscStr.value,True,True,ctypes.byref(instr)):
-#    print(instr)
-#    raise CcsError(msg='CCS175m not found')
-
-#err=dev.tlccs_init(rscStr.value,True,True,ctypes.byref(instr))
+got_time=ctypes.c_double()
+err=dev.tlccs_GetIntegrationTime(inst_handle,ctypes.byref(got_time))
+print(err,got_time)
+if True:
+    raise CcsError(status_code=-1073807338)
