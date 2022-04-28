@@ -40,10 +40,35 @@ if err:
     raise CcsError(status_code=err,session=inst_handle)
 
 
-buffer=np.zeros(3694,dtype=np.uint64)
+
+buffer=(ctypes.c_double*3648)(0)
+buffer_p=ctypes.pointer(buffer)
+buffer2=np.zeros(3648)
+
+#getscandataに参照渡しする引数はdouble(*?) data[3648];
 
 data=ctypes.c_int64()
-err=dev.tlccs_GetScanData(inst_handle,buffer.ctypes.data_as(ctypes.POINTER(ctypes.wintypes.WORD)))
+
+dev.tlccs_GetScanData.argtypes=(ctypes.c_int,ctypes.c_double*3648)
+err=dev.tlccs_GetScanData(inst_handle)
+
+#<error集>
+#err=dev.tlccs_GetScanData(inst_handle,buffer2.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+#例外が発生しました: ArgumentError
+#argument 2: <class 'TypeError'>: expected c_double_Array_3648 instance instead of LP_c_double
+
+#err=dev.tlccs_GetScanData(inst_handle,ctypes.POINTER(buffer))
+#例外が発生しました: TypeError
+#unhashable type
+
+#err=dev.tlccs_GetScanData(inst_handle,buffer)
+#例外が発生しました: OSError
+#exception: access violation reading 0x0000EA18
+
+#err=dev.tlccs_GetScanData(inst_handle,ctypes.byref(buffer))
+#例外が発生しました: ArgumentError
+#argument 2: <class 'TypeError'>: expected c_double_Array_3648 instance instead of pointer to c_double_Array_364
+
 print(buffer)
 
 
