@@ -26,7 +26,10 @@ dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M_st4.dll')
 name='USB0::0x1313::0x8087::M00801544::RAW'
 enc_name=name.encode('utf-8')
 name=ctypes.create_string_buffer(enc_name)
-dev.StringTest(name)
+handle=ctypes.c_long()
+err=dev.tlccs_Init_Simple(name,ctypes.byref(handle))
+print(handle)
+
 #dev.StringTest.argtypes=[ctypes.c_wchar_p]
 #print('name = ',name.value)
 #print(dev.StringTest("USB0::0x1313::0x8087::M00801544::RAW"))
