@@ -21,8 +21,9 @@ class CcsError(Exception):
         return str(pyvisa.constants.StatusCode(self.err))
 
 #dllファイル　ロード
-dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M_gsda9.dll')
+dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
+#接続
 name='USB0::0x1313::0x8087::M00801544::RAW'
 enc_name=name.encode('utf-8')
 name=ctypes.create_string_buffer(enc_name)
@@ -38,37 +39,22 @@ err=dev.tlccs_SetIntegrationTime(handle,integration_time)
 if err:
     raise CcsError(status_code=err,session=handle)
 
-
+#測定開始
 err=dev.tlccs_StartScan(handle)
 if err:
     raise CcsError(status_code=err,session=handle)
 
+#測定データの取得
 ccs_num_pixels=3648 #number of effective pixels of CCD
-buffer=ctypes.c_double*ccs_num_pixels
-buffer2=np.zeros(ccs_num_pixels).astype(np.double)
-buffer3=ctypes.c_double() #double buffer3
-buffer_p=(ctypes.POINTER(ctypes.c_double)*ccs_num_pixels)()
-buffer_c=ctypes.create_string_buffer(ctypes.sizeof((ctypes.c_double)*ccs_num_pixels))
-buffer_q=np.ctypeslib.as_ctypes(buffer2)
-
-
-#getscandataに参照渡しする引数はdouble(*?) data[3648];
-
-
-
-#dev.tlccs_GetScanData.argtypes=(ctypes.c_long,buffer_p)
-#dev.tlccs_GetScanData.argtypes=[ctypes.c_long,ctypes.POINTER(ctypes.c_double)]
-#dev.tlccs_GetScanData(handle,buffer2.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
 dev.GetScanDataArray.argtype=(ctypes.c_long)
 dev.GetScanDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=ccs_num_pixels)
-
 data=dev.GetScanDataArray(handle)
+
+#データプロット
 plt.plot(data)
 plt.show()
 
-
 #セッション終了
-
 err=dev.tlccs_Close(handle)
 if err:
     raise CcsError(status_code=err,session=handle)
