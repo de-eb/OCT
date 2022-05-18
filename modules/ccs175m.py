@@ -1,4 +1,5 @@
 import ctypes
+import pyvisa
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -48,10 +49,15 @@ if err:
 ccs_num_pixels=3648 #number of effective pixels of CCD
 dev.GetScanDataArray.argtype=(ctypes.c_long)
 dev.GetScanDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=ccs_num_pixels)
-data=dev.GetScanDataArray(handle)
+sp=dev.GetScanDataArray(handle)
+
+#波長軸データの取得
+dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
+dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=ccs_num_pixels)
+wl=dev.GetWavelengthDataArray(handle)
 
 #データプロット
-plt.plot(data)
+plt.plot(wl,sp)
 plt.show()
 
 #セッション終了
