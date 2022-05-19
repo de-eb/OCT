@@ -1,25 +1,29 @@
 import ctypes
-import pyvisa
 import numpy as np
 import matplotlib.pyplot as plt
+import chardet
 
 class CcsError(Exception):
-    """Base exception describing for this module.
-    See 'class pyvisa.constants.StatusCode(value)[source]' in this site for error details.
-    https://pyvisa.readthedocs.io/en/latest/api/constants.html
+    """ Base exception class for this modules.
+    Outputs a message to the TERMINAL instead of an exception message
+     because of unfixable garbled characters.
 
     Attributes
     ----------
-    err: 'int'
+    err : `int`
         Status codes that VISA driver-level operations can return. 
+    session : `int`
+        An instrument handle which is used in call functions.
     """
-    def __init__(self, status_code:int, session:int):
+    def __init__(self,status_code:int,session:int):
         self.err=status_code
-        self.inst_handle=session
-
+        self.handle=session
+        if session:
+            dev.tlccs_Close(self.handle)
+        self.msg="See terminal for details."
+        dev.OutputErrorMessage(self.handle,self.err)
     def __str__(self):
-        dev.tlccs_Close(self.inst_handle)
-        return str(pyvisa.constants.StatusCode(self.err))
+        return self.msg
 
 class Ccs175m():
     """Class to control compact spectrometer(CCS175/M)
@@ -41,6 +45,7 @@ class Ccs175m():
         ---------
         CcsError :
             When the module initialization fails.
+            Details are output to terminal
         """
         #device initializing
         self.name=ctypes.create_string_buffer(name.encode('utf-8'))
@@ -55,7 +60,7 @@ class Ccs175m():
         Ccs175m.__dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
         self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(handle)
 
-        #Set types of arguments and return value of the GetScanDataArray function.
+        #Set types of arguments and return value of GetScanDataArray function.
         Ccs175m.__dev.GetScanDataArray.argtypes=(ctypes.c_long)
         Ccs175m.__dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
     
@@ -109,12 +114,14 @@ class Ccs175m():
 #dllファイル　ロード
 dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
+
 #接続
 name='USB0::0x1313::0x8087::M00801544::RAW'
 name=ctypes.create_string_buffer(name.encode('utf-8'))
 handle=ctypes.c_long()
 dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
 err=dev.tlccs_Init(name,False,False,ctypes.byref(handle))
+
 if err:
     raise CcsError(status_code=err,session=handle)
 
@@ -128,6 +135,7 @@ if err:
 err=dev.tlccs_StartScan(handle)
 if err:
     raise CcsError(status_code=err,session=handle)
+
 
 #測定データの取得
 ccs_num_pixels=3648 #number of effective pixels of CCD
