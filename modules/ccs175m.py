@@ -1,7 +1,7 @@
 import ctypes
 import numpy as np
-import matplotlib.pyplot as plt
-import chardet
+import warnings
+import atexit
 
 class CcsError(Exception):
     """ Base exception class for this modules.
@@ -15,13 +15,13 @@ class CcsError(Exception):
     session : `int`
         An instrument handle which is used in call functions.
     """
-    def __init__(self,status_code:int,session:int):
+    def __init__(self,status_code:int,session:int,msg="See terminal for details."):
         self.err=status_code
         self.handle=session
         if session:
-            dev.tlccs_Close(self.handle)
-        self.msg="See terminal for details."
-        dev.OutputErrorMessage(self.handle,self.err)
+            Ccs175m.close(self.handle)
+        self.msg=msg
+        Ccs175m.output_ErrorMessage(self, status_code=self.err, session=self.handle)
     def __str__(self):
         return self.msg
 
@@ -48,28 +48,32 @@ class Ccs175m():
             Details are output to terminal
         """
         #device initializing
-        self.name=ctypes.create_string_buffer(name.encode('utf-8'))
-        self.handle=ctypes.c_long()
+        self.__name=ctypes.create_string_buffer(name.encode('utf-8'))
+        self.__handle=ctypes.c_long()
         Ccs175m.__dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
-        err=Ccs175m.__dev.tlccs_Init(self.name,False,False,ctypes.byref(self.handle))
+        err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(self.__handle))
         if err:
-            raise CcsError(status_code=err,session=handle)
+            raise CcsError(status_code=err,session=self.__handle)
 
         #get wavelength data
         Ccs175m.__dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
         Ccs175m.__dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
-        self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(handle)
+        self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(self.__handle)
+
+        #Resister the exit process
+        atexit.register(self.close)
 
         #Set types of arguments and return value of GetScanDataArray function.
-        Ccs175m.__dev.GetScanDataArray.argtypes=(ctypes.c_long)
+        Ccs175m.__dev.GetScanDataArray.argtype=(ctypes.c_long)
         Ccs175m.__dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
-    
+
+        print("CCS175M is ready.")
     @property
     def wavelength(self):
         """Wavelength [nm] axis corresponding to the measurement data.
         """
         return self.__wavelength
-    
+
     def set_IntegrationTime(self,time=0.01):
         """This function set the optical integration time in seconds.
 
@@ -83,22 +87,35 @@ class Ccs175m():
         CcsError :
             When the setting fails.
         """
-        err=Ccs175m.__dev.tlccs_SetIntegrationTime(self.handle)
+        err=Ccs175m.__dev.tlccs_SetIntegrationTime(self.__handle)
         if err:
-            raise CcsError(status_code=err,session=handle)
+            raise CcsError(status_code=err,session=self.__handle)
+
+    def start_scan(self):
+        """This function starts the CCS scanning continuously.
+        Any other function except 'read_spectra' will stop the scanning.
+        """
+        err=Ccs175m.__dev.tlccs_SrartScanCont(self.__handle)
+        if err:
+            raise CcsError(status_code=err,session=self.__handle)
 
     def read_spectra(self,averaging=1):
-        """This function triggers the CCS to take one single scan 
-        and reads out the processed scan data.
-        """
-        Ccs175m.__dev.tlccs_SrartScanCont(handle)
-        data=np.zeros()
+        data=np.zeros(Ccs175m.num_pixels)
+        if averaging<1:
+            warnings.warn('The value of averaging must always be greater than or equal to 1.')
+            averaging=1
+        for i in range(averaging):
+            #sp=Ccs175m.__dev.GetScanDataArray(self.__handle)
+            #data+=sp
+            data+=Ccs175m.__dev.GetScanDataArray(self.__handle)
+        return data/averaging
 
+    def output_ErrorMessage(self,status_code:int,session:int):
+        Ccs175m.__dev.OutputErrorMessage(status_code,session)
 
-
-    def close(self):
+    def close(self) ->bool:
         """This function close an instrument driver session.
-        
+
         Raise
         --------
         CcsError :
@@ -106,11 +123,42 @@ class Ccs175m():
         """
         err=Ccs175m.__dev.tlccs_Close(self.handle)
         if err:
-            raise CcsError(status_code=err,session=handle)
+            raise CcsError(status_code=err,session=self.__handle)
         
+if __name__=="__main__":
+    import matplotlib.pyplot as plt
+    import pandas as pd
 
+    #Graph setting
+    plt.rcParams['font.family'] ='sans-serif'
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['ytick.direction'] = 'in'
+    plt.rcParams["xtick.minor.visible"] = True
+    plt.rcParams["ytick.minor.visible"] = True
+    plt.rcParams['xtick.major.width'] = 1.0
+    plt.rcParams['ytick.major.width'] = 1.0
+    plt.rcParams["xtick.minor.width"] = 0.5
+    plt.rcParams["ytick.minor.width"] = 0.5
+    plt.rcParams['font.size'] = 14
+    plt.rcParams['axes.linewidth'] = 1.0
 
+    #Parameter initiallization
+    ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW')
+    ccs.set_IntegrationTime(7)
 
+    key=None
+    def on_key(event):
+        global key
+        key=event.key
+
+    #graph initialization
+    fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
+    fig.canvas.mpl_connect('key_press_event', on_key)  # Key event
+    ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    graph, = ax.plot(pma.wavelength, data)    
+'''
 #dllファイル　ロード
 dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
@@ -132,7 +180,7 @@ if err:
     raise CcsError(status_code=err,session=handle)
 
 #測定開始
-err=dev.tlccs_StartScan(handle)
+err=dev.tlccs_StartScan(handle.value+1)
 if err:
     raise CcsError(status_code=err,session=handle)
 
@@ -158,3 +206,4 @@ plt.show()
 err=dev.tlccs_Close(handle)
 if err:
     raise CcsError(status_code=err,session=handle)
+'''
