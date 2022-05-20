@@ -90,10 +90,8 @@ class SignalProcessorHamasaki():
             Data after IFFT
         
         """
+        result=np.zeros_like(self.__depth)
         for  i in range(len(self.__freq_fixed)):
-            if i==0:
-                result=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
-            else:
                 result+=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
         result/=np.amax(result)
         return abs(result)
