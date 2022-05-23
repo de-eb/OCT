@@ -15,13 +15,14 @@ class CcsError(Exception):
     session : `int`
         An instrument handle which is used in call functions.
     """
-    def __init__(self,status_code:int,session:int,msg="See terminal for details."):
-        self.err=status_code
+    def __init__(self,status_code:int,session:ctypes.c_long,msg="See terminal for details."):
+        self.err=ctypes.c_long(status_code)
         self.handle=session
         if session:
-            Ccs175m.close(self.handle)
+            Ccs175m.close_ccs(self.handle)
         self.msg=msg
         Ccs175m.output_ErrorMessage(self, status_code=self.err, session=self.handle)
+        print('(Error code:',self.err,')')
     def __str__(self):
         return self.msg
 
@@ -61,73 +62,59 @@ class Ccs175m():
         self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(self.__handle)
 
         #Resister the exit process
-        atexit.register(self.close)
+        #atexit.register(self.close_ccs)
 
         #Set types of arguments and return value of GetScanDataArray function.
         Ccs175m.__dev.GetScanDataArray.argtype=(ctypes.c_long)
         Ccs175m.__dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
 
+        #Set type of argument of tlccs_close
+        Ccs175m.__dev.tlccs_Close.argtype=(ctypes.c_long)
+
+        #Set type of argument of OutputErrorMessage
+        Ccs175m.__dev.OutputErrorMessage.argtype=(ctypes.c_long,ctypes.c_long)
         print("CCS175M is ready.")
+
     @property
     def wavelength(self):
-        """Wavelength [nm] axis corresponding to the measurement data.
-        """
         return self.__wavelength
 
     def set_IntegrationTime(self,time=0.01):
-        """This function set the optical integration time in seconds.
-
-        Parameter
-        ---------
-        time : `float`
-            The optical integration time.
-        
-        Raise
-        ---------
-        CcsError :
-            When the setting fails.
-        """
-        err=Ccs175m.__dev.tlccs_SetIntegrationTime(self.__handle)
+        iTime=ctypes.c_double(time)
+        err=Ccs175m.__dev.tlccs_SetIntegrationTime(self.__handle,iTime)
         if err:
-            raise CcsError(status_code=err,session=self.__handle)
-
+            raise CcsError(status_code=err,session=self.__handle,
+            msg='If no error message is printed, the value of integration time is probably out of range(1.0e-5 ~ 6.0e+1)')
+    
     def start_scan(self):
-        """This function starts the CCS scanning continuously.
-        Any other function except 'read_spectra' will stop the scanning.
-        """
-        err=Ccs175m.__dev.tlccs_SrartScanCont(self.__handle)
+        err=Ccs175m.__dev.tlccs_StartScanCont(self.__handle)
         if err:
             raise CcsError(status_code=err,session=self.__handle)
-
+    
     def read_spectra(self,averaging=1):
-        data=np.zeros(Ccs175m.num_pixels)
+        #data=np.zeros(Ccs175m.num_pixels)
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
-        for i in range(averaging):
-            #sp=Ccs175m.__dev.GetScanDataArray(self.__handle)
-            #data+=sp
-            data+=Ccs175m.__dev.GetScanDataArray(self.__handle)
-        return data/averaging
-
-    def output_ErrorMessage(self,status_code:int,session:int):
-        Ccs175m.__dev.OutputErrorMessage(status_code,session)
-
-    def close(self) ->bool:
-        """This function close an instrument driver session.
-
-        Raise
-        --------
-        CcsError :
-            When the module is not controlled correctly.
-        """
-        err=Ccs175m.__dev.tlccs_Close(self.handle)
+        data=Ccs175m.__dev.GetScanDataArray(self.__handle)
+        print(len(data))
+        return data
+    
+    def close_ccs(self):
+        err=Ccs175m.__dev.tlccs_Close(self.__handle)
         if err:
-            raise CcsError(status_code=err,session=self.__handle)
+            raise CcsError(status_code=err,session=self.__handle,
+            msg='For some reason the equipment could not be disconnected properly')
+    
+    def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
+        return Ccs175m.__dev.OutputErrorMessage(status_code,session)
+
+
         
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     import pandas as pd
+    from matplotlib.ticker import ScalarFormatter
 
     #Graph setting
     plt.rcParams['font.family'] ='sans-serif'
@@ -144,20 +131,15 @@ if __name__=="__main__":
 
     #Parameter initiallization
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW')
-    ccs.set_IntegrationTime(7)
+    ccs.set_IntegrationTime()
+    ccs.start_scan()
+    data=ccs.read_spectra()
+    wl=ccs.wavelength
+    ccs.close_ccs()
 
-    key=None
-    def on_key(event):
-        global key
-        key=event.key
+    plt.plot(wl,data)
+    plt.show()
 
-    #graph initialization
-    fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
-    fig.canvas.mpl_connect('key_press_event', on_key)  # Key event
-    ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
-    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    graph, = ax.plot(pma.wavelength, data)    
 '''
 #dllファイル　ロード
 dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
