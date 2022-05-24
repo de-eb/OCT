@@ -19,11 +19,11 @@ class CcsError(Exception):
     def __init__(self,status_code:int,session:ctypes.c_long,msg="See terminal for details."):
         self.__err=ctypes.c_long(status_code)
         self.__handle=session
-        if session:
-            Ccs175m.close_ccs(self.__handle)
+        #if session:
+        #    Ccs175m.close_ccs(self.__handle)
         self.__msg=msg
         Ccs175m.output_ErrorMessage(self, status_code=self.__err, session=self.__handle)
-        print('(Error code:',self.__err,')')
+        print('(Error code:',self.__err.value,')')
     def __str__(self):
         return self.__msg
 
@@ -39,19 +39,18 @@ class Ccs175m():
     __handle=ctypes.c_long()
 
     #Set type of argument of functions
+    __dev.tlccs_StartScan.argtype=(ctypes.c_long)
+    __dev.tlccs_StartScanCont.argtype=(ctypes.c_long)
+    __dev.tlccs_SetIntegrationTime.argtypes=(ctypes.c_long,ctypes.c_double)
     __dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
     __dev.GetScanDataArray.argtype=(ctypes.c_long)
     __dev.tlccs_Close.argtype=(ctypes.c_long)
     __dev.OutputErrorMessage.argtypes=(ctypes.c_long,ctypes.c_long)
-    __dev.tlccs_SetIntegrationTime.argtypes=(ctypes.c_long,ctypes.c_double)
-    __dev.tlccs_StartScanCont.argtype=(ctypes.c_long)
-    __dev.tlccs_StartScan.argtype=(ctypes.c_long)
 
     #Set type of returned value of functions
+    __dev.GetScanDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
     __dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
-    __dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
     
-
     def __init__(self,name:str):
         """Initiates and unlock communication with the device
 
@@ -88,7 +87,7 @@ class Ccs175m():
 
     def set_IntegrationTime(self,time=0.01):
         self.iTime=ctypes.c_double(time)
-        err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle,self.iTime)
+        err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle.value,self.iTime)
         if err:
             raise CcsError(status_code=err,session=Ccs175m.__handle,
             msg='If no error message is printed, the value of integration time is probably out of range(1.0e-5 ~ 6.0e+1)')
@@ -99,11 +98,12 @@ class Ccs175m():
             raise CcsError(status_code=err,session=Ccs175m.__handle)
     
     def read_spectra(self,averaging=1):
-        data=np.zeros(Ccs175m.num_pixels)
+        data=np.zeros_like(self.wavelength)
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
         data=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
+        print(data,type(data))
         return data
     
     def close_ccs(self):
@@ -112,7 +112,7 @@ class Ccs175m():
             raise CcsError(status_code=err,session=Ccs175m.__handle,
             msg='For some reason the equipment could not be disconnected properly')
     
-    def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
+    def output_ErrorMessage(self,status_code:int,session:ctypes.c_long):
         return Ccs175m.__dev.OutputErrorMessage(status_code,session)
 
 
