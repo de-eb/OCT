@@ -16,14 +16,12 @@ class CcsError(Exception):
     session : `int`
         An instrument handle which is used in call functions.
     """
-    def __init__(self,status_code:int,session:ctypes.c_long,msg="See terminal for details."):
-        self.__err=ctypes.c_long(status_code)
+    def __init__(self,status_code:ctypes.c_long,session:ctypes.c_long,msg="See terminal for details."):
+        self.__status_code=ctypes.c_long(status_code)
         self.__handle=session
-        #if session:
-        #    Ccs175m.close_ccs(self.__handle)
         self.__msg=msg
-        Ccs175m.output_ErrorMessage(self, status_code=self.__err, session=self.__handle)
-        print('(Error code:',self.__err.value,')')
+        Ccs175m.output_ErrorMessage(self, status_code=self.__status_code, session=self.__handle)
+        print('(Error code:',self.__status_code.value,')')
     def __str__(self):
         return self.__msg
 
@@ -35,8 +33,9 @@ class Ccs175m():
     #External modules loading
     __dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
-    #define device handler
+    #define device handler and status code
     __handle=ctypes.c_long()
+    __err=ctypes.c_long()
 
     #Set type of argument of functions
     __dev.tlccs_StartScan.argtype=(ctypes.c_long)
@@ -68,9 +67,9 @@ class Ccs175m():
         #device initializing
         self.__name=ctypes.create_string_buffer(name.encode('utf-8'))
         Ccs175m.__dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
-        err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(Ccs175m.__handle))
-        if err:
-            raise CcsError(status_code=err,session=Ccs175m.__handle)
+        Ccs175m.__err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(Ccs175m.__handle))
+        if Ccs175m.__err:
+            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
 
         #Resister the exit process
         atexit.register(self.close_ccs)
@@ -83,19 +82,34 @@ class Ccs175m():
 
     @property
     def wavelength(self):
+        """ Wavelength [nm] axis corresponding to the measurement data.
+        """
         return self.__wavelength
 
-    def set_IntegrationTime(self,time=0.01):
+    def set_IntegrationTime(self,time=1.0e-3):
+        """This function set the optical integration time in seconds.
+
+        Parameters
+        ----------
+        time : `double`
+            The optical integration time [sec].
+            Minimum value : 1.0e-5, Maximum value : 6.0e+1
+
+        Raise
+        ---------
+        CcsError : 
+            When an invlid parameter is set. 
+        """
         self.iTime=ctypes.c_double(time)
-        err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle.value,self.iTime)
-        if err:
-            raise CcsError(status_code=err,session=Ccs175m.__handle,
+        Ccs175m.__err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle.value,self.iTime)
+        if Ccs175m.__err:
+            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle,
             msg='If no error message is printed, the value of integration time is probably out of range(1.0e-5 ~ 6.0e+1)')
     
     def start_scan(self):
-        err=Ccs175m.__dev.tlccs_StartScanCont(Ccs175m.__handle)
-        if err:
-            raise CcsError(status_code=err,session=Ccs175m.__handle)
+        Ccs175m.__err=Ccs175m.__dev.tlccs_StartScanCont(Ccs175m.__handle)
+        if Ccs175m.__err:
+            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
     
     def read_spectra(self,averaging=1):
         data=np.zeros_like(self.wavelength)
@@ -103,20 +117,18 @@ class Ccs175m():
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
         data=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
-        print(data,type(data))
+        
         return data
     
     def close_ccs(self):
-        err=Ccs175m.__dev.tlccs_Close(Ccs175m.__handle)
-        if err:
-            raise CcsError(status_code=err,session=Ccs175m.__handle,
-            msg='For some reason the equipment could not be disconnected properly')
-    
-    def output_ErrorMessage(self,status_code:int,session:ctypes.c_long):
+        Ccs175m.__err=Ccs175m.__dev.tlccs_Close(Ccs175m.__handle)
+        if Ccs175m.__err:
+            raise CcsError(status_code=Ccs175m.__err, session=Ccs175m.__handle)
+
+    def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
         return Ccs175m.__dev.OutputErrorMessage(status_code,session)
 
 
-        
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -137,14 +149,31 @@ if __name__=="__main__":
 
     #Parameter initiallization
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW')
-    ccs.set_IntegrationTime()
+    ccs.set_IntegrationTime(time=0.01)
     ccs.start_scan()
-    data=ccs.read_spectra()
-    wl=ccs.wavelength
-    ccs.close_ccs()
+    data=np.zeros_like(ccs.wavelength)
+    key=None
+    
+    def on_key(event):
+        global key
+        key=event.key
 
-    plt.plot(wl,data)
-    plt.show()
+    #Graph initialization
+    fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
+    fig.canvas.mpl_connect('key_press_event', on_key)  # Key event
+    ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    graph, = ax.plot(ccs.wavelength, data)
+
+    while key!='escape':
+        data=ccs.read_spectra()
+        graph.set_data(ccs.wavelength,data)
+        ax.set_ylim((0,np.amax(data)*1.2))
+        key=None
+        plt.pause(0.0001)
+
+
 '''
 
 import matplotlib.pyplot as plt
