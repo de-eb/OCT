@@ -2,10 +2,11 @@ import ctypes
 import numpy as np
 import warnings
 import atexit
+import time
 
 class CcsError(Exception):
     """ Base exception class for this modules.
-    Outputs a message to the TERMINAL instead of an exception message
+    Outputs a message to the terminal or an exception message
      because of unfixable garbled characters.
 
     Attributes
@@ -16,23 +17,40 @@ class CcsError(Exception):
         An instrument handle which is used in call functions.
     """
     def __init__(self,status_code:int,session:ctypes.c_long,msg="See terminal for details."):
-        self.err=ctypes.c_long(status_code)
-        self.handle=session
+        self.__err=ctypes.c_long(status_code)
+        self.__handle=session
         if session:
-            Ccs175m.close_ccs(self.handle)
-        self.msg=msg
-        Ccs175m.output_ErrorMessage(self, status_code=self.err, session=self.handle)
-        print('(Error code:',self.err,')')
+            Ccs175m.close_ccs(self.__handle)
+        self.__msg=msg
+        Ccs175m.output_ErrorMessage(self, status_code=self.__err, session=self.__handle)
+        print('(Error code:',self.__err,')')
     def __str__(self):
-        return self.msg
+        return self.__msg
 
 class Ccs175m():
     """Class to control compact spectrometer(CCS175/M)
     """
+    num_pixels=3648 #number of effective pixels of CCD
+
     #External modules loading
     __dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
-    num_pixels=3648 #number of effective pixels of CCD
+    #define device handler
+    __handle=ctypes.c_long()
+
+    #Set type of argument of functions
+    __dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
+    __dev.GetScanDataArray.argtype=(ctypes.c_long)
+    __dev.tlccs_Close.argtype=(ctypes.c_long)
+    __dev.OutputErrorMessage.argtypes=(ctypes.c_long,ctypes.c_long)
+    __dev.tlccs_SetIntegrationTime.argtypes=(ctypes.c_long,ctypes.c_double)
+    __dev.tlccs_StartScanCont.argtype=(ctypes.c_long)
+    __dev.tlccs_StartScan.argtype=(ctypes.c_long)
+
+    #Set type of returned value of functions
+    __dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
+    __dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
+    
 
     def __init__(self,name:str):
         """Initiates and unlock communication with the device
@@ -50,60 +68,48 @@ class Ccs175m():
         """
         #device initializing
         self.__name=ctypes.create_string_buffer(name.encode('utf-8'))
-        self.__handle=ctypes.c_long()
         Ccs175m.__dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
-        err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(self.__handle))
+        err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(Ccs175m.__handle))
         if err:
-            raise CcsError(status_code=err,session=self.__handle)
-
-        #get wavelength data
-        Ccs175m.__dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
-        Ccs175m.__dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
-        self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(self.__handle)
+            raise CcsError(status_code=err,session=Ccs175m.__handle)
 
         #Resister the exit process
-        #atexit.register(self.close_ccs)
+        atexit.register(self.close_ccs)
 
-        #Set types of arguments and return value of GetScanDataArray function.
-        Ccs175m.__dev.GetScanDataArray.argtype=(ctypes.c_long)
-        Ccs175m.__dev.GetScanDataArray.restypes=np.ctypeslib.ndpointer(dtype=np.double,shape=Ccs175m.num_pixels)
+        #get wavelength data
+        self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(Ccs175m.__handle)
 
-        #Set type of argument of tlccs_close
-        Ccs175m.__dev.tlccs_Close.argtype=(ctypes.c_long)
-
-        #Set type of argument of OutputErrorMessage
-        Ccs175m.__dev.OutputErrorMessage.argtype=(ctypes.c_long,ctypes.c_long)
-        print("CCS175M is ready.")
+        time.sleep(2)
+        print('CCS175M is ready.')
 
     @property
     def wavelength(self):
         return self.__wavelength
 
     def set_IntegrationTime(self,time=0.01):
-        iTime=ctypes.c_double(time)
-        err=Ccs175m.__dev.tlccs_SetIntegrationTime(self.__handle,iTime)
+        self.iTime=ctypes.c_double(time)
+        err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle,self.iTime)
         if err:
-            raise CcsError(status_code=err,session=self.__handle,
+            raise CcsError(status_code=err,session=Ccs175m.__handle,
             msg='If no error message is printed, the value of integration time is probably out of range(1.0e-5 ~ 6.0e+1)')
     
     def start_scan(self):
-        err=Ccs175m.__dev.tlccs_StartScanCont(self.__handle)
+        err=Ccs175m.__dev.tlccs_StartScanCont(Ccs175m.__handle)
         if err:
-            raise CcsError(status_code=err,session=self.__handle)
+            raise CcsError(status_code=err,session=Ccs175m.__handle)
     
     def read_spectra(self,averaging=1):
-        #data=np.zeros(Ccs175m.num_pixels)
+        data=np.zeros(Ccs175m.num_pixels)
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
-        data=Ccs175m.__dev.GetScanDataArray(self.__handle)
-        print(len(data))
+        data=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
         return data
     
     def close_ccs(self):
-        err=Ccs175m.__dev.tlccs_Close(self.__handle)
+        err=Ccs175m.__dev.tlccs_Close(Ccs175m.__handle)
         if err:
-            raise CcsError(status_code=err,session=self.__handle,
+            raise CcsError(status_code=err,session=Ccs175m.__handle,
             msg='For some reason the equipment could not be disconnected properly')
     
     def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
@@ -139,8 +145,9 @@ if __name__=="__main__":
 
     plt.plot(wl,data)
     plt.show()
-
 '''
+
+import matplotlib.pyplot as plt
 #dllファイル　ロード
 dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
 
@@ -157,12 +164,13 @@ if err:
 
 #露光時間設定
 integration_time=ctypes.c_double(0.01)
+dev.tlccs_SetIntegrationTime.restype=ctypes.c_long
 err=dev.tlccs_SetIntegrationTime(handle,integration_time)
 if err:
     raise CcsError(status_code=err,session=handle)
 
 #測定開始
-err=dev.tlccs_StartScan(handle.value+1)
+err=dev.tlccs_StartScanCont(handle)
 if err:
     raise CcsError(status_code=err,session=handle)
 
