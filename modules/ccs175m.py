@@ -28,10 +28,10 @@ class CcsError(Exception):
 class Ccs175m():
     """Class to control compact spectrometer(CCS175/M)
     """
-    num_pixels=3648 #number of effective pixels of CCD
-
     #External modules loading
     __dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
+
+    num_pixels=3648 #number of effective pixels of CCD
 
     #define device handler and status code
     __handle=ctypes.c_long()
@@ -132,7 +132,7 @@ class Ccs175m():
 if __name__=="__main__":
     import matplotlib.pyplot as plt
     import pandas as pd
-    from matplotlib.ticker import ScalarFormatter
+    import matplotlib.ticker as ticker
 
     #Graph setting
     plt.rcParams['font.family'] ='sans-serif'
@@ -162,67 +162,16 @@ if __name__=="__main__":
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
     fig.canvas.mpl_connect('key_press_event', on_key)  # Key event
     ax = fig.add_subplot(111, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
-    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+    ax.get_yaxis().set_major_locator(ticker.MaxNLocator(integer=True))
     ax.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
     graph, = ax.plot(ccs.wavelength, data)
 
     while key!='escape':
         data=ccs.read_spectra()
+        #data/=np.amax(data)
         graph.set_data(ccs.wavelength,data)
         ax.set_ylim((0,np.amax(data)*1.2))
+        #ax.set_xlim((770,910))
         key=None
         plt.pause(0.0001)
-
-
-'''
-
-import matplotlib.pyplot as plt
-#dllファイル　ロード
-dev=ctypes.windll.LoadLibrary(r'modules\tools\CCS175M.dll')
-
-
-#接続
-name='USB0::0x1313::0x8087::M00801544::RAW'
-name=ctypes.create_string_buffer(name.encode('utf-8'))
-handle=ctypes.c_long()
-dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
-err=dev.tlccs_Init(name,False,False,ctypes.byref(handle))
-
-if err:
-    raise CcsError(status_code=err,session=handle)
-
-#露光時間設定
-integration_time=ctypes.c_double(0.01)
-dev.tlccs_SetIntegrationTime.restype=ctypes.c_long
-err=dev.tlccs_SetIntegrationTime(handle,integration_time)
-if err:
-    raise CcsError(status_code=err,session=handle)
-
-#測定開始
-err=dev.tlccs_StartScanCont(handle)
-if err:
-    raise CcsError(status_code=err,session=handle)
-
-
-#測定データの取得
-ccs_num_pixels=3648 #number of effective pixels of CCD
-dev.GetScanDataArray.argtype=(ctypes.c_long)
-dev.GetScanDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=ccs_num_pixels)
-sp=dev.GetScanDataArray(handle)
-
-#波長軸データの取得
-dev.GetWavelengthDataArray.argtype=(ctypes.c_long)
-dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=ccs_num_pixels)
-wl=dev.GetWavelengthDataArray(handle)
-
-#データプロット
-plt.plot(wl,sp)
-plt.xlabel("wavelength[nm]",fontsize=17)
-plt.ylabel("light intensity[arb. unit]",fontsize=17)
-plt.show()
-
-#セッション終了
-err=dev.tlccs_Close(handle)
-if err:
-    raise CcsError(status_code=err,session=handle)
-'''
