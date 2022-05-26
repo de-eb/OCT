@@ -38,6 +38,7 @@ class Ccs175m():
     __err=ctypes.c_long()
 
     #Set type of argument of functions
+    __dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
     __dev.tlccs_StartScan.argtype=(ctypes.c_long)
     __dev.tlccs_StartScanCont.argtype=(ctypes.c_long)
     __dev.tlccs_SetIntegrationTime.argtypes=(ctypes.c_long,ctypes.c_double)
@@ -66,7 +67,6 @@ class Ccs175m():
         """
         #device initializing
         self.__name=ctypes.create_string_buffer(name.encode('utf-8'))
-        Ccs175m.__dev.tlccs_Init.argtypes=(ctypes.c_char_p,ctypes.c_bool,ctypes.c_bool,ctypes.POINTER(ctypes.c_long))
         Ccs175m.__err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(Ccs175m.__handle))
         if Ccs175m.__err:
             raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
