@@ -16,12 +16,13 @@ class CcsError(Exception):
     session : `int`
         An instrument handle which is used in call functions.
     """
+    __status_code=ctypes.c_long()
+    __err=ctypes.c_long()
     def __init__(self,status_code:ctypes.c_long,session:ctypes.c_long,msg="See terminal for details."):
-        self.__status_code=ctypes.c_long(status_code)
-        self.__handle=session
+        CcsError.__status_code=ctypes.c_long(status_code)
+        CcsError.__handle=session
         self.__msg=msg
-        Ccs175m.output_ErrorMessage(self, status_code=self.__status_code, session=self.__handle)
-        print('(Error code:',self.__status_code.value,')')
+        Ccs175m.output_ErrorMessage(self,status_code=CcsError.__status_code, session=CcsError.__handle)
     def __str__(self):
         return self.__msg
 
@@ -48,6 +49,7 @@ class Ccs175m():
     __dev.OutputErrorMessage.argtypes=(ctypes.c_long,ctypes.c_long)
 
     #Set type of returned value of functions
+    __dev.tlccs_Init.restype=(ctypes.c_long)
     __dev.GetScanDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
     __dev.GetWavelengthDataArray.restype=np.ctypeslib.ndpointer(dtype=np.double,shape=num_pixels)
     
@@ -116,9 +118,10 @@ class Ccs175m():
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
-        data=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
-        
-        return data
+        for i in range(averaging):
+            data2=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
+            data+=data2  
+        return data/averaging
     
     def close_ccs(self):
         Ccs175m.__err=Ccs175m.__dev.tlccs_Close(Ccs175m.__handle)
@@ -126,7 +129,7 @@ class Ccs175m():
             raise CcsError(status_code=Ccs175m.__err, session=Ccs175m.__handle)
 
     def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
-        return Ccs175m.__dev.OutputErrorMessage(status_code,session)
+        return Ccs175m.__dev.OutputErrorMessage(session,status_code)
 
 
 if __name__=="__main__":
