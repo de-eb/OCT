@@ -6,7 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12, PmaError
-from modules.fine01r import Fine01r
+from modules.fine01r import Fine01r, Fine01rError
 from modules.ncm6212c import Ncm6212c, Ncm6212cError
 from modules.artcam130mi import ArtCam130
 from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
@@ -63,17 +63,23 @@ if __name__ == "__main__":
 
     #Flag for equipment operation
     stage_s_flag=None
+    stage_m_flag=None
 
     # Device settings
-    stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
+    try: stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
+    except Fine01rError:
+        print('Error:FINE01R not found.Reference mirror movement function is disabled.')
+        stage_m_flag=False
+    else:
+        stage_m_flag=True
     try: stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
     except Ncm6212cError:
-        print("Error:NCM6212 not found. Sample stage movement function is disabled.")
+        print("Error:NCM6212C not found. Sample stage movement function is disabled.")
         stage_s_flag=False
     else:
         stage_s_flag=True
     pma = Pma12(dev_id=5)  # Spectrometer
-    sp = Processor(pma.wavelength[st:ed], n=1.0,depth_max=0.2,resolution=200)
+    sp = Processor(pma.wavelength[st:ed], n=1.0,depth_max=0.2,resolution=400)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -103,7 +109,8 @@ if __name__ == "__main__":
     ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax1.set_xlim(0,np.amax(sp.depth)*1e6)
     # Device initialization
-    stage_m.absolute_move(z)
+    if stage_m_flag:
+        stage_m.absolute_move(z)
     if stage_s_flag:
         stage_s.absolute_move(axis='A', position=x)
         stage_s.absolute_move(axis='B', position=y)
@@ -125,7 +132,8 @@ if __name__ == "__main__":
             elif g_key == '+': z += step  # Forward
             elif g_key == '0': z = 0  # Return to origin
             # Drive
-            stage_m.absolute_move(z)
+            if stage_m_flag:
+                stage_m.absolute_move(z)
             if stage_s_flag:
                 print(stage_s.absolute_move('A', x))
                 stage_s.absolute_move('B', y)
