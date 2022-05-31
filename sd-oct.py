@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r
-from modules.ncm6212c import Ncm6212c
+from modules.ncm6212c import Ncm6212c, Ncm6212cError
 from modules.artcam130mi import ArtCam130
-from modules.signal_processor import SignalProcessor as Processor
+from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
 import modules.data_handler as dh
 
 # Graph settings
@@ -31,7 +31,7 @@ g_key = None  # Pressed key
 
 def profile_beam(q):
 
-    camera = ArtCam130(exposure_time=100000, scale=0.8, auto_iris=0)
+    camera = ArtCam130(exposure_time=1000, scale=0.8, auto_iris=0)
     camera.open()
     while True:
         img = camera.capture(grid=True)
@@ -61,11 +61,19 @@ if __name__ == "__main__":
     st = 762  # Calculation range (Start) of spectrum
     ed = 953  # Calculation range (End) of spectrum
 
+    #Flag for equipment operation
+    stage_s_flag=None
+
     # Device settings
     stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
-    stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
+    try: stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
+    except Ncm6212cError:
+        print("Error:NCM6212 not found. Sample stage movement function is disabled.")
+        stage_s_flag=False
+    else:
+        stage_s_flag=True
     pma = Pma12(dev_id=5)  # Spectrometer
-    sp = Processor(pma.wavelength[st:ed], 1.0)
+    sp = Processor(pma.wavelength[st:ed], n=1.0,depth_max=0.2,resolution=200)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -93,11 +101,12 @@ if __name__ == "__main__":
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
     ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
     ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    
+    ax1.set_xlim(0,np.amax(sp.depth)*1e6)
     # Device initialization
     stage_m.absolute_move(z)
-    stage_s.absolute_move(axis='A', position=x)
-    stage_s.absolute_move(axis='B', position=y)
+    if stage_s_flag:
+        stage_s.absolute_move(axis='A', position=x)
+        stage_s.absolute_move(axis='B', position=y)
     pma.set_parameter(shutter=1)
 
     # Main loop
@@ -117,8 +126,9 @@ if __name__ == "__main__":
             elif g_key == '0': z = 0  # Return to origin
             # Drive
             stage_m.absolute_move(z)
-            print(stage_s.absolute_move('A', x))
-            stage_s.absolute_move('B', y)
+            if stage_s_flag:
+                print(stage_s.absolute_move('A', x))
+                stage_s.absolute_move('B', y)
             print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
 
         # Spectral measurement
@@ -137,7 +147,7 @@ if __name__ == "__main__":
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
             ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
-            ax1.set_ylim((0, 0.3*ascan.max()))
+            ax1.set_ylim((0,1))
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
@@ -154,7 +164,7 @@ if __name__ == "__main__":
             print("Saved the graph to {}.".format(file_path))
 
         # 'Space' key to Start measurement
-        elif g_key == ' ':
+        elif g_key == ' ' and stage_s_flag:
             if ref is None:
                 print("No reference data available.")
             else:
