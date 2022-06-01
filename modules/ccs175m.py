@@ -11,10 +11,12 @@ class CcsError(Exception):
 
     Attributes
     ----------
-    err : `int`
+    err : `int`, required
         Status codes that VISA driver-level operations can return. 
-    session : `int`
+    session : `int`,required
         An instrument handle which is used in call functions.
+    msg : `str`
+        Message to be output.(For when outputting non-supported message)
     """
     __status_code=ctypes.c_long()
     __err=ctypes.c_long()
