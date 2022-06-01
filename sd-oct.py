@@ -11,6 +11,7 @@ from modules.ncm6212c import Ncm6212c, Ncm6212cError
 from modules.artcam130mi import ArtCam130
 from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
 import modules.data_handler as dh
+from modules.ccs175m import Ccs175m,CcsError
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -58,8 +59,8 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     #Constants
-    st = 762  # Calculation range (Start) of spectrum
-    ed = 953  # Calculation range (End) of spectrum
+    st=1664 # Calculation range (Start) of spectrum(ccs)
+    ed=2491 # Calculation range (End) of spectrum(ccs)
 
     #Flag for equipment operation
     stage_s_flag=None
@@ -78,8 +79,9 @@ if __name__ == "__main__":
         stage_s_flag=False
     else:
         stage_s_flag=True
-    pma = Pma12(dev_id=5)  # Spectrometer
-    sp = Processor(pma.wavelength[st:ed], n=1.0,depth_max=0.2,resolution=400)
+    #pma = Pma12(dev_id=5)  # Spectrometer (old)
+    ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=0.2,resolution=400)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     limit = 300000  # Stage operation limit [nm]
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
-    itf = np.zeros((pma.wavelength.size, int((limit-x)/step)), dtype=float)  # Interference spectra
+    itf = np.zeros((ccs.wavelength.size, int((limit-x)/step)), dtype=float)  # Interference spectra
     ascan = np.zeros_like(sp.depth)
     err = False
 
@@ -99,14 +101,14 @@ if __name__ == "__main__":
     ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0_0, = ax0.plot(pma.wavelength[st:ed], itf[st:ed,0], label='interference')
-    ax0_1, = ax0.plot(pma.wavelength[st:ed], itf[st:ed,0], label='reference')
+    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='interference')
+    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*1e6, ascan, label='Numpy fft')
-    ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
+    ax1_0, = ax1.plot(sp.depth*1e6, ascan)
+    #ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax1.set_xlim(0,np.amax(sp.depth)*1e6)
     # Device initialization
     if stage_m_flag:
@@ -114,8 +116,9 @@ if __name__ == "__main__":
     if stage_s_flag:
         stage_s.absolute_move(axis='A', position=x)
         stage_s.absolute_move(axis='B', position=y)
-    pma.set_parameter(shutter=1)
-
+    #pma.set_parameter(shutter=1)
+    ccs.set_IntegrationTime(time=0.0001)
+    ccs.start_scan()
     # Main loop
     while g_key != 'escape':  # ESC key to exit
 
@@ -140,7 +143,7 @@ if __name__ == "__main__":
             print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
 
         # Spectral measurement
-        try: itf[:,0] = pma.read_spectra(averaging=5)
+        try: itf[:,0] = ccs.read_spectra(averaging=5)
         except PmaError as e:
             err = True
             print(e, end="\r")
@@ -148,7 +151,7 @@ if __name__ == "__main__":
             if err:
                 print("                            ", end="\r")
                 err= False
-        ax0_0.set_data(pma.wavelength[st:ed], itf[st:ed,0])  # Graph update
+        ax0_0.set_data(ccs.wavelength[st:ed], itf[st:ed,0])  # Graph update
         ax0.set_ylim((0, 1.2*itf[st:ed,0].max()))
 
         # Signal processing
@@ -159,14 +162,14 @@ if __name__ == "__main__":
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
-            ref = pma.read_spectra(averaging=100)
+            ref = ccs.read_spectra(averaging=100)
             sp.set_reference(ref[st:ed])
             print("Reference data updated.")
-            ax0_1.set_data(pma.wavelength[st:ed], ref[st:ed])
+            ax0_1.set_data(ccs.wavelength[st:ed], ref[st:ed])
         
         if g_key == 'alt':  # 'Alt' key to save single data
-            data = pma.read_spectra(averaging=100)
-            dh.save_spectra(wavelength=pma.wavelength, spectra=data)
+            data = ccs.read_spectra(averaging=100)
+            dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
@@ -183,13 +186,13 @@ if __name__ == "__main__":
                     print("Stage position [nm]: x={}".format(x))
                     x += step
                     time.sleep(0.1)
-                    itf[:,i] = pma.read_spectra(averaging=10)  # update interference data
+                    itf[:,i] = ccs.read_spectra(averaging=10)  # update interference data
                 x = 100000
                 stage_s.absolute_move('A', x)
                 print("Measurement complete.")
 
                 # Save data
-                dh.save_spectra(wavelength=pma.wavelength, reference=ref, spectra=itf)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
 
         g_key = None
         plt.pause(0.0001)
