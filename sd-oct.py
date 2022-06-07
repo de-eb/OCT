@@ -62,7 +62,7 @@ if __name__ == "__main__":
     st=1664 # Calculation range (Start) of spectrum(ccs)
     ed=2491 # Calculation range (End) of spectrum(ccs)
 
-    #Flag for equipment operation
+    #Flag for piezo stage operation
     stage_s_flag=None
     stage_m_flag=None
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         stage_s_flag=True
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=0.2,resolution=400)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=1.6,resolution=400)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -104,12 +104,11 @@ if __name__ == "__main__":
     ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='interference')
     ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
+    ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*1e6, ascan)
-    #ax1.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    ax1.set_xlim(0,np.amax(sp.depth)*1e6)
+    ax1_0, = ax1.plot(sp.depth*1e3, ascan)
+    ax1.set_xlim(0,np.amax(sp.depth)*1e3)
     # Device initialization
     if stage_m_flag:
         stage_m.absolute_move(z)
@@ -157,8 +156,15 @@ if __name__ == "__main__":
         # Signal processing
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
-            ax1_0.set_data(sp.depth*1e6, ascan)  # Graph update
+            ax1_0.set_data(sp.depth*1e3, ascan)  # Graph update
             ax1.set_ylim((0,1))
+
+        #'Delete' key to delete reference and a-scan data       
+        if g_key=='delete':
+            ref=None
+            ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))
+            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
+            print('Reference data deleted.')            
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
