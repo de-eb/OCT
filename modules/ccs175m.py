@@ -6,15 +6,17 @@ import time
 
 class CcsError(Exception):
     """ Base exception class for this modules.
-    Outputs a message to the terminal or an exception message
+    Outputs a message to the TERMINAL instead of an exception message
      because of unfixable garbled characters.
 
     Attributes
     ----------
-    err : `int`
+    err : `int`, required
         Status codes that VISA driver-level operations can return. 
-    session : `int`
+    session : `int`,required
         An instrument handle which is used in call functions.
+    msg : `str`
+        Message to be output.(For when outputting non-supported message)
     """
     __status_code=ctypes.c_long()
     __err=ctypes.c_long()
@@ -108,11 +110,27 @@ class Ccs175m():
             raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
     
     def start_scan(self):
+        """This function starts measurement continuously.
+        Any other function except 'read_spectra' function will stop scanning.
+
+        Raise
+        --------
+        CcsError :
+            When measurement could not be started for some reason.
+        """
         Ccs175m.__err=Ccs175m.__dev.tlccs_StartScanCont(Ccs175m.__handle)
         if Ccs175m.__err:
             raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
     
     def read_spectra(self,averaging=1):
+        """This function reads out spectra.
+        Be sure to call 'start_scan' function before this function.
+
+        Return
+        ---------
+        `1d-ndarray`
+            Spectra sampled evenly in the wavelength space.
+        """
         data=np.zeros_like(self.wavelength)
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
@@ -123,11 +141,31 @@ class Ccs175m():
         return data/averaging
     
     def close_ccs(self):
+        """ Release the instrument and device driver
+        and terminate the connection.
+        
+        Raise
+        -------
+        CcsError :
+            When the module is not controlled correctly.
+        """
         Ccs175m.__err=Ccs175m.__dev.tlccs_Close(Ccs175m.__handle)
         if Ccs175m.__err:
             raise CcsError(status_code=Ccs175m.__err, session=Ccs175m.__handle)
 
     def output_ErrorMessage(self,status_code:ctypes.c_long,session:ctypes.c_long):
+        """This function translates the error return value from VXIplug&play 
+        instrument driver function to a user-readable string.
+
+        Parameters
+        ----------
+        status_code : `ctypes.c_long` 
+            Error return value from VXIplug&play instrument driver.
+        
+        session : `ctypes.c_long`
+            Instrument handle of ccs.
+
+        """
         return Ccs175m.__dev.OutputErrorMessage(session,status_code)
 
 

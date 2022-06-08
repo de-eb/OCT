@@ -8,7 +8,7 @@ class SignalProcessorHamasaki():
     """
     c = 2.99792458e8  # Speed of light in vacuum [m/sec].
 
-    def __init__(self,wavelength,n,depth_max,signal_length):
+    def __init__(self,wavelength,n,depth_max,resolution,signal_length=3):
         """
         Initialization and preprocessing of parameters.
         Parameters
@@ -19,15 +19,19 @@ class SignalProcessorHamasaki():
             Refractive index of the sample .
         xmax : 'float', required
             maximum value of depth axis[mm]
-        signal_length :  `float`, required
-            Signal length.(3 is recomended)
+        resolution : `int`
+            Resolution of calculation result.
+            The larger the value, the sharper the graph,but the calculation time.
+        signal_length :  `float`
+            Signal length.
             The calculation result always be periodic function. 
             This parameter controls the length of the cycle.
             The higher this parameter, the longer the period, but also the longer the time required for the calculation.
+
         """
         # Axis conversion for resampling
         self.__wl=wavelength
-        self.__depth=np.linspace(0, depth_max, int(20000))
+        self.__depth=np.linspace(0, depth_max, int(resolution))
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
@@ -115,6 +119,7 @@ class SignalProcessorHamasaki():
         itf=self.resample(interference)
         rmv=self.remove_background(itf)
         ascan=self.apply_inverse_ft(rmv)
+        ascan/=np.amax(ascan)
         return ascan
 
 if __name__=="__main__":
@@ -126,7 +131,7 @@ if __name__=="__main__":
      wl=data.loc[st:ed,'wl'] # Wavelength
      bg=data.loc[st:ed,'bg'] # Background spectra
      sp=data.loc[st:ed,'sp'] # Sample spectra
-     SigPro=SignalProcessorHamasaki(wl,1.4,0.2,3)
+     SigPro=SignalProcessorHamasaki(wl,1.4,0.2,3,20000)
      result=SigPro.generate_ascan(sp,bg)
      depth=SigPro.depth*1e3
      plt.plot(depth,result)
