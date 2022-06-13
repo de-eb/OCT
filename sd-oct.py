@@ -32,7 +32,7 @@ g_key = None  # Pressed key
 
 def profile_beam(q):
 
-    camera = ArtCam130(exposure_time=1000, scale=0.8, auto_iris=0)
+    camera = ArtCam130(exposure_time=10000, scale=0.8, auto_iris=0)
     camera.open()
     while True:
         img = camera.capture(grid=True)
@@ -61,6 +61,10 @@ if __name__ == "__main__":
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
     ed=2491 # Calculation range (End) of spectrum(ccs)
+    depth_max=0.4 #maximum value of depth axis[mm]
+    exponentation=3
+    #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
+    #(Axis label automatically change according to number)
 
     #Flag for piezo stage operation
     stage_s_flag=None
@@ -81,7 +85,7 @@ if __name__ == "__main__":
         stage_s_flag=True
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=1.6,resolution=400)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=400)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -104,11 +108,15 @@ if __name__ == "__main__":
     ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='interference')
     ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
+    if exponentation ==6:
+        ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
+    else:
+        ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*1e3, ascan)
-    ax1.set_xlim(0,np.amax(sp.depth)*1e3)
+    ax1_0, = ax1.plot(sp.depth*(10**exponentation), ascan)
+    ax1.set_xlim(0,np.amax(sp.depth)*(10**exponentation))
+
     # Device initialization
     if stage_m_flag:
         stage_m.absolute_move(z)
@@ -156,7 +164,7 @@ if __name__ == "__main__":
         # Signal processing
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
-            ax1_0.set_data(sp.depth*1e3, ascan)  # Graph update
+            ax1_0.set_data(sp.depth*(10**exponentation), ascan)  # Graph update
             ax1.set_ylim((0,1))
 
         #'Delete' key to delete reference and a-scan data       
