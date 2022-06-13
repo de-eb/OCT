@@ -107,8 +107,7 @@ class Ccs175m():
         self.iTime=ctypes.c_double(time)
         Ccs175m.__err=Ccs175m.__dev.tlccs_SetIntegrationTime(Ccs175m.__handle.value,self.iTime)
         if Ccs175m.__err:
-            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle,
-            msg='If no error message is printed, the value of integration time is probably out of range(1.0e-5 ~ 6.0e+1)')
+            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
     
     def start_scan(self):
         """This function starts measurement continuously.
@@ -190,7 +189,7 @@ if __name__=="__main__":
 
     #Parameter initiallization
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW')
-    ccs.set_IntegrationTime(time=0.01)
+    ccs.set_IntegrationTime()
     ccs.start_scan()
     data=np.zeros_like(ccs.wavelength)
     key=None
