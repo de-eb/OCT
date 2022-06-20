@@ -183,7 +183,11 @@ if __name__ == "__main__":
         
         if g_key == 'alt':  # 'Alt' key to save single data
             data = ccs.read_spectra(averaging=100)
-            dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
+            if ref is None:
+                dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
+                print('Message:Reference data was not registered. Only spectra data was saved.')
+            else:
+                dh.save_spectra(wavelength=ccs.wavelength, spectra=data,reference=ref)
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
