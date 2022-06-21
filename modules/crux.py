@@ -1,20 +1,6 @@
 import serial
 import atexit
 import warnings
-
-'''
-move=decoder('APS',[1,0,10000,0])
-
-ser.write(move)
-result=ser.readline()
-print(result)
-
-origin=decoder('ORG',[1,5,0])
-ser.write(origin)
-result=ser.readline()
-print(result)
-'''
-
 class Crux:
     """Class to control 1-axis auto stage (CRUX)
     """
