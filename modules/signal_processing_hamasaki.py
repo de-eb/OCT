@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from scipy import special, interpolate
 
 class SignalProcessorHamasaki():
@@ -124,17 +123,36 @@ class SignalProcessorHamasaki():
 
 if __name__=="__main__":
      import matplotlib.pyplot as plt
-     st = 762
-     ed = 953
-     name=['wl','bg','sp']
-     data=pd.read_csv('data/210924_0.csv', header=3, index_col=0,names=name)
-     wl=data.loc[st:ed,'wl'] # Wavelength
-     bg=data.loc[st:ed,'bg'] # Background spectra
-     sp=data.loc[st:ed,'sp'] # Sample spectra
-     SigPro=SignalProcessorHamasaki(wl,1.4,0.2,3,20000)
-     result=SigPro.generate_ascan(sp,bg)
+     import pandas as pd
+
+     st = 1664
+     ed = 2491
+     name=['wl','sp']
+     data_ref=pd.read_csv('data/220608_0.csv', header=3, index_col=0,names=name)
+     data_sp0=pd.read_csv('data/220613_1.csv',header=3, index_col=0,names=name)
+     #data_sp1=pd.read_csv('data/220608_2.csv',header=3, index_col=0,names=name)
+     #data_sp2=pd.read_csv('data/220608_3.csv',header=3, index_col=0,names=name)
+    
+     wl=data_ref.loc[st:ed,'wl'] # Wavelength
+     bg=data_ref.loc[st:ed,'sp'] # Background spectra
+     sp0=data_sp0.loc[st:ed,'sp'] # Sample spectra
+     #sp1=data_sp1.loc[st:ed,'sp']
+     #sp2=data_sp2.loc[st:ed,'sp']
+
+     SigPro=SignalProcessorHamasaki(wavelength=wl,n=1.5,depth_max=0.4,resolution=20000)
+     result0=SigPro.generate_ascan(sp0,bg)
+     #result1=SigPro.generate_ascan(sp1,bg)
+     #result2=SigPro.generate_ascan(sp2,bg)
      depth=SigPro.depth*1e3
-     plt.plot(depth,result)
+
+     plt.plot(depth,result0)
+     #plt.plot(depth,result1,label='cover glass + 1 layer of cellophane')
+     #plt.plot(depth,result2,label='cover glass + 2 layers of cellophane')
      plt.xlabel('depth[mm]',fontsize=17)
      plt.ylabel('intensity[arb. unit]',fontsize=17)
+     plt.legend()
+     plt.xlim(0,np.amax(depth))
+     plt.ylim(0,1)
+     plt.xticks(fontsize=15)
+     plt.yticks(fontsize=15)
      plt.show()
