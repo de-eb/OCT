@@ -8,6 +8,7 @@ from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r, Fine01rError
 from modules.ncm6212c import Ncm6212c, Ncm6212cError
+from modules.crux import Crux,CruxError
 from modules.artcam130mi import ArtCam130
 from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
 import modules.data_handler as dh
@@ -32,7 +33,7 @@ g_key = None  # Pressed key
 
 def profile_beam(q):
 
-    camera = ArtCam130(exposure_time=10000, scale=0.8, auto_iris=0)
+    camera = ArtCam130(exposure_time=500, scale=0.8, auto_iris=0)
     camera.open()
     while True:
         img = camera.capture(grid=True)
@@ -77,9 +78,9 @@ if __name__ == "__main__":
         stage_m_flag=False
     else:
         stage_m_flag=True
-    try: stage_s = Ncm6212c('COM10')  # Piezo stage (sample side)
-    except Ncm6212cError:
-        print("Error:NCM6212C not found. Sample stage movement function is disabled.")
+    try: stage_s = Crux('COM4')  # Auto stage (sample side)
+    except CruxError:
+        print("Error:Crux not found. Sample stage movement function is disabled.")
         stage_s_flag=False
     else:
         stage_s_flag=True
@@ -120,9 +121,6 @@ if __name__ == "__main__":
     # Device initialization
     if stage_m_flag:
         stage_m.absolute_move(z)
-    if stage_s_flag:
-        stage_s.absolute_move(axis='A', position=x)
-        stage_s.absolute_move(axis='B', position=y)
     #pma.set_parameter(shutter=1)
     ccs.set_IntegrationTime(time=0.0001)
     ccs.start_scan()
