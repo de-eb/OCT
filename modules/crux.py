@@ -1,6 +1,7 @@
 import serial
 import atexit
 import warnings
+
 class Crux:
     """Class to control 1-axis auto stage (CRUX)
     """
@@ -37,6 +38,7 @@ class Crux:
         if self.hw_info[0]!='C' or self.hw_info[2]!='CRUX':
             print(self.hw_info)
             raise CruxError(msg="*IDN? query failed.\n")
+        self.move_origin()
         print("CRUX is ready.")
 
     def __send_cmd(self,cmd:str,param=[]):
@@ -72,7 +74,7 @@ class Crux:
         self.__send_cmd('IDN')
         return self.__read()
     
-    def move_origin(self,axis_num=1,velocity=5,ret_form=0):
+    def move_origin(self,axis_num=1,velocity=9,ret_form=0):
         """Return the stage to its origin.
         
         Parameters
