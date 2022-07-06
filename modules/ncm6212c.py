@@ -160,6 +160,6 @@ class Ncm6212cError(Exception):
 
 
 if __name__ == "__main__":
-    stage = Ncm6212c(port='COM13')
+    stage = Ncm6212c(port='COM10')
     print(stage.hw_info)
     print(stage.status)

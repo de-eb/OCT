@@ -126,6 +126,6 @@ class Fine01rError(Exception):
 
 
 if __name__ == "__main__":
-    stage = Fine01r('COM12')
+    stage = Fine01r('COM11')
     print(stage.hw_info)
     print(stage.status)
