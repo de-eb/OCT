@@ -172,6 +172,18 @@ class Crux:
     
     def stop(self,axis_num=1,stop_mode=0):
         """Interrupts the operation of the stage like the emergency stop button.
+
+        Parameters
+        ----------
+        axis_num : `int`, optional
+            1 or 2 : axis to stop.
+            0 : stop all axis
+            other : not supported
+        
+        stop_mode : `int`, optional
+            0 : deceleration stop
+            1 : emergency stop
+            other : not supported
         """
         self.__send_cmd('STP',[axis_num,stop_mode])
         self.__error_handling()
