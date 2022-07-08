@@ -150,6 +150,26 @@ class Crux:
         self.__error_handling(responce=responce)
         return int(responce[2])
     
+    def move_cont(self,rot_way:int,axis_num=1,velocity=0):
+        """Keep stage moving until stop command is issued.
+
+        Parameters
+        ----------
+        rot_way : `int`, required
+            rotation way.
+            0 : CW rotation
+            1 : CCW rotation
+            other : not supported
+
+        axis_num : `int`, optional
+            axis to move.
+
+        velocity : `int`, optional
+            stage movement speed.This value can be set in the range of 1 to 9.
+        """
+        self.__send_cmd('FRP',[axis_num,velocity,rot_way])
+        self.__error_handling()
+    
     def stop(self,axis_num=1,stop_mode=0):
         """Interrupts the operation of the stage like the emergency stop button.
         """
