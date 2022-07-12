@@ -93,7 +93,7 @@ class Crux:
         self.__send_cmd('ORG',[axis_num,velocity,ret_form])
         self.__error_handling()
 
-    def absolute_move(self,position:int,axis_num=1,velocity=0,ret_form=0):
+    def absolute_move(self,position:int,axis_num=1,velocity=9,ret_form=0):
         """Move stage to the absolute position.
         
         Parameters
@@ -188,12 +188,18 @@ class CruxError(Exception):
         return self.msg
 
 if __name__=="__main__":
+    plus = 40000
     import time
     stage=Crux('COM4')
-    stage.absolute_move(20000,velocity=9)
-    time.sleep(0.2)
+    for y in range(1):
+        for i in range(int(plus/1000
+        )):
+            stage.relative_move(-1000,velocity=9)
+            time.sleep(0.5)
+        stage.absolute_move(0,velocity=9)
+        time.sleep(0.5)
     stage.stop()
-    stage.absolute_move(-20000,velocity=9)
+    stage.absolute_move(-50000,velocity=9)
 
 
 
