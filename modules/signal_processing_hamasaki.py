@@ -139,10 +139,15 @@ def calculate_absorbance(transmittion,incidence):
     
     Return
     ----------
-    `1d-ndarray`
+    absorbanve : `1d-ndarray`
         calculated absorbance data
     """
-    return np.log10(transmittion/incidence)*(-1)
+    with np.errstate(divide='ignore',invalid='ignore'):
+        absorbance=np.log10(transmittion/incidence)*(-1)
+    for i in range(len(absorbance)):
+        if np.isnan(absorbance[i]) or np.isinf(absorbance[i]):
+            absorbance[i]=0
+    return absorbance
 
 if __name__=="__main__":
      import matplotlib.pyplot as plt
