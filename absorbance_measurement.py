@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12,PmaError
-from modules.signal_processing_hamasaki import SignalProcessorHamasaki
+from modules.signal_processing_hamasaki import calculate_absorbance
+from multiprocessing import Process, Queue
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -18,9 +19,18 @@ plt.rcParams["ytick.minor.width"] = 0.5
 plt.rcParams['font.size'] = 14
 plt.rcParams['axes.linewidth'] = 1.0
 
+q=Queue()
+g_key=None
+def on_key(event,q):
+    global g_key
+    g_key=event.key
+    q.put(g_key)
+
 #device connection
 pma=Pma12(dev_id=5)
 data=np.zeros_like(pma.wavelength,dtype=float)
+incidence=None
+absorbance=np.zeros_like(pma.wavelength,dtype=float)
 key=None
 err=False
 
@@ -30,11 +40,36 @@ fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))  # Key e
 ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
 ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='Transmitted light')
-ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='Incident light')
+ax0_0, = ax0.plot(pma.wavelength,data, label='Transmitted light')
+ax0_1, = ax0.plot(pma.wavelength,data, label='Incident light')
 ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-ax1 = fig.add_subplot(212, title='Absorbance', xlabel='depth [mm]', ylabel='Intensity [-]')
+ax1 = fig.add_subplot(212, title='Absorbance', xlabel='wavelength [mm]', ylabel='Absorbance [-]')
 ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-ax1_0, = ax1.plot(sp.depth*(10**exponentation), ascan)
-ax1.set_xlim(0,np.amax(sp.depth)*(10**exponentation))
+ax1_0, = ax1.plot(pma.wavelength,absorbance)
+
+pma.set_parameter(shutter=1)
+while g_key!='escape':
+    try :data=pma.read_spectra()
+    except PmaError as e:
+        err=True
+        print(e,end="\r")
+    else:
+        if err:
+            print("                            ", end="\r")
+            err= False
+    ax0_0.set_data(pma.wavelength,data)
+    ax0.set_ylim(0,np.amax(data)*1.2)
+
+    if g_key=='enter':
+        incidence=pma.read_spectra(averaging=100)
+        ax0_1.set_data(pma.wavelength,incidence)
+        print("Incident light spectra updated.")
+    
+    if incidence is not None:
+        absorbance=calculate_absorbance(data,incidence)
+        ax1_0.set_data(pma.wavelength,absorbance)
+        ax1.set_ylim(0,np.amax(absorbance)*1.2)
+        
+    g_key=None
+    plt.pause(0.0001)
