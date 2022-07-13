@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import special, interpolate
+from scipy import interpolate
 
 class SignalProcessorHamasaki():
     """
@@ -10,6 +10,7 @@ class SignalProcessorHamasaki():
     def __init__(self,wavelength,n,depth_max,resolution,signal_length=3):
         """
         Initialization and preprocessing of parameters.
+
         Parameters
         ----------
         wavelength : `1d-ndarray`, required
@@ -45,6 +46,7 @@ class SignalProcessorHamasaki():
 
     def resample(self, spectra):
         """ Resamples the spectra.
+
         Parameters
         ----------
         spectra : `1d-ndarray`, required
@@ -59,6 +61,7 @@ class SignalProcessorHamasaki():
 
     def set_reference(self,reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
+
         Parameters
         ----------
         spectra : `1d-ndarray`, required
@@ -83,11 +86,13 @@ class SignalProcessorHamasaki():
 
     def apply_inverse_ft(self,spectra):
         """Apply inverse ft to the spectra and convert it to distance data
+
         Parameters
         ----------
         sp : `1d-ndarray`, required
             spectra(After applying resampling)
-        Returns
+
+        Return
         ----------
         `1d-array`
             Data after IFFT
@@ -101,13 +106,15 @@ class SignalProcessorHamasaki():
 
     def generate_ascan(self,interference,reference):
         """ Performs a series of signal processing in one step.
+
         Parameters
         ----------
         interference : `1d-ndarray`, required
             Spectra of interference light only, sampled evenly in wavelength space.
         reference : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
-        Returns
+        
+        Return
         -------
         ascan : `1d-ndarray`
             Light intensity data in the time domain (i.e. A-scan).
@@ -120,6 +127,23 @@ class SignalProcessorHamasaki():
         ascan=self.apply_inverse_ft(rmv)
         ascan/=np.amax(ascan)
         return ascan
+
+    def calculate_transmittance(self,transmittion,incidence):
+        """Calculate tranmittance based on the incident and transmitted light.
+
+        Parameters
+        ----------
+        transmittion : `1d-ndarray`, required
+            Spectrum of the light source used to measure transmittance
+        incidence : `1d-ndarray`, required
+            
+
+        Return
+        ----------
+        `1d-ndarray`
+            calculated transmittance data
+        """
+        return np.log10(transmittion/incidence)*(-1)
 
 if __name__=="__main__":
      import matplotlib.pyplot as plt
