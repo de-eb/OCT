@@ -195,6 +195,24 @@ if __name__ == "__main__":
             if ref is None:
                 print("No reference data available.")
             else:
+                stage_s.move_origin()
+                print("Measurement start")
+                
+                plus = 40000
+                stage_s.absolute_move(20000,velocity=9)          
+                for i in range(int(plus/1000)):
+                    spectra=ccs.read_spectra()
+                    data=sp.generate_ascan(spectra[st:ed],ref[st:ed])
+                    if i==0:
+                        result_map=data
+                    else:
+                        result_map=np.vstack((result_map,data))
+                    stage_s.relative_move(-1000,velocity=9)
+                plt.figure()
+                plt.imshow(result_map)
+                plt.show()
+                
+                '''
                 x = 100000
                 print("Measurement start.")
                 for i in range(itf.shape[1]):
@@ -206,9 +224,10 @@ if __name__ == "__main__":
                 x = 100000
                 stage_s.absolute_move('A', x)
                 print("Measurement complete.")
+                '''
 
                 # Save data
-                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
+                #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
 
         g_key = None
         plt.pause(0.0001)
