@@ -128,21 +128,20 @@ class SignalProcessorHamasaki():
         ascan/=np.amax(ascan)
         return ascan
 
-    def calculate_absorbance(self,transmittion,incidence):
-        """Calculate tranmittance based on the incident and transmitted light.
-
-        Parameters
-        ----------
-        transmittion : `1d-ndarray`, required
-            Spectrum of the light source used to measure transmittance
-        incidence : `1d-ndarray`, required
-        
-        Return
-        ----------
-        `1d-ndarray`
-            calculated absorbance data
-        """
-        return np.log10(transmittion/incidence)*(-1)
+def calculate_absorbance(transmittion,incidence):
+    """Calculate tranmittance based on the incident and transmitted light.
+    Parameters
+    ----------
+    transmittion : `1d-ndarray`, required
+        Spectrum of the light source used to measure transmittance
+    incidence : `1d-ndarray`, required
+    
+    Return
+    ----------
+    `1d-ndarray`
+        calculated absorbance data
+    """
+    return np.log10(transmittion/incidence)*(-1)
 
 if __name__=="__main__":
      import matplotlib.pyplot as plt
