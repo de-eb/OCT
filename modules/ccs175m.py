@@ -20,11 +20,14 @@ class CcsError(Exception):
     """
     __status_code=ctypes.c_long()
     __err=ctypes.c_long()
-    def __init__(self,status_code:ctypes.c_long,session:ctypes.c_long,msg="See terminal for details."):
-        CcsError.__status_code=ctypes.c_long(status_code)
-        CcsError.__handle=session
-        self.__msg=msg
-        Ccs175m.output_ErrorMessage(self,status_code=CcsError.__status_code, session=CcsError.__handle)
+    def __init__(self,status_code:ctypes.c_long,session:ctypes.c_long,msg="See terminal for details."):  
+        if status_code and session:
+            CcsError.__status_code=ctypes.c_long(status_code)
+            CcsError.__handle=ctypes.c_long(session)
+            Ccs175m.output_ErrorMessage(self,status_code=CcsError.__status_code, session=CcsError.__handle)
+            self.__msg=msg
+        else:
+            self.__msg = '\033[31m' + msg + '\033[0m'
     def __str__(self):
         return self.__msg
 
@@ -137,6 +140,8 @@ class Ccs175m():
             averaging=1
         for i in range(averaging):
             data2=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
+            if np.amax(data2)>=1:
+                raise CcsError(status_code=None, session=None,msg="Measured data are saturated.")
             data+=data2  
         return data/averaging
     
@@ -193,6 +198,7 @@ if __name__=="__main__":
     ccs.start_scan()
     data=np.zeros_like(ccs.wavelength)
     key=None
+    err=False
     
     def on_key(event):
         global key
@@ -208,8 +214,14 @@ if __name__=="__main__":
     graph, = ax.plot(ccs.wavelength, data)
 
     while key!='escape':
-        data=ccs.read_spectra()
-        #data/=np.amax(data)
+        try:data=ccs.read_spectra()
+        except CcsError as e:
+            err=True
+            print(e,end="\r")
+        else:
+            if err:
+                print("                            ", end="\r")
+                err=False
         graph.set_data(ccs.wavelength,data)
         ax.set_ylim((0,np.amax(data)*1.2))
         #ax.set_xlim((770,910))
