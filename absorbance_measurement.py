@@ -25,7 +25,7 @@ def on_key(event,q):
     global g_key
     g_key=event.key
     q.put(g_key)
-
+    
 #device connection
 pma=Pma12(dev_id=5)
 data=np.zeros_like(pma.wavelength,dtype=float)
@@ -69,7 +69,7 @@ while g_key!='escape':
     if incidence is not None:
         absorbance=calculate_absorbance(data,incidence)
         ax1_0.set_data(pma.wavelength,absorbance)
-        ax1.set_ylim(0,np.amax(absorbance)*1.2)
+        ax1.set_ylim(0,np.nanmax(absorbance)*1.2)
         
     g_key=None
     plt.pause(0.0001)
