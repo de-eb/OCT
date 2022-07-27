@@ -209,7 +209,10 @@ if __name__ == "__main__":
                         result_map=np.vstack((result_map,data))
                     stage_s.relative_move(-1000,velocity=9)
                 plt.figure()
-                plt.imshow(result_map)
+                plt.imshow(result_map,cmap='jet')
+                plt.colorbar()
+                plt.xlabel('depth[μm]')
+                plt.ylabel('width')
                 plt.show()
                 
                 '''
