@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
         # Spectral measurement
         try: itf[:,0] = ccs.read_spectra(averaging=5)
-        except PmaError as e:
+        except CcsError as e:
             err = True
             print(e, end="\r")
         else:
