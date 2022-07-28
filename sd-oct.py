@@ -190,7 +190,7 @@ if __name__ == "__main__":
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
 
-        # 'Space' key to Start measurement
+        # 's' key to Start measurement (2-dimention data)
         elif g_key == 's' and stage_s_flag:
             if ref is None:
                 print("No reference data available.")

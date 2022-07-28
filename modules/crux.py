@@ -93,7 +93,7 @@ class Crux:
         self.__send_cmd('ORG',[axis_num,velocity,ret_form])
         self.__error_handling()
 
-    def absolute_move(self,position:int,axis_num=1,velocity=0,ret_form=0):
+    def absolute_move(self,position:int,axis_num=1,velocity=9,ret_form=0):
         """Move stage to the absolute position.
         
         Parameters
