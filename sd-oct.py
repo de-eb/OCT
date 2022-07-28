@@ -191,7 +191,7 @@ if __name__ == "__main__":
             print("Saved the graph to {}.".format(file_path))
 
         # 'Space' key to Start measurement
-        elif g_key == ' ' and stage_s_flag:
+        elif g_key == 's' and stage_s_flag:
             if ref is None:
                 print("No reference data available.")
             else:
@@ -209,7 +209,10 @@ if __name__ == "__main__":
                         result_map=np.vstack((result_map,data))
                     stage_s.relative_move(-1000,velocity=9)
                 plt.figure()
-                plt.imshow(result_map)
+                plt.imshow(result_map,cmap='jet')
+                plt.colorbar()
+                plt.xlabel('depth[μm]')
+                plt.ylabel('width')
                 plt.show()
                 
                 '''
