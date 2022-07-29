@@ -104,6 +104,7 @@ if __name__ == "__main__":
     itf = np.zeros((ccs.wavelength.size,step_h), dtype=float)  # Interference spectra
     ascan = np.zeros_like(sp.depth)
     err = False
+    location=np.zeros(3,dtype=int)
 
     # Graph initialization
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
@@ -131,7 +132,7 @@ if __name__ == "__main__":
     ccs.start_scan()
     # Main loop
     while g_key != 'escape':  # ESC key to exit
-
+        '''
         # Manual operation of Piezo stages
         if g_key in ['8', '2', '6', '4', '+', '-', '5', '0']:
             # Sample
@@ -151,6 +152,13 @@ if __name__ == "__main__":
                 print(stage_s.absolute_move('A', x))
                 stage_s.absolute_move('B', y)
             print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
+        '''
+        if g_key in ['4','6','5']:
+            if g_key=='6':stage_s.relative_move(200,axis_num=1,velocity=9)
+            elif g_key=='4':stage_s.relative_move(-200,axis_num=1,velocity=9)
+            elif g_key=='5':stage_s.move_origin(axis_num=1)
+            location[0]=stage_s.read_position(axis_num=1)
+            print('Stage position[mm]:x={},y={},z={}'.format(location[0]/pl_rate,location[1]/pl_rate,location[2]/pl_rate))
 
         # Spectral measurement
         try: itf[:,0] = ccs.read_spectra(averaging=5)
