@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
+from tqdm import tqdm
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r, Fine01rError
 from modules.ncm6212c import Ncm6212c, Ncm6212cError
@@ -59,13 +60,18 @@ def on_key(event, q):
 
 
 if __name__ == "__main__":
-    #Constants
-    st=1664 # Calculation range (Start) of spectrum(ccs)
-    ed=2491 # Calculation range (End) of spectrum(ccs)
+    # Parameter initialization
     depth_max=0.4 #maximum value of depth axis[mm]
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
+    pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
+    step_h=640 # Number of horizontal divisions
+    width_h=20 # Horizontal scanning width[mm]
+
+    #Constants
+    st=1664 # Calculation range (Start) of spectrum(ccs)
+    ed=2491 # Calculation range (End) of spectrum(ccs)
 
     #Flag for piezo stage operation
     stage_s_flag=None
@@ -86,17 +92,16 @@ if __name__ == "__main__":
         stage_s_flag=True
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=400)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=1000)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
-
-    # Parameter initialization
-    step = 1000  # Stage operation interval [nm]
-    limit = 300000  # Stage operation limit [nm]
+   
+    #step = 1000  # Stage operation interval [nm]
+    #limit = 300000  # Stage operation limit [nm]
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
-    itf = np.zeros((ccs.wavelength.size, int((limit-x)/step)), dtype=float)  # Interference spectra
+    itf = np.zeros((ccs.wavelength.size,step_h), dtype=float)  # Interference spectra
     ascan = np.zeros_like(sp.depth)
     err = False
 
@@ -190,44 +195,32 @@ if __name__ == "__main__":
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
 
-        # 's' key to Start measurement (2-dimention data)
-        elif g_key == 's' and stage_s_flag:
+        # 't' key to Start measurement (2-dimention data)
+        elif g_key == 't' and stage_s_flag:
             if ref is None:
                 print("No reference data available.")
             else:
                 stage_s.move_origin()
                 print("Measurement start")
-                
-                plus = 40000
-                stage_s.absolute_move(20000,velocity=9)          
-                for i in range(int(plus/1000)):
+
+                stage_s.absolute_move(int((width_h*pl_rate/2)),velocity=9)     
+                for i in tqdm(range(step_h)):
                     spectra=ccs.read_spectra()
                     data=sp.generate_ascan(spectra[st:ed],ref[st:ed])
                     if i==0:
                         result_map=data
                     else:
                         result_map=np.vstack((result_map,data))
-                    stage_s.relative_move(-1000,velocity=9)
+                    stage_s.relative_move(int(width_h/step_h*pl_rate*(-1)),velocity=9)
                 plt.figure()
-                plt.imshow(result_map,cmap='jet')
+                plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*(2/3))
                 plt.colorbar()
-                plt.xlabel('depth[μm]')
-                plt.ylabel('width')
+                if exponentation==6:
+                    plt.xlabel('depth[μm]')
+                else:
+                    plt.xlabel('depth[mm]')
+                plt.ylabel('width[mm]')
                 plt.show()
-                
-                '''
-                x = 100000
-                print("Measurement start.")
-                for i in range(itf.shape[1]):
-                    stage_s.absolute_move('A', x)
-                    print("Stage position [nm]: x={}".format(x))
-                    x += step
-                    time.sleep(0.1)
-                    itf[:,i] = ccs.read_spectra(averaging=10)  # update interference data
-                x = 100000
-                stage_s.absolute_move('A', x)
-                print("Measurement complete.")
-                '''
 
                 # Save data
                 #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
