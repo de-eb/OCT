@@ -65,13 +65,13 @@ if __name__ == "__main__":
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
-    pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
     step_h=640 # Number of horizontal divisions
     width_h=20 # Horizontal scanning width[mm]
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
     ed=2491 # Calculation range (End) of spectrum(ccs)
+    pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
 
     #Flag for piezo stage operation
     stage_s_flag=None
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         stage_s_flag=True
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=1000)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=1500)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -153,12 +153,17 @@ if __name__ == "__main__":
                 stage_s.absolute_move('B', y)
             print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
         '''
-        if g_key in ['4','6','5']:
-            if g_key=='6':stage_s.relative_move(200,axis_num=1,velocity=9)
-            elif g_key=='4':stage_s.relative_move(-200,axis_num=1,velocity=9)
-            elif g_key=='5':stage_s.move_origin(axis_num=1)
+        if g_key in ['4','6','5','2','8']:
+            if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
+            elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
+            elif g_key=='5':
+                stage_s.move_origin(axis_num=1,velocity=9)
+                stage_s.move_origin(axis_num=2,velocity=9)
+            elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
+            elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
             location[0]=stage_s.read_position(axis_num=1)
-            print('Stage position[mm]:x={},y={},z={}'.format(location[0]/pl_rate,location[1]/pl_rate,location[2]/pl_rate))
+            location[1]=stage_s.read_position(axis_num=2)
+            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format(location[0]/pl_rate,location[1]/pl_rate,location[2]/pl_rate))
 
         # Spectral measurement
         try: itf[:,0] = ccs.read_spectra(averaging=5)
@@ -202,8 +207,11 @@ if __name__ == "__main__":
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
+        
+        if g_key=='/': #'/' key to move the stage to the left edge (for when change sample)
+            stage_s.absolute_move(-71000)
 
-        # 't' key to Start measurement (2-dimention data)
+        # 'd' key to Start measurement (2-dimention data)
         elif g_key == 't' and stage_s_flag:
             if ref is None:
                 print("No reference data available.")
@@ -213,25 +221,25 @@ if __name__ == "__main__":
 
                 stage_s.absolute_move(int((width_h*pl_rate/2)),velocity=9)     
                 for i in tqdm(range(step_h)):
-                    spectra=ccs.read_spectra()
-                    data=sp.generate_ascan(spectra[st:ed],ref[st:ed])
+                    itf[:,i]=ccs.read_spectra()
+                    data=sp.generate_ascan(itf[st:ed,i],ref[st:ed])
                     if i==0:
                         result_map=data
                     else:
                         result_map=np.vstack((result_map,data))
                     stage_s.relative_move(int(width_h/step_h*pl_rate*(-1)),velocity=9)
                 plt.figure()
-                plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*(2/3))
+                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*(2/3),vmax=0.5)
                 plt.colorbar()
                 if exponentation==6:
                     plt.xlabel('depth[μm]')
                 else:
                     plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
-                plt.show()
-
                 # Save data
-                #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
+                stage_s.move_origin(axis_num=1,ret_form=1)
+                plt.show()
 
         g_key = None
         plt.pause(0.0001)
