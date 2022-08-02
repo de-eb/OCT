@@ -39,6 +39,7 @@ class Crux:
             print(self.hw_info)
             raise CruxError(msg="*IDN? query failed.\n")
         self.move_origin()
+        self.move_origin(axis_num=2)
         print("CRUX is ready.")
 
     def __send_cmd(self,cmd:str,param=[]):
@@ -79,16 +80,19 @@ class Crux:
         
         Parameters
         ----------
-        axis_num : `int`, optional
-            axis to move.
+        axis_num : `int`, optional 
+            Axis to move.
+            1 : Vertical motorized stage
+            2 : Horizontal motorized stage
+            other : Not supported 
 
-        velocity : `int`, optional
-            stage movement speed.This value can be set in the range of 1 to 9.
+        velocity : `int`, optional 
+            Stage movement speed.This value can be set in the range of 1 to 9.
 
         ret_form : `int`, optional
             0 : Device responds when the operation is complete
             1 : Device responds immediately upon receiving a signal
-            other : not supported
+            other : Not supported
         """
         self.__send_cmd('ORG',[axis_num,velocity,ret_form])
         self.__error_handling()
@@ -102,7 +106,10 @@ class Crux:
             Target absolute position[pulse]. 20000[pulse] equals about 10[mm].
 
         axis_num : `int`, optional
-            axis to move.
+            Axis to move.
+            1 : Vertical motorized stage
+            2 : Horizontal motorized stage
+            other : Not supported 
 
         velocity : `int`, optional
             stage movement speed.This value can be set in the range of 1 to 9.
@@ -110,35 +117,46 @@ class Crux:
         ret_form : `int`, optional
             0 : Device responds when the operation is complete
             1 : Device responds immediately upon receiving a signal
-            other : not supported
+            other : Not supported
         """
         self.__send_cmd('APS',[axis_num,velocity,position,ret_form])
         self.__error_handling()
     
-    def relative_move(self,distance:int,axis_num=1,velocity=0,ret_form=0):
+    def relative_move(self,distance:int,axis_num=1,velocity=9,ret_form=0):
         """Moves from the current position to the position of the set travel distance.
         
         Parameters
         ----------
         distance : `int`, required
-            amount of movement[pulse]. 20000[pulse] equals about 10[mm].
+            Amount of movement[pulse]. 20000[pulse] equals about 10[mm].
 
         axis_num : `int`, optional
-            axis to move.
+            Axis to move.
+            1 : Vertical motorized stage
+            2 : Horizontal motorized stage
+            other : Not supported 
 
         velocity : `int`, optional
-            stage movement speed.This value can be set in the range of 1 to 9.
+            Stage movement speed.This value can be set in the range of 1 to 9.
 
         ret_form : `int`, optional
             0 : Device responds when the operation is complete
             1 : Device responds immediately upon receiving a signal
-            other : not supported
+            other : Not supported
         """
         self.__send_cmd('RPS',[axis_num,velocity,distance,ret_form])
         self.__error_handling()
 
-    def read_position(self,axis_num=1):
+    def read_position(self,axis_num:int):
         """Reads the current position value (pulse counter value).
+        
+        Parameters
+        ----------
+        axis_num : `int`, required
+            Number of stage from which the position is read.
+            1 : Vertical motorized stage
+            2 : Horizontal motorized stage
+            other : Not supported 
 
         Return
         ----------
@@ -156,16 +174,19 @@ class Crux:
         Parameters
         ----------
         rot_way : `int`, required
-            rotation way.
+            Rotation way.
             0 : CW rotation
             1 : CCW rotation
-            other : not supported
+            other : Not supported
 
         axis_num : `int`, optional
-            axis to move.
+            Axis to move.
+            1 : Vertical motorized stage
+            2 : Horizontal motorized stage
+            other : Not supported 
 
         velocity : `int`, optional
-            stage movement speed.This value can be set in the range of 1 to 9.
+            Stage movement speed.This value can be set in the range of 1 to 9.
         """
         self.__send_cmd('FRP',[axis_num,velocity,rot_way])
         self.__error_handling()
@@ -176,14 +197,14 @@ class Crux:
         Parameters
         ----------
         axis_num : `int`, optional
-            1 or 2 : axis to stop.
-            0 : stop all axis
-            other : not supported
+            1 or 2 : Axis to stop.
+            0 : Stop all axis
+            other : Not supported
         
         stop_mode : `int`, optional
-            0 : deceleration stop
-            1 : emergency stop
-            other : not supported
+            0 : Deceleration stop
+            1 : Emergency stop
+            other : Not supported
         """
         self.__send_cmd('STP',[axis_num,stop_mode])
         self.__error_handling()
@@ -220,16 +241,6 @@ class CruxError(Exception):
         return self.msg
 
 if __name__=="__main__":
-    plus = 40000
     import time
     stage=Crux('COM4')
-    for y in range(1):
-        for i in range(int(plus/1000
-        )):
-            stage.relative_move(-1000,velocity=9)
-            time.sleep(0.5)
-        stage.absolute_move(0,velocity=9)
-        time.sleep(0.5)
-    stage.stop()
-    stage.absolute_move(-50000,velocity=9)
-
+    print(stage.move_origin.__doc__)
