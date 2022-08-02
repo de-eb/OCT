@@ -16,14 +16,11 @@ if __name__=="__main__":
     aspect=2/3
 
     data=dh.load_spectra(file_path=filename,wavelength_range=[770,910])
-    result_map=None
+    result_map=np.zeros((len(data['spectra'][0]),resolution))
     sp=Processor(wavelength=data['wavelength'], n=n, depth_max=0.4, resolution=resolution)
     for i in tqdm(range(len(data['spectra'][0]))):
         ascan=sp.generate_ascan(data['spectra'][:,i], data['reference'])
-        if i==0:
-            result_map=ascan
-        else:
-            result_map=np.vstack((result_map,ascan))
+        result_map[i]=ascan
     plt.figure()
     plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*aspect)
     plt.xlabel('depth[mm]')
