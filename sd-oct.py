@@ -66,8 +66,10 @@ if __name__ == "__main__":
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
-    step_h=640 # Number of horizontal divisions
-    width_h=20 # Horizontal scanning width[mm]
+    step_h=30 # Number of horizontal divisions
+    width=20 # Horizontal scanning width[mm]
+    step_v=30 # Number of vertical divisions
+    height=20 # Vertical scaninng height[mm]
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -103,6 +105,7 @@ if __name__ == "__main__":
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
     itf = np.zeros((ccs.wavelength.size,step_h), dtype=float)  # Interference spectra
+    itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size))
     ascan = np.zeros_like(sp.depth)
     err = False
     location=np.zeros(3,dtype=int)
@@ -182,7 +185,7 @@ if __name__ == "__main__":
         if ref is not None:
             ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
             ax1_0.set_data(sp.depth*(10**exponentation), ascan)  # Graph update
-            ax1.set_ylim((0,1))
+            ax1.set_ylim((0,np.amax(ascan)))
 
         #'Delete' key to delete reference and a-scan data       
         if g_key=='delete':
@@ -212,21 +215,20 @@ if __name__ == "__main__":
         if g_key=='/': #'/' key to move the stage to the left edge (for when change sample)
             stage_s.absolute_move(-71000)
 
-        # 'd' key to Start measurement (2-dimention data)
-        elif g_key == 't' and stage_s_flag:
+        # 'd' key to Start measurement (2-dimention data), double
+        elif g_key == 'd' and stage_s_flag:
             if ref is None:
-                print("No reference data available.")
+                print("Error:No reference data available.")
             else:
                 result_map=np.zeros((step_h,resolution))
-                stage_s.move_origin()
-                print("Measurement start")
-                stage_s.absolute_move(int((width_h*pl_rate/2)))
+                print("Measurement(2D) start")
+                stage_s.absolute_move(int((width*pl_rate/2)))
                 for i in tqdm(range(step_h)):
                     itf[:,i]=ccs.read_spectra()
                     result_map[i]=sp.generate_ascan(itf[st:ed,i],ref[st:ed])
-                    stage_s.relative_move(int(width_h/step_h*pl_rate*(-1)))
+                    stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 plt.figure()
-                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*(2/3),vmax=0.5)
+                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
                 plt.colorbar()
                 if exponentation==6:
                     plt.xlabel('depth[μm]')
@@ -237,6 +239,23 @@ if __name__ == "__main__":
                 dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
                 stage_s.move_origin(axis_num=1,ret_form=1)
                 plt.show()
+        # 't'key to start measurement(3-dimention data), triple
+        elif g_key=='t' and stage_s_flag:
+            if ref is None:
+                print('Error:No reference data available.')
+            else:
+                result_map=np.zeros((step_v,step_h,resolution))
+                stage_s.absolute_move(int((width*pl_rate/2)))
+                stage_s.absolute_move(int(height*pl_rate/2),axis_num=2)
+                for i in tqdm(range(step_v)):
+                    for j in range(step_h):
+                        itf_3d[i][j]=ccs.read_spectra()
+                        result_map[i][j]=sp.generate_ascan(itf_3d[i][j][st:ed], ref[st:ed])
+                        stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                    stage_s.absolute_move(int((width*pl_rate/2)))
+                    stage_s.relative_move(int(height/step_v*pl_rate*(-1)),axis_num=2)
+
+
 
         g_key = None
         plt.pause(0.0001)
