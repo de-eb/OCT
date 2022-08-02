@@ -61,6 +61,7 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # Parameter initialization
+    resolution=1500
     depth_max=0.4 #maximum value of depth axis[mm]
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
@@ -92,7 +93,7 @@ if __name__ == "__main__":
         stage_s_flag=True
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=1500)
+    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=resolution)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
@@ -216,18 +217,14 @@ if __name__ == "__main__":
             if ref is None:
                 print("No reference data available.")
             else:
+                result_map=np.zeros((step_h,resolution))
                 stage_s.move_origin()
                 print("Measurement start")
-
-                stage_s.absolute_move(int((width_h*pl_rate/2)),velocity=9)     
+                stage_s.absolute_move(int((width_h*pl_rate/2)))
                 for i in tqdm(range(step_h)):
                     itf[:,i]=ccs.read_spectra()
-                    data=sp.generate_ascan(itf[st:ed,i],ref[st:ed])
-                    if i==0:
-                        result_map=data
-                    else:
-                        result_map=np.vstack((result_map,data))
-                    stage_s.relative_move(int(width_h/step_h*pl_rate*(-1)),velocity=9)
+                    result_map[i]=sp.generate_ascan(itf[st:ed,i],ref[st:ed])
+                    stage_s.relative_move(int(width_h/step_h*pl_rate*(-1)))
                 plt.figure()
                 plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*(2/3),vmax=0.5)
                 plt.colorbar()

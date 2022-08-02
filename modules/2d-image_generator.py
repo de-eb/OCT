@@ -17,10 +17,9 @@ if __name__=="__main__":
 
     data=dh.load_spectra(file_path=filename,wavelength_range=[770,910])
     result_map=np.zeros((len(data['spectra'][0]),resolution))
-    sp=Processor(wavelength=data['wavelength'], n=n, depth_max=0.4, resolution=resolution)
+    sp=Processor(data['wavelength'], n, depth_max, resolution)
     for i in tqdm(range(len(data['spectra'][0]))):
-        ascan=sp.generate_ascan(data['spectra'][:,i], data['reference'])
-        result_map[i]=ascan
+        result_map[i]=sp.generate_ascan(data['spectra'][:,i], data['reference'])
     plt.figure()
     plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*aspect)
     plt.xlabel('depth[mm]')
