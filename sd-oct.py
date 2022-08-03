@@ -66,10 +66,10 @@ if __name__ == "__main__":
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
-    step_h=30 # Number of horizontal divisions
-    width=20 # Horizontal scanning width[mm]
-    step_v=30 # Number of vertical divisions
-    height=20 # Vertical scaninng height[mm]
+    step_h=20 # Number of horizontal divisions
+    width=10 # Horizontal scanning width[mm]
+    step_v=20 # Number of vertical divisions
+    height=10 # Vertical scaninng height[mm]
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -104,8 +104,8 @@ if __name__ == "__main__":
     #limit = 300000  # Stage operation limit [nm]
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
-    itf = np.zeros((ccs.wavelength.size,step_h), dtype=float)  # Interference spectra
-    itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size))
+    itf = np.zeros((step_h,ccs.wavelength.size), dtype=float)  # Interference spectra
+    itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size),dtype=float)
     ascan = np.zeros_like(sp.depth)
     err = False
     location=np.zeros(3,dtype=int)
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='interference')
-    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[st:ed,0], label='reference')
+    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='interference')
+    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     if exponentation ==6:
         ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
@@ -170,7 +170,7 @@ if __name__ == "__main__":
             print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format(location[0]/pl_rate,location[1]/pl_rate,location[2]/pl_rate))
 
         # Spectral measurement
-        try: itf[:,0] = ccs.read_spectra(averaging=5)
+        try: itf[0,:] = ccs.read_spectra(averaging=5)
         except CcsError as e:
             err = True
             print(e, end="\r")
@@ -178,12 +178,12 @@ if __name__ == "__main__":
             if err:
                 print("                            ", end="\r")
                 err= False
-        ax0_0.set_data(ccs.wavelength[st:ed], itf[st:ed,0])  # Graph update
-        ax0.set_ylim((0, 1.2*itf[st:ed,0].max()))
+        ax0_0.set_data(ccs.wavelength[st:ed], itf[0,st:ed])  # Graph update
+        ax0.set_ylim((0, 1.2*itf[0,st:ed].max()))
 
         # Signal processing
         if ref is not None:
-            ascan = sp.generate_ascan(itf[st:ed,0], ref[st:ed])
+            ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
             ax1_0.set_data(sp.depth*(10**exponentation), ascan)  # Graph update
             ax1.set_ylim((0,np.amax(ascan)))
 
@@ -224,8 +224,8 @@ if __name__ == "__main__":
                 print("Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)))
                 for i in tqdm(range(step_h)):
-                    itf[:,i]=ccs.read_spectra()
-                    result_map[i]=sp.generate_ascan(itf[st:ed,i],ref[st:ed])
+                    itf[i,:]=ccs.read_spectra()
+                    result_map[i]=sp.generate_ascan(itf[i,st:ed],ref[st:ed])
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 plt.figure()
                 plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
@@ -236,7 +236,7 @@ if __name__ == "__main__":
                     plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
-                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
                 stage_s.move_origin(axis_num=1,ret_form=1)
                 plt.show()
         # 't'key to start measurement(3-dimention data), triple
