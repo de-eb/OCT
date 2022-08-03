@@ -50,6 +50,29 @@ def save_spectra(wavelength, reference=None, spectra=None, file_path=None, memo=
     df.to_csv(file_path, mode='a')
     print("Saved the spectra to {} .".format(file_path))
 
+def save_spectra_3d(wavelength, reference=None, spectra=None, memo=None, file_path=None):
+    """Save the spectral data as a binary file.(.npz file) Saved data can't be edited, but 3D arrays can be saved.
+
+    Parameters
+    ----------
+    wavelength : `1d-ndarray`, required
+        Wavelength [nm] data corresponding to spectra.
+    reference : `1d-ndarray`
+        Spectra of reference light only. If it is not specified, it will not be recorded.
+    spectra : `ndarray`
+        Spectra, such as interference light.
+        When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
+    file_path : `str`
+        Where file is stored.
+        If not specified, the file will be automatically numbered and saved in `data/`.
+    memo : `str`
+        Additional information to be included in the header of the file.
+    """
+    date=np.array([datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')],dtype=object)
+    remarks=np.array([memo],dtype=object)
+    file_path=generate_filename()
+    np.savez_compressed(file_path,wavelength=wavelength,reference=reference,spectra=spectra,date=date,memo=remarks)
+    print("Saved spectra to {}.npz.".format(file_path))
 
 def load_spectra(file_path, wavelength_range=[0,2000]):
     """ Load the spectra. The data format is the same as the one saved by `self.save_spectra`.
@@ -199,13 +222,13 @@ def draw_graph(format, save=False, file_path=None, **kwargs):
         fig.show()
 
 
-def generate_filename(extension, directory='data'):
+def generate_filename(extension=None, directory='data'):
     """ Automatically generates unique file name that include relative path and extension.
     This prevents overwriting of already existing measurement data, etc.
 
     Parameters
     ----------
-    extension : `str`, required
+    extension : `str`
         File extension to be added to file name.
     directory : `str`
         Relative path to be appended to the file name.
@@ -220,4 +243,7 @@ def generate_filename(extension, directory='data'):
     tag = timestamp.strftime('%y%m%d')
     i = 0
     while '{}_{}.{}'.format(tag,i,extension) in files: i+=1
-    return '{}/{}_{}.{}'.format(directory,tag,i,extension)
+    if extension:
+        return '{}/{}_{}.{}'.format(directory,tag,i,extension)
+    else:
+        return '{}/{}_{}'.format(directory,tag,i)
