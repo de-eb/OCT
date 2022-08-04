@@ -213,6 +213,7 @@ class Crux:
         """ Release the instrument and device driver and terminate the connection.
         """
         self.move_origin()
+        self.move_origin(axis_num=2)
         self.__ser.close()
 
 class CruxError(Exception):
