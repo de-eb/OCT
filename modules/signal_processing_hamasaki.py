@@ -40,9 +40,9 @@ class SignalProcessorHamasaki():
 
     @property
     def depth(self):
-        """ Horizontal axis after FFT (depth [m])
+        """ Horizontal axis after FFT (depth [mm])
         """
-        return self.__depth*1e-3
+        return self.__depth
 
     def resample(self, spectra):
         """ Resamples the spectra.
@@ -125,7 +125,7 @@ class SignalProcessorHamasaki():
         itf=self.resample(interference)
         rmv=self.remove_background(itf)
         ascan=self.apply_inverse_ft(rmv)
-        ascan/=np.amax(ascan)
+        #ascan/=np.amax(ascan)
         return ascan
 
 def calculate_absorbance(transmittion,incidence):
