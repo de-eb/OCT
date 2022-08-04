@@ -50,7 +50,7 @@ def save_spectra(wavelength, reference=None, spectra=None, file_path=None, memo=
     df.to_csv(file_path, mode='a')
     print("Saved the spectra to {} .".format(file_path))
 
-def save_spectra_3d(wavelength, reference=None, spectra=None, memo=None, file_path=None):
+def save_spectra_3d(wavelength, width, height, reference=None, spectra=None, memo=None, file_path=None):
     """Save the spectral data as a binary file.(.npz file) Saved data can't be edited, but 3D arrays can be saved.
 
     Parameters
@@ -59,6 +59,10 @@ def save_spectra_3d(wavelength, reference=None, spectra=None, memo=None, file_pa
         Wavelength [nm] data corresponding to spectra.
     reference : `1d-ndarray`
         Spectra of reference light only. If it is not specified, it will not be recorded.
+    width : `float`, required
+        Horizontal scan length[mm]
+    height : `float`, required
+        vertical sca length[mm]
     spectra : `ndarray`
         Spectra, such as interference light.
         When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
@@ -70,8 +74,10 @@ def save_spectra_3d(wavelength, reference=None, spectra=None, memo=None, file_pa
     """
     date=np.array([datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')],dtype=object)
     remarks=np.array([memo],dtype=object)
-    file_path=generate_filename()
-    np.savez_compressed(file_path,wavelength=wavelength,reference=reference,spectra=spectra,date=date,memo=remarks)
+    w=np.array([width],dtype=float)
+    h=np.array([height],dtype=float)
+    file_path=generate_filename('npz')
+    np.savez_compressed(file_path,wavelength=wavelength,reference=reference,spectra=spectra,date=date,memo=remarks,width=w,height=h)
     print("Saved spectra to {}.npz.".format(file_path))
 
 def load_spectra(file_path, wavelength_range=[0,2000]):
@@ -222,7 +228,7 @@ def draw_graph(format, save=False, file_path=None, **kwargs):
         fig.show()
 
 
-def generate_filename(extension=None, directory='data'):
+def generate_filename(extension:str, directory='data'):
     """ Automatically generates unique file name that include relative path and extension.
     This prevents overwriting of already existing measurement data, etc.
 
@@ -243,7 +249,7 @@ def generate_filename(extension=None, directory='data'):
     tag = timestamp.strftime('%y%m%d')
     i = 0
     while '{}_{}.{}'.format(tag,i,extension) in files: i+=1
-    if extension:
-        return '{}/{}_{}.{}'.format(directory,tag,i,extension)
-    else:
+    if extension=='npz':
         return '{}/{}_{}'.format(directory,tag,i)
+    else:
+        return '{}/{}_{}.{}'.format(directory,tag,i,extension)
