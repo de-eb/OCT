@@ -67,9 +67,10 @@ if __name__ == "__main__":
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
     step_h=40 # Number of horizontal divisions
-    width=8 # Horizontal scanning width[mm]
+    width=10 # Horizontal scanning width[mm]
     step_v=40 # Number of vertical divisions
-    height=8 # Vertical scaninng height[mm]
+    height=10 # Vertical scaninng height[mm]
+    memo='Sample:cover glass and stair-case shaped cellophane. lens=THORLABS 54-850'
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -244,7 +245,7 @@ if __name__ == "__main__":
             if ref is None:
                 print('Error:No reference data available.')
             else:
-                itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size),dtype=float)
+                itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
                 result_map=np.zeros((step_v,step_h,resolution))
                 stage_s.absolute_move(int((width*pl_rate/2)))
                 stage_s.absolute_move(int(height*pl_rate/2),axis_num=2)
@@ -255,7 +256,7 @@ if __name__ == "__main__":
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.absolute_move(int((width*pl_rate/2)))
                     stage_s.relative_move(int(height/step_v*pl_rate*(-1)),axis_num=2)
-                dh.save_spectra_3d(wavelength=ccs.wavelength,reference=ref,spectra=itf_3d,memo='Sample:cover glass and stair-case shaped cellophane. lens=THORLABS 54-850')
+                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=ref,spectra=itf_3d,memo=memo)
 
 
         g_key = None
