@@ -77,9 +77,13 @@ if __name__ == "__main__":
     ed=2491 # Calculation range (End) of spectrum(ccs)
     pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
 
-    #Flag for piezo stage operation
+    #Flag for auto stage operation
     stage_s_flag=None
     stage_m_flag=None
+
+    #Initial position of auto stage
+    vi=0 #initial position of vertical stage
+    hi=0 #initial position of horizontal stage
 
     # Device settings
     try: stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
@@ -94,6 +98,8 @@ if __name__ == "__main__":
         stage_s_flag=False
     else:
         stage_s_flag=True
+        vi,hi = dh.load_position("modules/tools/stage_position.csv")
+        stage_s.absolute_move_biaxial(vi, hi)
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
     sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=resolution)
@@ -162,13 +168,15 @@ if __name__ == "__main__":
             if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
             elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
             elif g_key=='5':
-                stage_s.move_origin(axis_num=1,velocity=9)
-                stage_s.move_origin(axis_num=2,velocity=9)
+                if hi==0 and vi==0:
+                    stage_s.move_origin()
+                else:
+                    stage_s.absolute_move_biaxial(vi, hi)
             elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
             elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
             location[0]=stage_s.read_position(axis_num=1)
             location[1]=stage_s.read_position(axis_num=2)
-            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format(location[0]/pl_rate,location[1]/pl_rate,location[2]/pl_rate))
+            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
 
         # Spectral measurement
         try: itf[0,:] = ccs.read_spectra(averaging=5)
@@ -223,7 +231,7 @@ if __name__ == "__main__":
             else:
                 result_map=np.zeros((step_h,resolution))
                 print("Measurement(2D) start")
-                stage_s.absolute_move(int((width*pl_rate/2)))
+                stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
                     itf[i,:]=ccs.read_spectra()
                     result_map[i]=sp.generate_ascan(itf[i,st:ed],ref[st:ed])
@@ -247,8 +255,7 @@ if __name__ == "__main__":
             else:
                 itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
                 result_map=np.zeros((step_v,step_h,resolution))
-                stage_s.absolute_move(int((width*pl_rate/2)))
-                stage_s.absolute_move(int(height*pl_rate/2),axis_num=2)
+                stage_s.absolute_move_biaxial(int(height*pl_rate/2)+vi, int((width*pl_rate/2))+hi)
                 for i in tqdm(range(step_v)):
                     for j in range(step_h):
                         itf_3d[i][j]=ccs.read_spectra()
