@@ -62,7 +62,7 @@ def save_spectra_3d(wavelength, width, height, reference=None, spectra=None, mem
     width : `float`, required
         Horizontal scan length[mm]
     height : `float`, required
-        vertical sca length[mm]
+        vertical scan length[mm]
     spectra : `ndarray`
         Spectra, such as interference light.
         When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
@@ -239,7 +239,7 @@ def generate_filename(extension:str, directory='data'):
     directory : `str`
         Relative path to be appended to the file name.
     
-    Returns
+    Return
     -------
     filename : `str`
         File name containing relative path and extension.
@@ -253,3 +253,23 @@ def generate_filename(extension:str, directory='data'):
         return '{}/{}_{}'.format(directory,tag,i)
     else:
         return '{}/{}_{}.{}'.format(directory,tag,i,extension)
+
+def load_position(file_path):
+    """Reads the saved coordinates of the initial position of the autostage from csv file.
+
+    Parameters
+    ----------
+    file_path : `str`, required
+        Where to load the file.
+    
+    Returns
+    -------
+    vertical : `int`
+        Initial position of vertical stage.
+    horizontal : `int`
+        Initial position of horizontal stage.
+    """
+    data=pd.read_csv(filepath_or_buffer=file_path,encoding="utf_8",sep=",")
+    vertical=int(data["vertical"].values[0])
+    horizontal=int(data["horizontal"].values[0])
+    return vertical,horizontal
