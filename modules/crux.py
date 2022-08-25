@@ -38,8 +38,6 @@ class Crux:
         if self.hw_info[0]!='C' or self.hw_info[2]!='CRUX':
             print(self.hw_info)
             raise CruxError(msg="*IDN? query failed.\n")
-        self.move_origin()
-        self.move_origin(axis_num=2)
         print("CRUX is ready.")
 
     def __send_cmd(self,cmd:str,param=[]):
@@ -75,15 +73,16 @@ class Crux:
         self.__send_cmd('IDN')
         return self.__read()
     
-    def move_origin(self,axis_num=1,velocity=9,ret_form=0):
+    def move_origin(self,axis_num=0,velocity=9,ret_form=0):
         """Return the stage to its origin.
         
         Parameters
         ----------
         axis_num : `int`, optional 
             Axis to move.
-            1 : Vertical motorized stage
-            2 : Horizontal motorized stage
+            0 : Both stage
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported 
 
         velocity : `int`, optional 
@@ -94,8 +93,14 @@ class Crux:
             1 : Device responds immediately upon receiving a signal
             other : Not supported
         """
-        self.__send_cmd('ORG',[axis_num,velocity,ret_form])
-        self.__error_handling()
+        if axis_num==0:
+            self.__send_cmd('ORG',[1,velocity,0])
+            self.__error_handling()
+            self.__send_cmd('ORG',[2,velocity,0])
+            self.__error_handling()
+        else:
+            self.__send_cmd('ORG',[axis_num,velocity,ret_form])
+            self.__error_handling()
 
     def absolute_move(self,position:int,axis_num=1,velocity=9,ret_form=0):
         """Move stage to the absolute position.
@@ -107,8 +112,8 @@ class Crux:
 
         axis_num : `int`, optional
             Axis to move.
-            1 : Vertical motorized stage
-            2 : Horizontal motorized stage
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported 
 
         velocity : `int`, optional
@@ -121,7 +126,24 @@ class Crux:
         """
         self.__send_cmd('APS',[axis_num,velocity,position,ret_form])
         self.__error_handling()
-    
+
+    def absolute_move_biaxial(self, v, h, velocity=9):
+        """Move two stages together.
+
+        Parameters
+        ----------
+        v : `int`
+            Target absolute position of vertical stage[pulse].
+        h : `int`
+            Target absolute position of horizontal stage[pulse].
+        velocity : `int`, optional
+            stage movement speed.This value can be set in the range of 1 to 9.
+        """
+        self.__send_cmd('APS',[2,velocity,v,0])
+        self.__error_handling()
+        self.__send_cmd('APS',[1,velocity,h,0])
+        self.__error_handling()
+
     def relative_move(self,distance:int,axis_num=1,velocity=9,ret_form=0):
         """Moves from the current position to the position of the set travel distance.
         
@@ -132,8 +154,8 @@ class Crux:
 
         axis_num : `int`, optional
             Axis to move.
-            1 : Vertical motorized stage
-            2 : Horizontal motorized stage
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported 
 
         velocity : `int`, optional
@@ -154,8 +176,8 @@ class Crux:
         ----------
         axis_num : `int`, required
             Number of stage from which the position is read.
-            1 : Vertical motorized stage
-            2 : Horizontal motorized stage
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported 
 
         Return
@@ -181,8 +203,8 @@ class Crux:
 
         axis_num : `int`, optional
             Axis to move.
-            1 : Vertical motorized stage
-            2 : Horizontal motorized stage
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported 
 
         velocity : `int`, optional
@@ -197,8 +219,9 @@ class Crux:
         Parameters
         ----------
         axis_num : `int`, optional
-            1 or 2 : Axis to stop.
             0 : Stop all axis
+            1 : Horizontal motorized stage
+            2 : Vertical motorized stage
             other : Not supported
         
         stop_mode : `int`, optional
@@ -213,7 +236,6 @@ class Crux:
         """ Release the instrument and device driver and terminate the connection.
         """
         self.move_origin()
-        self.move_origin(axis_num=2)
         self.__ser.close()
 
 class CruxError(Exception):
@@ -244,4 +266,8 @@ class CruxError(Exception):
 if __name__=="__main__":
     import time
     stage=Crux('COM4')
-    print(stage.move_origin.__doc__)
+    print("1")
+    stage.absolute_move_biaxial(7000, 7000)
+    print("2")
+    stage.move_origin()
+    print("3")
