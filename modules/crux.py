@@ -38,6 +38,7 @@ class Crux:
         if self.hw_info[0]!='C' or self.hw_info[2]!='CRUX':
             print(self.hw_info)
             raise CruxError(msg="*IDN? query failed.\n")
+        self.move_origin()
         print("CRUX is ready.")
 
     def __send_cmd(self,cmd:str,param=[]):
@@ -139,9 +140,11 @@ class Crux:
         velocity : `int`, optional
             stage movement speed.This value can be set in the range of 1 to 9.
         """
-        self.__send_cmd('APS',[2,velocity,v,0])
+        self.__send_cmd('MPI',[1,0,velocity])
         self.__error_handling()
-        self.__send_cmd('APS',[1,velocity,h,0])
+        self.__send_cmd('MPI',[2,0,velocity])
+        self.__error_handling()
+        self.__send_cmd('MPS',[1,h,2,v,0])
         self.__error_handling()
 
     def relative_move(self,distance:int,axis_num=1,velocity=9,ret_form=0):
@@ -264,10 +267,50 @@ class CruxError(Exception):
         return self.msg
 
 if __name__=="__main__":
-    import time
+    import matplotlib.pyplot as plt
+
+    #device connection
     stage=Crux('COM4')
-    print("1")
-    stage.absolute_move_biaxial(7000, 7000)
-    print("2")
-    stage.move_origin()
-    print("3")
+    info=stage.read_hw_info()
+    print('<Hardware information>\nDevice name:{}\nVersion:{:.3f}'.format(info[2],int(info[3])/1000))
+    '''
+    #constants
+    pl_late = 2000 # Number of pulses equals to 1mm [pulse/mm]
+    scale = 1
+
+
+    key=None
+    def on_key(event):
+        global key
+        key=event.key
+    fig=plt.figure()
+    fig.canvas.mpl_connect('key_press event0',lambda event:on_key(event))
+
+    
+    #main loop
+    while key != 'escape':
+        if key in ['+','-']:
+            if key == '+':
+                if scale >= 10:
+                    print('Error:Can not increase scale anymore.')
+                else:
+                    scale=scale*10
+                    print('scale changed to {}[mm]'.format(scale*pl_late/pl_late))
+            elif key == '-':
+                if scale <= 1:
+                    print('Error:Can not decrease scale anymore.')
+                else:
+                    scale=scale/10
+                    print('scale changed to {}[mm]'.format(scale*pl_late/pl_late))
+        
+        if key in ['2','4','5','6','8']:
+            if key=='2':stage.relative_move(int(pl_late*scale),axis_num=2)
+            elif key=='4':stage.relative_move(int(pl_late*scale*(-1)),axis_num=1)
+            elif key=='5':stage.move_origin()
+            elif key=='6':stage.relative_move(int(pl_late*scale),axis_num=1)
+            elif key=='8':stage.relative_move(int(pl_late*scale*(-1)),axis_num=2)
+            x=stage.read_position(axis_num=1)
+            z=stage.read_position(axis_num=2)
+            print('Stage position:x={}[mm], z={}[mm]\n(Number of pulses:x={}[pulse],z={}[pulse])\n'.format(x/pl_late,z/pl_late,x,z))
+        key = None
+    '''
