@@ -88,18 +88,22 @@ if __name__ == "__main__":
     # Device settings
     try: stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
     except Fine01rError:
-        print('Error:FINE01R not found.Reference mirror movement function is disabled.')
+        print('\033[31Error:FINE01R not found.Reference mirror movement function is disabled.\033[0m ')
         stage_m_flag=False
     else:
         stage_m_flag=True
     try: stage_s = Crux('COM4')  # Auto stage (sample side)
     except CruxError:
-        print("Error:Crux not found. Sample stage movement function is disabled.")
+        print("\033[31Error:Crux not found. Sample stage movement function is disabled.\033[0m ")
         stage_s_flag=False
     else:
         stage_s_flag=True
-        vi,hi = dh.load_position("modules/tools/stage_position.csv")
-        stage_s.absolute_move_biaxial(vi, hi)
+        try:vi,hi = dh.load_position("modules/tools/stage_position.csv")
+        except FileNotFoundError:
+            print('\033[31mError:Stage position data not found.\033[0m ')
+        else:
+            print('Stage position data loaded.')
+            stage_s.absolute_move_biaxial(vi, hi)
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
     sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=resolution)
