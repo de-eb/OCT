@@ -127,22 +127,41 @@ class Crux:
         """
         self.__send_cmd('APS',[axis_num,velocity,position,ret_form])
         self.__error_handling()
-
-    def absolute_move_biaxial(self, v, h, velocity=9):
+    def biaxial_move(self, v:int, vmode:str, h:int, hmode:str, velocity=9):
         """Move two stages together.
 
         Parameters
         ----------
         v : `int`
             Target absolute position of vertical stage[pulse].
+        vmode : `str`
+            Mode of vertical motorized stage.
+            'a' : Absolute move
+            'r' : Relative move
+            other : Not supported
         h : `int`
             Target absolute position of horizontal stage[pulse].
+        hmode : `str`
+            Mode of horizontal motorized stage.
+            'a' : Absolute move
+            'r' : Relative move
+            other : Not supported
         velocity : `int`, optional
             stage movement speed.This value can be set in the range of 1 to 9.
         """
-        self.__send_cmd('MPI',[1,0,velocity])
+        if hmode == 'a':
+            self.__send_cmd('MPI',[1,0,velocity])
+        elif hmode == 'r':
+            self.__send_cmd('MPI',[1,1,velocity])
+        else:
+            raise CruxError(msg='Invalid value was set to hmode.')
         self.__error_handling()
-        self.__send_cmd('MPI',[2,0,velocity])
+        if vmode == 'a':
+            self.__send_cmd('MPI',[2,0,velocity])
+        elif vmode =='r':
+            self.__send_cmd('MPI',[2,1,velocity])
+        else:
+            raise CruxError(msg='Invalid value was set to vmode.')
         self.__error_handling()
         self.__send_cmd('MPS',[1,h,2,v,0])
         self.__error_handling()
