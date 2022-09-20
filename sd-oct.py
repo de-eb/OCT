@@ -103,7 +103,7 @@ if __name__ == "__main__":
             print('\033[31mError:Stage position data not found.\033[0m ')
         else:
             print('Stage position data loaded.')
-            stage_s.absolute_move_biaxial(vi, hi)
+            stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
     #pma = Pma12(dev_id=5)  # Spectrometer (old)
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
     sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=resolution)
@@ -259,17 +259,14 @@ if __name__ == "__main__":
             else:
                 itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
                 result_map=np.zeros((step_v,step_h,resolution))
-                stage_s.absolute_move_biaxial(int(height*pl_rate/2)+vi, int((width*pl_rate/2))+hi)
+                stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
                 for i in tqdm(range(step_v)):
                     for j in range(step_h):
                         itf_3d[i][j]=ccs.read_spectra()
                         #result_map[i][j]=sp.generate_ascan(itf_3d[i][j][st:ed], ref[st:ed])
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                    stage_s.absolute_move(int((width*pl_rate/2)))
-                    stage_s.relative_move(int(height/step_v*pl_rate*(-1)),axis_num=2)
+                    stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
                 dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=ref,spectra=itf_3d,memo=memo)
-
-
         g_key = None
         plt.pause(0.0001)
     proc1.join()
