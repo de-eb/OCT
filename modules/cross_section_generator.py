@@ -33,9 +33,9 @@ if __name__== "__main__":
     ed=2491
     target_depth=205
 
-    process_flag=False
+    process_completed=False
 
-    if glob.glob(pathname=filename.strip('.npz')+'_calculated.npz'):
+    if glob.glob(filename.strip('.npz')+'_calculated.npz'): 
         print("Calculated file confirmed.")
         founddata=np.load(file=filename.strip('.npz')+'_calculated.npz',allow_pickle=True)
         if founddata['depth_max'][0]==depth_max \
@@ -45,11 +45,13 @@ if __name__== "__main__":
             print('<data information>\ndate:{}\nmemo:{}'.format(founddata['date'][0],founddata['memo'][0]))
             target_index=find_index(founddata['depth'], target_depth)
             cs_map=generate_CrossSection(founddata['data'],target_index)
-            process_flag=True
+            w=founddata['width'][0]
+            h=founddata['height'][0]
+            process_completed=True
         else:
             print('Calculation condition did not matched.')
-    if process_flag is not True:
-        data=np.load(filename,allow_pickle=True)
+    if process_completed is False:
+        data=np.load(file=filename,allow_pickle=True)
         sp=Processor(data['wavelength'][st:ed],n,depth_max,resolution)
         result_all=np.zeros((len(data['spectra']),len(data['spectra'][0]),resolution))
         print('<data information>\ndate:{}\nmemo:{}'.format(data['date'][0],data['memo'][0]))
@@ -58,6 +60,8 @@ if __name__== "__main__":
                 result_all[i][j]=sp.generate_ascan(data['spectra'][i][j][st:ed], data['reference'][st:ed])
         target_index=find_index(sp.depth,target_depth)
         cs_map=generate_CrossSection(result_all, target_index)
+        w=data['width'][0]
+        h=data['height'][0]
 
         np.savez_compressed(filename.strip('.npz')+'_calculated.npz',
         data=result_all,
@@ -66,8 +70,16 @@ if __name__== "__main__":
         resolution=np.array([resolution],dtype=int),
         n=np.array([n],dtype=float),
         depth_max=np.array([depth_max],dtype=float),
-        depth=sp.depth
+        depth=sp.depth,
+        width=data['width'],
+        height=data['height']
         )
-
-    plt.imshow(cs_map)
+        print('Calculation result saved.')
+    
+    #grath drawing
+    plt.xlabel("width[mm]",fontsize=15)
+    plt.ylabel('height[mm]',fontsize=15)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.imshow(cs_map,extent=[0,w,0,h])
     plt.show()
