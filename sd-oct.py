@@ -8,7 +8,7 @@ from matplotlib.ticker import ScalarFormatter
 from tqdm import tqdm
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r, Fine01rError
-from modules.ncm6212c import Ncm6212c, Ncm6212cError
+#from modules.ncm6212c import Ncm6212c, Ncm6212cError
 from modules.crux import Crux,CruxError
 from modules.artcam130mi import ArtCam130
 from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
@@ -61,16 +61,16 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # Parameter initialization
-    resolution=1500
-    depth_max=0.4 #maximum value of depth axis[mm]
+    resolution=2000
+    depth_max=0.25 #maximum value of depth axis[mm]
     exponentation=3
     #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
     #(Axis label automatically change according to number)
-    step_h=40 # Number of horizontal divisions
-    width=10 # Horizontal scanning width[mm]
-    step_v=40 # Number of vertical divisions
-    height=10 # Vertical scaninng height[mm]
-    memo='Sample:cover glass and stair-case shaped cellophane. lens=THORLABS 54-850'
+    step_h=10 # Number of horizontal divisions
+    width=5 # Horizontal scanning width[mm]
+    step_v=10 # Number of vertical divisions
+    height=5 # Vertical scaninng height[mm]
+    memo='Sample:Thin skin of onion. lens=THORLABS 54-850'
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -88,19 +88,19 @@ if __name__ == "__main__":
     # Device settings
     try: stage_m = Fine01r('COM11')  # Piezo stage (reference mirror side)
     except Fine01rError:
-        print('\033[31Error:FINE01R not found.Reference mirror movement function is disabled.\033[0m ')
+        print('\033[31m'+'Error:FINE01R not found. Reference mirror movement function is disabled.'+'\033[0m ')
         stage_m_flag=False
     else:
         stage_m_flag=True
     try: stage_s = Crux('COM4')  # Auto stage (sample side)
     except CruxError:
-        print("\033[31Error:Crux not found. Sample stage movement function is disabled.\033[0m ")
+        print('\033[31m'+'Error:Crux not found. Sample stage movement function is disabled.'+'\033[0m ')
         stage_s_flag=False
     else:
         stage_s_flag=True
         try:vi,hi = dh.load_position("modules/tools/stage_position.csv")
         except FileNotFoundError:
-            print('\033[31mError:Stage position data not found.\033[0m ')
+            print('\033[31m'+'Error:Stage position data not found.'+'\033[0m ')
         else:
             print('Stage position data loaded.')
             stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 if hi==0 and vi==0:
                     stage_s.move_origin()
                 else:
-                    stage_s.absolute_move_biaxial(vi, hi)
+                    stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
             elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
             elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
             location[0]=stage_s.read_position(axis_num=1)
@@ -233,15 +233,14 @@ if __name__ == "__main__":
             if ref is None:
                 print("Error:No reference data available.")
             else:
-                result_map=np.zeros((step_h,resolution))
                 print("Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
                     itf[i,:]=ccs.read_spectra()
-                    result_map[i]=sp.generate_ascan(itf[i,st:ed],ref[st:ed])
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                result_map=sp.generate_bscan(itf[:,st:ed], ref[st:ed])
                 plt.figure()
-                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
+                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.05)
                 plt.colorbar()
                 if exponentation==6:
                     plt.xlabel('depth[μm]')
@@ -249,7 +248,7 @@ if __name__ == "__main__":
                     plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
-                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
+                #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
                 stage_s.move_origin(axis_num=1,ret_form=1)
                 plt.show()
         # 't'key to start measurement(3-dimention data), triple

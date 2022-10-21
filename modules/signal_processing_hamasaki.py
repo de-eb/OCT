@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import interpolate
-
+from tqdm import tqdm
 class SignalProcessorHamasaki():
     """
     A class that packages various types of signal processing for OCT.
@@ -31,7 +31,8 @@ class SignalProcessorHamasaki():
         """
         # Axis conversion for resampling
         self.__wl=wavelength
-        self.__depth=np.linspace(0, depth_max, int(resolution))
+        self.__res=int(resolution)
+        self.__depth=np.linspace(0, depth_max, self.__res)
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
@@ -127,6 +128,29 @@ class SignalProcessorHamasaki():
         ascan=self.apply_inverse_ft(rmv)
         #ascan/=np.amax(ascan)
         return ascan
+    
+    def generate_bscan(self,interference,reference):
+        """Generate a B-scan by calling generate_ascan function multiple times.
+
+        Parameters
+        ----------
+        intereference : `2d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+         reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.           
+
+        Return
+        ----------
+        bscan : `2d-ndarray`
+            Light intensity data in the time domain(i.e. B-scan)
+            Thecorresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+        """
+        bscan=np.zeros((len(interference),self.__res))
+        print("Generating B-scan...")
+        for i in tqdm(range(len(interference))):
+            bscan[i]=self.generate_ascan(interference[i], reference)
+        return bscan
+
 
 def calculate_absorbance(transmittion,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
