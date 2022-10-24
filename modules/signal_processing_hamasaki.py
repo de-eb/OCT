@@ -143,14 +143,85 @@ class SignalProcessorHamasaki():
         ----------
         bscan : `2d-ndarray`
             Light intensity data in the time domain(i.e. B-scan)
-            Thecorresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
         bscan=np.zeros((len(interference),self.__res))
         print("Generating B-scan...")
         for i in tqdm(range(len(interference))):
             bscan[i]=self.generate_ascan(interference[i], reference)
         return bscan
+    
+    def generate_cscan(self, interference,reference):
+        """Generate a C-scan by calling generate_ascan function multiple times.
 
+        Parameters
+        ----------
+        intereference : `3d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+         reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.           
+
+        Return
+        ----------
+        bscan : `3d-ndarray`
+            Light intensity data in the time domain(i.e. B-scan)
+            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+        """
+        cscan=np.zeros((len(interference),len(interference[0],self.__res)))
+        print('Generating C-scan...')
+        for i in tqdm(range(len(interference))):
+            for j in range(len(interference[i])):
+                cscan=self.generate_ascan(interference[i][j],reference)
+        return cscan
+    
+    def find_index(self, target:'float')->int:
+        """Searches for index corresponding to the specified depth for generate_cross_section function.
+
+        Parameter
+        ----------
+        target : `float`, required
+            Depth to generate cross-sectional view[μm].
+        
+        Return
+        ----------
+        index : `int`
+            Index in self.depth for generate_cross_section function.
+        """
+
+        target_mm=target*1e-3
+        if np.amax(self.depth)<target_mm or np.amim(self.depth)>target_mm:
+            print("Error:Target is not included in depth array. Returned depth[0].")
+            return 0
+        else:
+            for i in range(len(self.depth)):
+                if self.depth[i]>=target_mm:
+                    index=i
+                    break
+            return index
+        
+    def generate_cross_section(self, cscan, target):
+        """Generates a cross-sectional view from c-scan data at a specified depth in a plane perpendicular to the optical axis direction.
+        
+        Parameters
+        ----------
+        cscan : `3d-ndarray`, required
+            c-scan data calculated by generate_cscan data.
+        target : `float` ,required
+            Depth to generate cross-sectional view[μm].
+
+        Return
+        ----------
+        cross_section : `2d-ndarray`
+            Generated cross-sectional view of C-csan.
+        
+        """
+
+        target_index=self.find_index(target)
+        cross_section=np.zeros(len(cscan),len(cscan[0]))
+        for i in range(len(cscan)):
+            for j in range(len(cscan[i])):
+                cross_section[i][j]=cscan[i][j][target_index]
+        return cross_section
 
 def calculate_absorbance(transmittion,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
