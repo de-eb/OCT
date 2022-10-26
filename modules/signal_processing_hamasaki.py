@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import interpolate
 from tqdm import tqdm
+
 class SignalProcessorHamasaki():
     """
     A class that packages various types of signal processing for OCT.
@@ -167,61 +168,48 @@ class SignalProcessorHamasaki():
             Light intensity data in the time domain(i.e. B-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
-        cscan=np.zeros((len(interference),len(interference[0],self.__res)))
+        cscan=np.zeros((len(interference),len(interference[0]),self.__res))
         print('Generating C-scan...')
         for i in tqdm(range(len(interference))):
             for j in range(len(interference[i])):
                 cscan=self.generate_ascan(interference[i][j],reference)
         return cscan
+
+#Please note that following 2 function is excluded from SignalProcessorHamasaki class, 
+#since there are cases the the SignalProcessorHamasaki class is not needed as long as these function is called.
+def generate_cross_section(cscan, target, depth):
+    """Generates a cross-sectional view from c-scan data at a specified depth in a plane perpendicular to the optical axis direction.
     
-    def find_index(self, target:'float')->int:
-        """Searches for index corresponding to the specified depth for generate_cross_section function.
+    Parameters
+    ----------
+    cscan : `3d-ndarray`, required
+        C-scan data calculated by generate_cscan data.
+    target : `float` ,required
+        Depth to generate cross-sectional view[μm].
+    depth : `1d-ndarray`, required
+        The corresponding horizontal axis data to C-scan.
 
-        Parameter
-        ----------
-        target : `float`, required
-            Depth to generate cross-sectional view[μm].
-        
-        Return
-        ----------
-        index : `int`
-            Index in self.depth for generate_cross_section function.
-        """
+    Return
+    ----------
+    cross_section : `2d-ndarray`
+        Generated cross-sectional view of C-csan.
+    """
+    #find index to generate cross-sectional view
+    target_mm = target*1e-3
+    if np.amax(depth)<target_mm or np.amin(depth)>target_mm:
+        print("Error:Target is not included in depth array. Returned depth[0].")
+    else:
+        for i in range(len(depth)):
+            if depth[i]>=target_mm:
+                index=i
+                break
 
-        target_mm=target*1e-3
-        if np.amax(self.depth)<target_mm or np.amim(self.depth)>target_mm:
-            print("Error:Target is not included in depth array. Returned depth[0].")
-            return 0
-        else:
-            for i in range(len(self.depth)):
-                if self.depth[i]>=target_mm:
-                    index=i
-                    break
-            return index
-        
-    def generate_cross_section(self, cscan, target):
-        """Generates a cross-sectional view from c-scan data at a specified depth in a plane perpendicular to the optical axis direction.
-        
-        Parameters
-        ----------
-        cscan : `3d-ndarray`, required
-            c-scan data calculated by generate_cscan data.
-        target : `float` ,required
-            Depth to generate cross-sectional view[μm].
-
-        Return
-        ----------
-        cross_section : `2d-ndarray`
-            Generated cross-sectional view of C-csan.
-        
-        """
-
-        target_index=self.find_index(target)
-        cross_section=np.zeros(len(cscan),len(cscan[0]))
-        for i in range(len(cscan)):
-            for j in range(len(cscan[i])):
-                cross_section[i][j]=cscan[i][j][target_index]
-        return cross_section
+    #generate cross-sectional view
+    cross_section=np.zeros((len(cscan),len(cscan[0])))
+    for i in range(len(cscan)):
+        for j in range(len(cscan[i])):
+            cross_section[i][j]=cscan[i][j][index]
+    return cross_section
 
 def calculate_absorbance(transmittion,incidence):
     """Calculate tranmittance based on the incident and transmitted light.

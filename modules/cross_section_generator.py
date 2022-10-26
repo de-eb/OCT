@@ -1,37 +1,21 @@
+from matplotlib.colors import Colormap
 import numpy as np
 from signal_processing_hamasaki import SignalProcessorHamasaki as Processor
+from signal_processing_hamasaki import generate_cross_section
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import data_handler as dh
 import glob
-
-def find_index(depth,target)->int:
-    array=depth*1e3
-    if np.amax(array)<target or np.amin(array)>target:
-        print('Error:Target is not included in depth array.')
-        return 0
-    else:
-        for i in range(len(array)):
-            if array[i]>=target:
-                index=i
-                break
-        return index
-
-def generate_CrossSection(data,index):
-    result=np.zeros((len(data[0]),len(data)))
-    for i in range(len(result)):
-        for j in range(len(result[i])):
-            result[i][j]=data[i][j][index]
-    return result
 
 if __name__== "__main__":
     #constants
     filename='data/220804_0.npz'
-    resolution=100
-    depth_max=0.3
+    resolution=2000
+    depth_max=0.25
     n=1.5
     st=1664
     ed=2491
-    target_depth=205
+    target_depth=183
 
     process_completed=False
 
@@ -42,9 +26,8 @@ if __name__== "__main__":
         and founddata['resolution'][0]==resolution \
         and founddata['n'][0]==n:
             print('Calculation conditions matched.')
-            print('<data information>\ndate:{}\nmemo:{}'.format(founddata['date'][0],founddata['memo'][0]))
-            target_index=find_index(founddata['depth'], target_depth)
-            cs_map=generate_CrossSection(founddata['data'],target_index)
+            dh.output_datainfo(founddata)
+            cs_map=generate_cross_section(founddata['data'],target_depth, founddata['depth'])
             w=founddata['width'][0]
             h=founddata['height'][0]
             process_completed=True
@@ -53,13 +36,9 @@ if __name__== "__main__":
     if process_completed is False:
         data=np.load(file=filename,allow_pickle=True)
         sp=Processor(data['wavelength'][st:ed],n,depth_max,resolution)
-        result_all=np.zeros((len(data['spectra']),len(data['spectra'][0]),resolution))
-        print('<data information>\ndate:{}\nmemo:{}'.format(data['date'][0],data['memo'][0]))
-        for i in tqdm(range(len(data['spectra']))):
-            for j in range(len(data['spectra'][0])):
-                result_all[i][j]=sp.generate_ascan(data['spectra'][i][j][st:ed], data['reference'][st:ed])
-        target_index=find_index(sp.depth,target_depth)
-        cs_map=generate_CrossSection(result_all, target_index)
+        dh.output_datainfo(data)
+        result_all=sp.generate_cscan(data['spectra'][:,:,st:ed],data['reference'][st:ed])
+        cs_map=generate_cross_section(result_all,target_depth,sp.depth)
         w=data['width'][0]
         h=data['height'][0]
 
@@ -81,5 +60,6 @@ if __name__== "__main__":
     plt.ylabel('height[mm]',fontsize=15)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.imshow(cs_map,extent=[0,w,0,h])
+    plt.imshow(cs_map,extent=[0,w,0,h],vmax=0.04)
+    plt.colorbar()
     plt.show()
