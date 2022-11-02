@@ -47,6 +47,7 @@ ax1 = fig.add_subplot(212, title='Absorbance', xlabel='wavelength [mm]', ylabel=
 ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 ax1_0, = ax1.plot(pma.wavelength,absorbance)
+ax0.set_yscale("log")
 
 pma.set_parameter(shutter=1)
 while g_key!='escape':
@@ -59,11 +60,13 @@ while g_key!='escape':
             print("                            ", end="\r")
             err= False
     ax0_0.set_data(pma.wavelength,data)
-    ax0.set_ylim(0,np.amax(data)*1.2)
+    if incidence is None:
+        ax0.set_ylim(0,np.amax(data)*1.2)
 
     if g_key=='enter':
         incidence=pma.read_spectra(averaging=100)
         ax0_1.set_data(pma.wavelength,incidence)
+        ax0.set_ylim(0,np.amax(incidence)*1.2)
         print("Incident light spectra updated.")
     
     if incidence is not None:
