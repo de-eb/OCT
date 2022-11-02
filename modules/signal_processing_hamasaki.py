@@ -53,18 +53,17 @@ class SignalProcessorHamasaki():
         Parameter
         ----------
         freq_fixed : `1d-ndarray`, required
-
+            Use equal width for each value, not the inverse of wavelength axis.
+        
         Return
         ----------
         freq_dataset : `2d-ndarray`
-            Calculated sine wave data set.
-        
+            Calculated sine wave data set. If this array is referenced when using apply_inverse_ft function, processing can be sped up.
         """
         freq_dataset=np.zeros((len(freq_fixed),len(self.__time)))
         for i in range(len(freq_fixed)):
             freq_dataset[i]=np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
         return freq_dataset
-
 
     def resample(self, spectra):
         """ Resamples the spectra.
@@ -111,7 +110,7 @@ class SignalProcessorHamasaki():
 
         Parameters
         ----------
-        sp : `1d-ndarray`, required
+        spectra : `1d-ndarray`, required
             spectra(After applying resampling)
 
         Return
@@ -121,10 +120,6 @@ class SignalProcessorHamasaki():
         
         """
         result=np.zeros_like(self.__depth)
-        '''
-        for  i in range(len(self.__freq_fixed)):
-                result+=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
-        '''
         for i in range(len(spectra)):
             result+=spectra[i]*self.__freq_dataset[i]
         result/=np.amax(result)
@@ -151,7 +146,6 @@ class SignalProcessorHamasaki():
         itf=self.resample(interference)
         rmv=self.remove_background(itf)
         ascan=self.apply_inverse_ft(rmv)
-        #ascan/=np.amax(ascan)
         return ascan
     
     def generate_bscan(self,interference,reference):
@@ -189,7 +183,7 @@ class SignalProcessorHamasaki():
         Return
         ----------
         bscan : `3d-ndarray`
-            Light intensity data in the time domain(i.e. B-scan)
+            Light intensity data in the time domain(i.e. C-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
         cscan=np.zeros((len(interference),len(interference[0]),self.__res))
