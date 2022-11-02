@@ -37,6 +37,7 @@ class SignalProcessorHamasaki():
         self.__time=2*(n*self.__depth*1e-3)/SignalProcessorHamasaki.c
         self.__freq=(SignalProcessorHamasaki.c/(self.__wl*1e9))*1e6
         self.__freq_fixed=np.linspace(np.amin(self.__freq),np.amax(self.__freq),int(len(self.__wl)*signal_length))
+        self.__freq_dataset=self.__prepare_sinusoid(self.__freq_fixed)
         #initialize data container
         self.__ref=None
 
@@ -45,6 +46,25 @@ class SignalProcessorHamasaki():
         """ Horizontal axis after FFT (depth [mm])
         """
         return self.__depth
+
+    def __prepare_sinusoid(self, freq_fixed):
+        """To speed up the calculation, this function calculates the sine wave needed for signal processing in advance.
+
+        Parameter
+        ----------
+        freq_fixed : `1d-ndarray`, required
+
+        Return
+        ----------
+        freq_dataset : `2d-ndarray`
+            Calculated sine wave data set.
+        
+        """
+        freq_dataset=np.zeros((len(freq_fixed),len(self.__time)))
+        for i in range(len(freq_fixed)):
+            freq_dataset[i]=np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
+        return freq_dataset
+
 
     def resample(self, spectra):
         """ Resamples the spectra.
@@ -101,8 +121,12 @@ class SignalProcessorHamasaki():
         
         """
         result=np.zeros_like(self.__depth)
+        '''
         for  i in range(len(self.__freq_fixed)):
                 result+=spectra[i]*np.sin(2*np.pi*self.__time*self.__freq_fixed[i]*1e12)
+        '''
+        for i in range(len(spectra)):
+            result+=spectra[i]*self.__freq_dataset[i]
         result/=np.amax(result)
         return abs(result)
 
@@ -183,7 +207,7 @@ def generate_cross_section(cscan, target, depth):
     Parameters
     ----------
     cscan : `3d-ndarray`, required
-        C-scan data calculated by generate_cscan data.
+        C-scan data calculated by generate_cscan function.
     target : `float` ,required
         Depth to generate cross-sectional view[μm].
     depth : `1d-ndarray`, required
@@ -198,6 +222,7 @@ def generate_cross_section(cscan, target, depth):
     target_mm = target*1e-3
     if np.amax(depth)<target_mm or np.amin(depth)>target_mm:
         print("Error:Target is not included in depth array. Returned depth[0].")
+        index = 0
     else:
         for i in range(len(depth)):
             if depth[i]>=target_mm:
