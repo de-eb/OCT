@@ -5,6 +5,7 @@ from matplotlib.ticker import ScalarFormatter
 from modules.pma12 import Pma12,PmaError
 from modules.signal_processing_hamasaki import calculate_absorbance
 from multiprocessing import Process, Queue
+import modules.data_handler as dh
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -60,8 +61,13 @@ while g_key!='escape':
             print("                            ", end="\r")
             err= False
     ax0_0.set_data(pma.wavelength,data)
+
     if incidence is None:
         ax0.set_ylim(0,np.amax(data)*1.2)
+    else:
+        absorbance=calculate_absorbance(data,incidence)
+        ax1_0.set_data(pma.wavelength,absorbance)
+        ax1.set_ylim(0,np.nanmax(absorbance)*1.2)       
 
     if g_key=='enter':
         incidence=pma.read_spectra(averaging=100)
@@ -69,10 +75,18 @@ while g_key!='escape':
         ax0.set_ylim(0,np.amax(incidence)*1.2)
         print("Incident light spectra updated.")
     
-    if incidence is not None:
-        absorbance=calculate_absorbance(data,incidence)
-        ax1_0.set_data(pma.wavelength,absorbance)
-        ax1.set_ylim(0,np.nanmax(absorbance)*1.2)
+    if g_key=='alt':
+        data=pma.read_spectra(averaging=100)
+        if incidence is None:
+            print('Error:Incidence light data is not registered.')
+        else:
+            dh.save_spectra(pma.wavelength,incidence,data,memo='Attention:This is absorbance measurement data.')
+    
+    if g_key=='delete':
+        incidence=None
+        ax0_1.set_data(pma.wavelength, np.zeros_like(pma.wavelength))
+        ax1_0.set_data(pma.wavelength, np.zeros_like(pma.wavelength))
+        print('Incident data daleted.')
         
     g_key=None
     plt.pause(0.0001)
