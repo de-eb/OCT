@@ -6,6 +6,7 @@ from modules.pma12 import Pma12,PmaError
 from modules.signal_processing_hamasaki import calculate_absorbance
 from multiprocessing import Process, Queue
 import modules.data_handler as dh
+import warnings
 
 # Graph settings
 plt.rcParams['font.family'] ='sans-serif'
@@ -48,6 +49,7 @@ ax1 = fig.add_subplot(212, title='Absorbance', xlabel='wavelength [mm]', ylabel=
 ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 ax1_0, = ax1.plot(pma.wavelength,absorbance)
+warnings.simplefilter(action='ignore',category=UserWarning)
 ax0.set_yscale("log")
 
 pma.set_parameter(shutter=1)
@@ -63,7 +65,7 @@ while g_key!='escape':
     ax0_0.set_data(pma.wavelength,data)
 
     if incidence is None:
-        ax0.set_ylim(0,np.amax(data)*1.2)
+        ax0.set_ylim(1,np.amax(data)*1.2)
     else:
         absorbance=calculate_absorbance(data,incidence)
         ax1_0.set_data(pma.wavelength,absorbance)
