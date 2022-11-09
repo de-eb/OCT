@@ -230,11 +230,11 @@ def generate_cross_section(cscan, target, depth):
             cross_section[i][j]=cscan[i][j][index]
     return cross_section
 
-def calculate_absorbance(transmittion,incidence):
+def calculate_absorbance(transmission,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
     Parameters
     ----------
-    transmittion : `1d-ndarray`, required
+    transmission : `1d-ndarray`, required
         Spectrum of the light source used to measure transmittance
     incidence : `1d-ndarray`, required
         Spectrum of light passing through the sample
@@ -245,7 +245,7 @@ def calculate_absorbance(transmittion,incidence):
         calculated absorbance data 
     """
     with np.errstate(divide='ignore',invalid='ignore'):
-        absorbance=np.log10(transmittion/incidence)*(-1)
+        absorbance=np.log10(transmission/incidence)*(-1)
     for i in range(len(absorbance)):
         if np.isinf(absorbance[i]):
             absorbance[i]=np.nan
