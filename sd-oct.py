@@ -62,12 +62,10 @@ def on_key(event, q):
 if __name__ == "__main__":
     # Parameter initialization
     resolution=2000
-    depth_max=0.25 #maximum value of depth axis[mm]
-    exponentation=3
-    #↑Use 3 when using [mm] for depth axis units and 6 when using [μm].
-    #(Axis label automatically change according to number)
-    step_h=10 # Number of horizontal divisions
-    width=5 # Horizontal scanning width[mm]
+    depth_max=0.3 #maximum value of depth axis[mm]
+    use_um=True #whether to use [μm]　units or not
+    step_h=1000 # Number of horizontal divisions
+    width=20 # Horizontal scanning width[mm]
     step_v=10 # Number of vertical divisions
     height=5 # Vertical scaninng height[mm]
     memo='Sample:Thin skin of onion. lens=THORLABS 54-850'
@@ -130,14 +128,17 @@ if __name__ == "__main__":
     ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='interference')
     ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
-    if exponentation ==6:
+    if use_um:
         ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
+        ax1_0, = ax1.plot(sp.depth*1e3, ascan)
+        ax1.set_xlim(0,np.amax(sp.depth)*1e3)
     else:
         ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
+        ax1_0, = ax1.plot(sp.depth, ascan)
+        ax1.set_xlim(0,np.amax(sp.depth))
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax1_0, = ax1.plot(sp.depth*(10**exponentation), ascan)
-    ax1.set_xlim(0,np.amax(sp.depth)*(10**exponentation))
+    
 
     # Device initialization
     if stage_m_flag:
@@ -197,7 +198,10 @@ if __name__ == "__main__":
         # Signal processing
         if ref is not None:
             ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
-            ax1_0.set_data(sp.depth*(10**exponentation), ascan)  # Graph update
+            if use_um:# Graph update
+                ax1_0.set_data(sp.depth*1e3, ascan)  
+            else:
+                ax1_0.set_data(sp.depth, ascan)
             ax1.set_ylim((0,np.amax(ascan)))
 
         #'Delete' key to delete reference and a-scan data       
@@ -240,12 +244,9 @@ if __name__ == "__main__":
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 result_map=sp.generate_bscan(itf[:,st:ed], ref[st:ed])
                 plt.figure()
-                plt.imshow(result_map,cmap='gray',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.05)
+                plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
                 plt.colorbar()
-                if exponentation==6:
-                    plt.xlabel('depth[μm]')
-                else:
-                    plt.xlabel('depth[mm]')
+                plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
                 #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
