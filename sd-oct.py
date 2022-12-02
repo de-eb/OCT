@@ -71,13 +71,16 @@ if __name__ == "__main__":
     memo='Sample:Thin skin of onion. lens=THORLABS 54-850'
 
     #Constants
-    st=1664 # Calculation range (Start) of spectrum(ccs)
-    ed=2491 # Calculation range (End) of spectrum(ccs)
+    ccs_st=1664 # Calculation range (Start) of spectrum(ccs)
+    ccs_ed=2491 # Calculation range (End) of spectrum(ccs)
     pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
+    pma_st=134 # calculation range(start) of spectrum(pma)
+    pma_ed=938 # calculation range(end) of spectrum(pma)
 
-    #Flag for auto stage operation
-    stage_s_flag=None
-    stage_m_flag=None
+    #Flag for equipment operation
+    stage_s_flag=None #sample stage(Crux)
+    stage_m_flag=None #reference mirror stage(fine01r)
+    stage_p_flag=None #spectrometer(PMA)
 
     #Initial position of auto stage
     vi=0 #initial position of vertical stage
@@ -90,6 +93,7 @@ if __name__ == "__main__":
         stage_m_flag=False
     else:
         stage_m_flag=True
+    
     try: stage_s = Crux('COM4')  # Auto stage (sample side)
     except CruxError:
         print('\033[31m'+'Error:Crux not found. Sample stage movement function is disabled.'+'\033[0m ')
@@ -102,43 +106,74 @@ if __name__ == "__main__":
         else:
             print('Stage position data loaded.')
             stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
-    #pma = Pma12(dev_id=5)  # Spectrometer (old)
-    ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (new)
-    sp = Processor(ccs.wavelength[st:ed], n=1.5,depth_max=depth_max,resolution=resolution)
+
+    try: pma = Pma12(dev_id=5)  # Spectrometer (old)
+    except PmaError:
+        print('\033[31m'+'Error:PMA not found. Absorbance measurement function is disabled.'+'\033[0m ')
+        stage_p_flag=False
+    else:
+        stage_p_flag=True
+
+    ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (for OCT measurement)
+    sp = Processor(ccs.wavelength[ccs_st:ccs_ed], n=1.5,depth_max=depth_max,resolution=resolution)
     q = Queue()
     proc1 = Process(target=profile_beam, args=(q,))  # Beam profiler
     proc1.start()
    
-    #step = 1000  # Stage operation interval [nm]
-    #limit = 300000  # Stage operation limit [nm]
-    x, y, z = 100000, 0, 0  # Stage position (Initial)
-    ref = None  # Reference spectra
+    #Array for OCT calculation
+    reference = None  # Reference spectra
     itf = np.zeros((step_h,ccs.wavelength.size), dtype=float)  # Interference spectra
     itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size),dtype=float)
     ascan = np.zeros_like(sp.depth)
+    
+    #Array for Absorbance calculation
+    inc = None # incident light spectra
+    reflect = np.zeros((step_h,pma.wavelength.size),dtype=float) #refrected light
+    absorbance=np.zeros(pma_ed-pma_st)
+
+    #Variables for others
     err = False
-    location=np.zeros(3,dtype=int)
+    location=np.zeros(3,dtype=int) 
+    x, y, z = 100000, 0, 0  # Stage position (Initial)
 
     # Graph initialization
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
     fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))  # Key event
-    ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
+
+    # CCS Spectrometer output (for OCT measurement)
+    ax0 = fig.add_subplot(221, title='Spectrometer output(CCS)', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='interference')
-    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label='reference')
+    ax0_0, = ax0.plot(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed], label='interference')
+    ax0_1, = ax0.plot(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
+
+    # OCT calculation result
     if use_um:
-        ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
+        ax1 = fig.add_subplot(223, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
         ax1_0, = ax1.plot(sp.depth*1e3, ascan)
         ax1.set_xlim(0,np.amax(sp.depth)*1e3)
     else:
-        ax1 = fig.add_subplot(212, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
+        ax1 = fig.add_subplot(223, title='A-scan', xlabel='depth [mm]', ylabel='Intensity [-]')
         ax1_0, = ax1.plot(sp.depth, ascan)
         ax1.set_xlim(0,np.amax(sp.depth))
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-    
+
+    # PMA Spectrometer  output (for Absorbance measurement)
+    ax2 = fig.add_subplot(222,title='Spectrometer output(PMA)',xlabel='Wavelength [nm]',ylabel='Intensity [-]')
+    ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax2.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    ax2_0,=ax2.plot(pma.wavelength[pma_st:pma_ed], reflect[0,pma_st:pma_ed], label='reflection')
+    ax2_1,=ax2.plot(pma.wavelength[pma_st:pma_ed], reflect[0,pma_st:pma_ed], label='incidence')
+    ax2.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
+    ax2.set_yscale("log")
+
+    # Absorbance calculation result
+    ax3 = fig.add_subplot(224,title='Absorbance', xlabel='Wavelength [nm]')
+    ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax3.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
+    ax3_0,=ax3.plot(pma.wavelength[pma_st:pma_ed],absorbance, label='reflection')
 
     # Device initialization
     if stage_m_flag:
@@ -146,29 +181,9 @@ if __name__ == "__main__":
     #pma.set_parameter(shutter=1)
     ccs.set_IntegrationTime(time=0.0001)
     ccs.start_scan()
+
     # Main loop
     while g_key != 'escape':  # ESC key to exit
-        '''
-        # Manual operation of Piezo stages
-        if g_key in ['8', '2', '6', '4', '+', '-', '5', '0']:
-            # Sample
-            if g_key == '8': y += step  # Up
-            elif g_key == '2': y -= step  # Down
-            elif g_key == '6': x += step  # Right
-            elif g_key == '4': x -= step  # Left
-            elif g_key == '5': x, y = 100000, 0  # Return to origin
-            # Reference mirror
-            elif g_key == '-': z -= step  # Backward
-            elif g_key == '+': z += step  # Forward
-            elif g_key == '0': z = 0  # Return to origin
-            # Drive
-            if stage_m_flag:
-                stage_m.absolute_move(z)
-            if stage_s_flag:
-                print(stage_s.absolute_move('A', x))
-                stage_s.absolute_move('B', y)
-            print("Stage position [nm]: x={},y={},z={}".format(x,y,z))
-        '''
         if g_key in ['4','6','5','2','8']:
             if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
             elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
@@ -192,12 +207,12 @@ if __name__ == "__main__":
             if err:
                 print("                            ", end="\r")
                 err= False
-        ax0_0.set_data(ccs.wavelength[st:ed], itf[0,st:ed])  # Graph update
-        ax0.set_ylim((0, 1.2*itf[0,st:ed].max()))
+        ax0_0.set_data(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed])  # Graph update
+        ax0.set_ylim((0, 1.2*itf[0,ccs_st:ccs_ed].max()))
 
         # Signal processing
-        if ref is not None:
-            ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
+        if reference is not None:
+            ascan = sp.generate_ascan(itf[0,ccs_st:ccs_ed], reference[ccs_st:ccs_ed])
             if use_um:# Graph update
                 ax1_0.set_data(sp.depth*1e3, ascan)  
             else:
@@ -206,25 +221,25 @@ if __name__ == "__main__":
 
         #'Delete' key to delete reference and a-scan data       
         if g_key=='delete':
-            ref=None
-            ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))
+            reference=None
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ed-st))
             ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
             print('Reference data deleted.')            
 
         # 'Enter' key to update reference data
         if g_key == 'enter':
-            ref = ccs.read_spectra(averaging=100)
-            sp.set_reference(ref[st:ed])
+            reference = ccs.read_spectra(averaging=100)
+            sp.set_reference(reference[ccs_st:ccs_ed])
             print("Reference data updated.")
-            ax0_1.set_data(ccs.wavelength[st:ed], ref[st:ed])
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed], reference[ccs_st:ccs_ed])
         
         if g_key == 'alt':  # 'Alt' key to save single data
             data = ccs.read_spectra(averaging=100)
-            if ref is None:
+            if reference is None:
                 dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
                 print('Message:Reference data was not registered. Only spectra data was saved.')
             else:
-                dh.save_spectra(wavelength=ccs.wavelength, spectra=data,reference=ref)
+                dh.save_spectra(wavelength=ccs.wavelength, spectra=data,reference=reference)
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
@@ -234,7 +249,7 @@ if __name__ == "__main__":
 
         # 'd' key to Start measurement (2-dimention data), double
         elif g_key == 'd' and stage_s_flag:
-            if ref is None:
+            if reference is None:
                 print("Error:No reference data available.")
             else:
                 print("Measurement(2D) start")
@@ -242,19 +257,19 @@ if __name__ == "__main__":
                 for i in tqdm(range(step_h)):
                     itf[i,:]=ccs.read_spectra()
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                result_map=sp.generate_bscan(itf[:,st:ed], ref[st:ed])
+                stage_s.move_origin(axis_num=1,ret_form=1)
+                result_map=sp.generate_bscan(itf[:,ccs_st:ccs_ed], reference[ccs_st:ccs_ed])
                 plt.figure()
                 plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
                 plt.colorbar()
                 plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
-                #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
-                stage_s.move_origin(axis_num=1,ret_form=1)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=reference, spectra=itf.T)
                 plt.show()
         # 't'key to start measurement(3-dimention data), triple
         elif g_key=='t' and stage_s_flag:
-            if ref is None:
+            if reference is None:
                 print('Error:No reference data available.')
             else:
                 itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
@@ -263,10 +278,9 @@ if __name__ == "__main__":
                 for i in tqdm(range(step_v)):
                     for j in range(step_h):
                         itf_3d[i][j]=ccs.read_spectra()
-                        #result_map[i][j]=sp.generate_ascan(itf_3d[i][j][st:ed], ref[st:ed])
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
-                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=ref,spectra=itf_3d,memo=memo)
+                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo)
         g_key = None
         plt.pause(0.0001)
     proc1.join()
