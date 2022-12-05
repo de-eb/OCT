@@ -234,7 +234,7 @@ def calculate_absorbance(transmission,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
     Parameters
     ----------
-    transmittion : `1d-ndarray`, required
+    transmission : `1d-ndarray`, required
         Spectrum of the light source used to measure transmittance
     incidence : `1d-ndarray`, required
         Spectrum of light passing through the sample
