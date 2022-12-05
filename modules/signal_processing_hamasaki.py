@@ -40,7 +40,9 @@ class SignalProcessorHamasaki():
         self.__freq_dataset=self.__prepare_sinusoid(self.__freq_fixed)
         #initialize data container
         self.__ref=None
+        self.__inc=None
 
+    #functions for OCT
     @property
     def depth(self):
         """ Horizontal axis after FFT (depth [mm])
@@ -68,11 +70,11 @@ class SignalProcessorHamasaki():
     def resample(self, spectra):
         """ Resamples the spectra.
 
-        Parameters
+        Parameter
         ----------
         spectra : `1d-ndarray`, required
             Spectra sampled evenly in the wavelength space.
-        Returns
+        Return
         -------
         `1d-ndarray`
             Spectra resampled evenly in the frequency space.
@@ -83,7 +85,7 @@ class SignalProcessorHamasaki():
     def set_reference(self,reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
 
-        Parameters
+        Parameter
         ----------
         spectra : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
@@ -93,7 +95,7 @@ class SignalProcessorHamasaki():
     def remove_background(self,spectra):
         """Subtract reference light from interference light.
     
-        Parameters
+        Parameter
         ----------
         sp : `1d-ndarray`, required
             Spectra. Normally, specify the interference spectra after resampling.
@@ -108,7 +110,7 @@ class SignalProcessorHamasaki():
     def apply_inverse_ft(self,spectra):
         """Apply inverse ft to the spectra and convert it to distance data
 
-        Parameters
+        Parameter
         ----------
         spectra : `1d-ndarray`, required
             spectra(After applying resampling)
@@ -192,6 +194,61 @@ class SignalProcessorHamasaki():
             for j in range(len(interference[i])):
                 cscan=self.generate_ascan(interference[i][j],reference)
         return cscan
+    
+    #functions for Absorbance calculation
+    def set_incidence(self, incidence):
+        """Specify the incidence light spectra.This spectra will be used for absorbance calculation later.
+
+        Parameter
+        ----------
+        incidence : `1d-ndarray`, required
+            Spectra of incident light only, sampled evenly in wavelength space.
+        """
+        self.__inc=incidence
+    
+    def calculate_absorbance(self, reflection ,incidence):
+        """Calculate tranmittance based on the incident and reflected light.
+        Parameter
+        ----------
+        reflection : `1d-ndarray`, required
+            Spectrum of the light source used to measure absorbance
+
+        Return
+        ----------
+        absorbance : `1d-ndarray`
+            calculated absorbance data 
+        """
+        if self.__inc is None:
+            self.set_incidence(incidence)
+        
+        #calculation
+        with np.errstate(divide='ignore',invalid='ignore'):
+            absorbance=np.log10(reflection/self.__inc)*(-1)
+        
+        #replacement (np.inf -> np.nan) for graph drawing
+        for i in range(len(absorbance)):
+            if np.isinf(absorbance[i]):
+                absorbance[i]=np.nan
+        return absorbance    
+    
+    def calculate_absorbance_2d(self, reflection):
+        """Generate a absorbance distribution map by calling calculate_absorbance function multiple times.
+
+        Parameter
+        ----------
+        reflection : `2d-ndarray`, required
+            Spectrum of the light source used to measure absorbance
+
+        Return 
+        ----------
+        absorbance_2d : `2d-ndarray`
+            calculated absorbance data
+        """
+        absorbance_2d=np.zeros((len(reflection),len(self.__inc)))
+        print('Generating absorbance distribution map(2D)...')
+        for i in tqdm(range((len(reflection)))):
+            absorbance_2d[i]=self.calculate_absorbance(reflection[i])
+        return absorbance_2d
 
 #Please note that following 2 function is excluded from SignalProcessorHamasaki class, 
 #since there are cases the the SignalProcessorHamasaki class is not needed as long as these function is called.
