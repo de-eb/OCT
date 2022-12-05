@@ -8,6 +8,6 @@ data
 temp*
 simulation
 venv
-graph_drawer_absorbance
-graph_drawer_blood
-graph_drawer_reflectance
+graph_drawer_absorbance.py
+graph_drawer_blood.py
+graph_drawer_reflectance.py
