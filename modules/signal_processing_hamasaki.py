@@ -230,7 +230,7 @@ def generate_cross_section(cscan, target, depth):
             cross_section[i][j]=cscan[i][j][index]
     return cross_section
 
-def calculate_absorbance(transmittion,incidence):
+def calculate_absorbance(transmission,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
     Parameters
     ----------
@@ -245,11 +245,33 @@ def calculate_absorbance(transmittion,incidence):
         calculated absorbance data 
     """
     with np.errstate(divide='ignore',invalid='ignore'):
-        absorbance=np.log10(transmittion/incidence)*(-1)
+        absorbance=np.log10(transmission/incidence)*(-1)
     for i in range(len(absorbance)):
         if np.isinf(absorbance[i]):
             absorbance[i]=np.nan
     return absorbance
+
+#changed 2022.1115
+def calculate_reflectance(reflection,incidence):
+    """Calculate reflectance based on the incident and reflected light.
+    Parameters
+    ----------
+    reflection  : `1d-ndarray`, required
+        Spectrum of the light source used to measure reflectance
+    incidence   : `1d-ndarray`, required
+        Spectrum of light passing through the sample
+    
+    Return
+    ----------
+    reflectance : `1d-ndarray`
+        calculated reflectance data 
+    """
+    with np.errstate(divide='ignore',invalid='ignore'):
+        reflectance=reflection/incidence
+    for i in range(len(reflectance)):
+        if np.isinf(reflectance[i]):
+            reflectance[i]=np.nan
+    return reflectance
 
 if __name__=="__main__":
      import matplotlib.pyplot as plt
