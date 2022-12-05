@@ -27,12 +27,15 @@ def on_key(event,q):
     global g_key
     g_key=event.key
     q.put(g_key)
+
+st=200
+ed=941
     
 #device connection
 pma=Pma12(dev_id=5)
-data=np.zeros_like(pma.wavelength,dtype=float)
+data=np.zeros_like(pma.wavelength[st:ed],dtype=float)
 incidence=None
-absorbance=np.zeros_like(pma.wavelength,dtype=float)
+absorbance=np.zeros_like(pma.wavelength[st:ed],dtype=float)
 key=None
 err=False
 
@@ -42,15 +45,16 @@ fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))  # Key e
 ax0 = fig.add_subplot(211, title='Spectrometer output', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
 ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-ax0_0, = ax0.plot(pma.wavelength,data, label='Transmitted light')
-ax0_1, = ax0.plot(pma.wavelength,data, label='Incident light')
+ax0_0, = ax0.plot(pma.wavelength[st:ed],data, label='Transmitted light')
+ax0_1, = ax0.plot(pma.wavelength[st:ed],data, label='Incident light')
 ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
 ax1 = fig.add_subplot(212, title='Absorbance', xlabel='wavelength [mm]', ylabel='Absorbance [-]')
 ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
-ax1_0, = ax1.plot(pma.wavelength,absorbance)
+ax1_0, = ax1.plot(pma.wavelength[st:ed],absorbance)
 warnings.simplefilter(action='ignore',category=UserWarning)
 ax0.set_yscale("log")
+
 
 pma.set_parameter(shutter=1)
 while g_key!='escape':
@@ -62,19 +66,19 @@ while g_key!='escape':
         if err:
             print("                            ", end="\r")
             err= False
-    ax0_0.set_data(pma.wavelength,data)
+    ax0_0.set_data(pma.wavelength[st:ed],data[st:ed])
 
     if incidence is None:
-        ax0.set_ylim(1,np.amax(data)*1.2)
+        ax0.set_ylim(1,np.amax(data[st:ed])*1.2)
     else:
-        absorbance=calculate_absorbance(data,incidence)
-        ax1_0.set_data(pma.wavelength,absorbance)
+        absorbance=calculate_absorbance(data[st:ed],incidence[st:ed])
+        ax1_0.set_data(pma.wavelength[st:ed],absorbance)
         ax1.set_ylim(0,np.nanmax(absorbance)*1.2)       
 
     if g_key=='enter':
         incidence=pma.read_spectra(averaging=100)
-        ax0_1.set_data(pma.wavelength,incidence)
-        ax0.set_ylim(0,np.amax(incidence)*1.2)
+        ax0_1.set_data(pma.wavelength[st:ed],incidence[st:ed])
+        ax0.set_ylim(0,np.amax(incidence[st:ed])*1.2)
         print("Incident light spectra updated.")
     
     if g_key=='alt':
@@ -86,8 +90,8 @@ while g_key!='escape':
     
     if g_key=='delete':
         incidence=None
-        ax0_1.set_data(pma.wavelength, np.zeros_like(pma.wavelength))
-        ax1_0.set_data(pma.wavelength, np.zeros_like(pma.wavelength))
+        ax0_1.set_data(pma.wavelength[st:ed], np.zeros_like(pma.wavelength))
+        ax1_0.set_data(pma.wavelength[st:ed], np.zeros_like(pma.wavelength))
         print('Incident data daleted.')
         
     g_key=None
