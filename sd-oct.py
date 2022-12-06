@@ -127,7 +127,6 @@ if __name__ == "__main__":
     #Array for OCT calculation
     reference = None  # Reference spectra
     itf = np.zeros((step_h,ccs.wavelength.size), dtype=float)  # Interference spectra
-    itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size),dtype=float)
     ascan = np.zeros_like(sp.depth)
     
     #Array for Absorbance calculation
@@ -145,7 +144,7 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(10, 10), dpi=80, tight_layout=True)
     fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))  # Key event
 
-    # CCS Spectrometer output (for OCT measurement)
+    # Graph settings for　CCS Spectrometer output (for OCT measurement)
     ax0 = fig.add_subplot(221, title='Spectrometer output(CCS)', xlabel='Wavelength [nm]', ylabel='Intensity [-]')
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax0.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
@@ -153,7 +152,7 @@ if __name__ == "__main__":
     ax0_1, = ax0.plot(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed], label='reference')
     ax0.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
 
-    # OCT calculation result
+    # Graph settings for OCT calculation result
     if use_um:
         ax1 = fig.add_subplot(223, title='A-scan', xlabel='depth [μm]', ylabel='Intensity [-]')
         ax1_0, = ax1.plot(sp.depth*1e3, ascan)
@@ -165,7 +164,7 @@ if __name__ == "__main__":
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax1.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
 
-    # PMA Spectrometer  output (for Absorbance measurement)
+    # Graph settings for PMA Spectrometer  output (for Absorbance measurement)
     ax2 = fig.add_subplot(222,title='Spectrometer output(PMA)',xlabel='Wavelength [nm]',ylabel='Intensity [-]')
     ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax2.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
@@ -174,7 +173,7 @@ if __name__ == "__main__":
     ax2.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax2.set_yscale("log")
 
-    # Absorbance calculation result
+    # Graph settings for Absorbance calculation result
     ax3 = fig.add_subplot(224,title='Absorbance', xlabel='Wavelength [nm]')
     ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
     ax3.ticklabel_format(style="sci",  axis="y",scilimits=(0,0))
@@ -189,20 +188,6 @@ if __name__ == "__main__":
 
     # Main loop
     while g_key != 'escape':  # ESC key to exit
-        if g_key in ['4','6','5','2','8']:
-            if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
-            elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
-            elif g_key=='5':
-                if hi==0 and vi==0:
-                    stage_s.move_origin()
-                else:
-                    stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
-            elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
-            elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
-            location[0]=stage_s.read_position(axis_num=1)
-            location[1]=stage_s.read_position(axis_num=2)
-            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
-
         # Spectral measurement (CCS)
         try: itf[0,:] = ccs.read_spectra(averaging=5)
         except CcsError as ccs_e:
@@ -243,27 +228,15 @@ if __name__ == "__main__":
             ax3_0.set_data(pma.wavelength[pma_st:pma_ed],absorbance)
             ax3.set_ylim(0,np.nanmax(absorbance))
 
-        if g_key == 'a':
-            inc = pma.read_spectra(averaging=50)
-            print('Incident light data updated.')
-            ax2_1.set_data(pma.wavelength[pma_st:pma_ed],inc[pma_st:pma_ed])
-            ax2.set_ylim(top=np.amax(inc)*1.2)
-
-        #'Delete' key to delete reference and a-scan data       
-        if g_key=='delete':
-            reference=None
-            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ed-st))
-            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
-            print('Reference data deleted.')        
-
-        # 'Enter' key to update reference data
-        if g_key == 'enter':
+        """-----OCT function-----"""
+        # 'q' key to update reference data
+        if g_key == 'q':
             reference = ccs.read_spectra(averaging=100)
             sp.set_reference(reference[ccs_st:ccs_ed])
             print("Reference data updated.")
             ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed], reference[ccs_st:ccs_ed])
         
-        if g_key == 'alt':  # 'Alt' key to save single data
+        if g_key == 'w':  # 'w' key to save single data
             data = ccs.read_spectra(averaging=100)
             if reference is None:
                 dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
@@ -273,16 +246,13 @@ if __name__ == "__main__":
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
-        
-        if g_key=='/': #'/' key to move the stage to the left edge (for when change sample)
-            stage_s.absolute_move(-71000)
 
-        # 'd' key to Start measurement (2-dimention data), double
-        elif g_key == 'd' and stage_s_flag:
+        # 'e' key to Start measurement (2-dimention data)
+        elif g_key == 'e' and stage_s_flag:
             if reference is None:
                 print("Error:No reference data available.")
             else:
-                print("Measurement(2D) start")
+                print("OCT:Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
                     itf[i,:]=ccs.read_spectra()
@@ -297,11 +267,13 @@ if __name__ == "__main__":
                 # Save data
                 dh.save_spectra(wavelength=ccs.wavelength, reference=reference, spectra=itf.T)
                 plt.show()
-        # 't'key to start measurement(3-dimention data), triple
-        elif g_key=='t' and stage_s_flag:
+
+        # 'r'key to start measurement(3-dimention data)
+        elif g_key=='r' and stage_s_flag:
             if reference is None:
                 print('Error:No reference data available.')
             else:
+                print('OCT:Measurement(3D) start')
                 itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
                 result_map=np.zeros((step_v,step_h,resolution))
                 stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
@@ -311,6 +283,93 @@ if __name__ == "__main__":
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
                 dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo)
+
+        #'t' key to delete reference and a-scan data       
+        if g_key=='t':
+            reference=None
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ed-st))
+            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
+            print('Reference data deleted.') 
+
+        """-----Absorbance measurement functions-----"""
+        # 'a' key to update  incident light spectra data
+        if g_key == 'a':
+            inc = pma.read_spectra(averaging=50)
+            sp.set_incidence(inc[pma_st:pma_ed])
+            print('Incident light data updated.')
+            ax2_1.set_data(pma.wavelength[pma_st:pma_ed],inc[pma_st:pma_ed])
+            ax2.set_ylim(top=np.amax(inc)*1.2)
+
+        # 's' key to save single data
+        if g_key == 's':
+            data=pma.read_spectra(averaging=100)
+            if inc is None:
+                dh.save_spectra(wavelength=pma.wavelength, spectra=data)
+                print('Message:Incident light spectra data was not registered. Only spectra data was saved.')
+            else:
+                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=data,memo='Attention:This is absorbance measurement data.')
+        
+        # 'd' key to start measurement(2-dimention)
+        if g_key =='d':
+            if inc is None:
+                print('Error:Incident light data not found.')
+            else:
+                print('ABS:Measurement(2D) start')
+                stage_s.absolute_move(int((width*pl_rate/2)+hi))
+                for i in tqdm(range(step_h)):
+                    reflect[i,:]=pma.read_spectra()
+                    stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                stage_s.move_origin(axis_num=1,ret_form=1)
+                result_map=sp.calculate_absorbance_2d(reflection=reflect)
+                plt.figure()
+                plt.imshow(result_map,cmap='jet',
+                extent=[pma.wavelength[pma_st],pma.wavelength[pma_ed],0,width],
+                aspect=(((pma.wavelength[pma_st]-pma.wavelength[pma_ed])/width))*(2/3),
+                #vmax=10
+                )
+                plt.colorbar()
+                plt.xlabel('Wavelength[nm]')
+                plt.ylabel('Width [mm]')
+
+                #save data
+                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=reflect.T,memo='Attention:This is absorbance measurement data.')
+                plt.show()
+
+        # 'd' key to start measurement(3-dimention)
+        if g_key =='f':
+            if inc is None:
+                print('Error:Incident light data not found.')
+            else:
+                print('ABS:Measurement(3D) start')
+                reflect_3d=np.zeros((step_v,step_h,pma.wavelength),dtype=float)
+                stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+                for i in tqdm (range(step_v)):
+                    for j in range(step_h):
+                        reflect_3d[i][j]=pma.read_spectra()
+                        stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                    stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
+                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo+'Attention:This is absorbance measurement data.')
+
+
+        """-----Auto stage control function-----"""
+        if g_key in ['4','6','5','2','8']:
+            if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
+            elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
+            elif g_key=='5':
+                if hi==0 and vi==0:
+                    stage_s.move_origin()
+                else:
+                    stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+            elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
+            elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
+            location[0]=stage_s.read_position(axis_num=1)
+            location[1]=stage_s.read_position(axis_num=2)
+            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
+        
+        #'/' key to move the stage to the left edge (for when change sample)
+        if g_key=='/': 
+            stage_s.absolute_move(-71000)
+
         g_key = None
         plt.pause(0.0001)
     proc1.join()
