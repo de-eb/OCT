@@ -248,9 +248,12 @@ if __name__ == "__main__":
             print("Saved the graph to {}.".format(file_path))
 
         # 'e' key to Start measurement (2-dimention data)
-        elif g_key == 'e' and stage_s_flag:
-            if reference is None:
-                print("Error:No reference data available.")
+        elif g_key == 'e':
+            if reference is None or stage_s_flag == False:
+                if stage_s_flag ==False:
+                    print('Error:Crux is not connected.')
+                else:
+                    print("Error:No reference data available.")
             else:
                 print("OCT:Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
@@ -270,8 +273,11 @@ if __name__ == "__main__":
 
         # 'r'key to start measurement(3-dimention data)
         elif g_key=='r' and stage_s_flag:
-            if reference is None:
-                print('Error:No reference data available.')
+            if reference is None or stage_s_flag ==False:
+                if stage_s_flag ==False:
+                    print('Error:Crux is not connected.')
+                else:               
+                    print('Error:No reference data available.')
             else:
                 print('OCT:Measurement(3D) start')
                 itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
@@ -287,7 +293,7 @@ if __name__ == "__main__":
         #'t' key to delete reference and a-scan data       
         if g_key=='t':
             reference=None
-            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ed-st))
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ccs_ed-ccs_st))
             ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
             print('Reference data deleted.') 
 
@@ -310,9 +316,12 @@ if __name__ == "__main__":
                 dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=data,memo='Attention:This is absorbance measurement data.')
         
         # 'd' key to start measurement(2-dimention)
-        if g_key =='d':
-            if inc is None:
-                print('Error:Incident light data not found.')
+        if g_key =='d' and stage_s_flag:
+            if inc is None or stage_s_flag == False:
+                if stage_s_flag ==False:
+                    print('Error:Crux is not connected.')
+                else: 
+                    print('Error:Incident light data not found.')
             else:
                 print('ABS:Measurement(2D) start')
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
@@ -336,9 +345,12 @@ if __name__ == "__main__":
                 plt.show()
 
         # 'd' key to start measurement(3-dimention)
-        if g_key =='f':
-            if inc is None:
-                print('Error:Incident light data not found.')
+        if g_key =='f' and stage_s_flag:
+            if inc is None or stage_s_flag == False:
+                if stage_s_flag ==False:
+                    print('Error:Crux is not connected.')
+                else: 
+                    print('Error:Incident light data not found.')
             else:
                 print('ABS:Measurement(3D) start')
                 reflect_3d=np.zeros((step_v,step_h,pma.wavelength),dtype=float)
@@ -348,10 +360,113 @@ if __name__ == "__main__":
                         reflect_3d[i][j]=pma.read_spectra()
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
-                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo+'Attention:This is absorbance measurement data.')
+                dh.save_spectra_3d(wavelength=pma.wavelength,width=width,height=height,reference=inc,spectra=reflect,memo=memo+'Attention:This is absorbance measurement data.')
 
+        # 'g' key to delete incident light data
+        if g_key == 'g':
+            inc = None
+            ax2_1.set_data(pma.wavelength[pma_st:pma_ed],np.zeros(pma_ed-pma_st)+1)
+            ax3_0.set_data(pma.wavelength[pma_st:pma_ed],np.zeros(pma_ed-pma_st))
+            print('Incident light data deleted.')
 
-        """-----Auto stage control function-----"""
+        """-----Simultaneous measurement functions (OCT & ABS)-----"""
+        # 'z' key to update reference data and incident light data (I don't know if you'd use it.)
+        if g_key == 'z':
+            inc = pma.read_spectra(averaging=50)
+            sp.set_incidence(inc[pma_st:pma_ed])
+            print('Incident light data updated.')
+            ax2_1.set_data(pma.wavelength[pma_st:pma_ed],inc[pma_st:pma_ed])
+            ax2.set_ylim(top=np.amax(inc)*1.2)
+            reference = ccs.read_spectra(averaging=100)
+            sp.set_reference(reference[ccs_st:ccs_ed])
+            print("Reference data updated.")
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed], reference[ccs_st:ccs_ed])
+        
+        # 'x' key to save single data of pma and ccs
+        if g_key == 'x':
+            data = ccs.read_spectra(averaging=100)
+            if reference is None:
+                dh.save_spectra(wavelength=ccs.wavelength, spectra=data)
+                print('Message:Reference data was not registered. Only spectra data was saved.')
+            else:
+                dh.save_spectra(wavelength=ccs.wavelength, spectra=data,reference=reference)
+            file_path = dh.generate_filename('png')
+            plt.savefig(file_path)
+            print("Saved the graph to {}.".format(file_path))
+            data=pma.read_spectra(averaging=100)
+            if inc is None:
+                dh.save_spectra(wavelength=pma.wavelength, spectra=data)
+                print('Message:Incident light spectra data was not registered. Only spectra data was saved.')
+            else:
+                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=data,memo='Attention:This is absorbance measurement data.')
+
+        # 'c' key to start measurement (2-dimention)
+        if g_key == 'c' and stage_s_flag:
+            if inc is None or reference is None or stage_s_flag == False:
+                if stage_s_flag == False:
+                    print('Error:Crux is not connected.')
+                else:
+                    if inc is None:
+                        print('Error:Incident light data not found.')      
+                    if reference is None:
+                        print('Error:No reference data available.')   
+            else:
+                print('OCT & ABS:Measurement(2D) start')
+
+                #measurement loop
+                stage_s.absolute_move(int((width*pl_rate/2)+hi))
+                for i in tqdm(range(step_h)):
+                    reflect[i,:]=pma.read_spectra()
+                    itf[i,:]=ccs.read_spectra()
+                    stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+
+                #signal processing
+                result_abs=sp.calculate_absorbance_2d(reflection=reflect)
+                result_oct=sp.generate_bscan(itf[:,ccs_st:ccs_ed],reference[ccs_st:ccs_ed])
+
+                #save data
+                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=reflect.T,memo='Attention:This is absorbance measurement data.')
+                dh.save_spectra(wavelength=ccs.wavelength, reference=reference, spectra=itf.T)
+
+                #result output
+                plt.figure()
+                plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width],aspect=(depth_max/width)*(2/3),vmax=0.5)
+                plt.colorbar()
+                plt.xlabel('depth[mm]')
+                plt.ylabel('width[mm]')
+                plt.show()
+        
+        # 'v'key to start measurement (3-dimention)
+        if g_key == 'v':
+            if inc is None or reference is None or stage_s_flag == False:
+                if stage_s_flag == False:
+                    print('Error:Crux is not connected.')
+                else:
+                    if inc is None:
+                        print('Error:Incident light data not found.')      
+                    if reference is None:
+                        print('Error:No reference data available.')   
+            else:
+                print('ABS:Measurement(3D) start')
+
+                #measurement loop
+                reflect_3d=np.zeros((step_v,step_h,pma.wavelength),dtype=float)
+                itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
+                stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+                for i in tqdm (range(step_v)):
+                    for j in range(step_h):
+                        reflect_3d[i][j]=pma.read_spectra()
+                        itf_3d[i][j]=ccs.read_spectra()
+                        stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+                    stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
+                stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+
+                #save data
+                dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo)
+                dh.save_spectra_3d(wavelength=pma.wavelength,width=width,height=height,reference=inc,spectra=reflect,memo=memo+'Attention:This is absorbance measurement data.')
+
+        """-----Auto stage control functions-----"""
         if g_key in ['4','6','5','2','8']:
             if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
             elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
