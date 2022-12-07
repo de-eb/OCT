@@ -205,7 +205,7 @@ class Pma12():
                     + self.buffer[int(self.buffer.size/2):]).astype(int)
         if correction:
             if data.max() >= 65535:
-                raise PmaError(msg="Measured data are saturated.")
+                raise PmaError(msg="PmaError:Measured data are saturated.")
             data = data - self.__background
             data = np.where(data < 0, 0, data)*self.__sensitivity
         return np.mean(data, axis=0)

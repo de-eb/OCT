@@ -192,10 +192,12 @@ if __name__ == "__main__":
         try: itf[0,:] = ccs.read_spectra(averaging=5)
         except CcsError as ccs_e:
             ccs_err = True
-            print('\033[31m'+'CcsError:'+'\033[0m '+ ccs_e, end="\r")
+            print(ccs_e, end="\r")
+            ax0_0.set_color('tab:red')
         else:
             if ccs_err:
                 print("                            ", end="\r")
+                ax0_0.set_color('tab:blue')
                 ccs_err= False
         ax0_0.set_data(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed])  # Graph update
         ax0.set_ylim((0, 1.2*itf[0,ccs_st:ccs_ed].max()))
@@ -213,11 +215,13 @@ if __name__ == "__main__":
         try: reflect[0,:] = pma.read_spectra(averaging=5)
         except PmaError as pma_e:
             pma_err = True
-            print('\033[31m'+'PmaError:'+'\033[0m '+ pma_e, end="\r")
+            print(pma_e, end="\r")
+            ax2_0.set_color('tab:red')
         else:
             if pma_err:
                 print("                            ", end="\r")
-                pma_err= False                   
+                ax2_0.set_color('tab:blue')
+                pma_err= False               
         ax2_0.set_data(pma.wavelength[pma_st:pma_ed],reflect[0,pma_st:pma_ed])
         
         #Signal processing and plot(PMA)

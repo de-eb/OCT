@@ -76,15 +76,13 @@ class Ccs175m():
         self.__name=ctypes.create_string_buffer(name.encode('utf-8'))
         Ccs175m.__err=Ccs175m.__dev.tlccs_Init(self.__name,False,False,ctypes.byref(Ccs175m.__handle))
         if Ccs175m.__err:
-            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle)
+            raise CcsError(status_code=Ccs175m.__err,session=Ccs175m.__handle,msg='CCS175M not found.')
 
         #Resister the exit process
         atexit.register(self.close_ccs)
 
         #get wavelength data
         self.__wavelength=Ccs175m.__dev.GetWavelengthDataArray(Ccs175m.__handle)
-
-        time.sleep(2)
         print('CCS175M is ready.')
 
     @property
@@ -141,7 +139,7 @@ class Ccs175m():
         for i in range(averaging):
             data2=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
             if np.amax(data2)>=1:
-                raise CcsError(status_code=None, session=None,msg="Measured data are saturated.")
+                raise CcsError(status_code=None, session=None,msg="CcsError:Measured data are saturated.")
             data+=data2  
         return data/averaging
     
@@ -224,6 +222,6 @@ if __name__=="__main__":
                 err=False
         graph.set_data(ccs.wavelength,data)
         ax.set_ylim((0,np.amax(data)*1.2))
-        #ax.set_xlim((770,910))
+        ax.set_xlim((770,910))
         key=None
         plt.pause(0.0001)
