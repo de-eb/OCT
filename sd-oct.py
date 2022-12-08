@@ -32,7 +32,6 @@ plt.rcParams['axes.linewidth'] = 1.0
 # Globals
 g_key = None  # Pressed key
 
-
 def profile_beam(q):
 
     camera = ArtCam130(exposure_time=500, scale=0.8, auto_iris=0)
@@ -53,12 +52,10 @@ def profile_beam(q):
     camera.close()
     cv2.destroyAllWindows()
 
-
 def on_key(event, q):
     global g_key
     g_key = event.key
     q.put(g_key)
-
 
 if __name__ == "__main__":
     # Parameter initialization
@@ -98,7 +95,7 @@ if __name__ == "__main__":
         stage_p_flag=True
         
     # Piezo stage (reference mirror side)
-    try: stage_m = Fine01r('COM11')  
+    try: stage_m = Fine01r('COM12')  
     except Fine01rError:
         print('\033[31m'+'Error:FINE01R not found. Reference mirror movement function is disabled.'+'\033[0m ')
         stage_m_flag=False
@@ -106,7 +103,7 @@ if __name__ == "__main__":
         stage_m_flag=True
     
     # Auto stage (sample side)
-    try: stage_s = Crux('COM4')  
+    try: stage_s = Crux('COM6')  
     except CruxError:
         print('\033[31m'+'Error:Crux not found. Sample stage movement function is disabled.'+'\033[0m ')
         stage_s_flag=False
@@ -348,7 +345,7 @@ if __name__ == "__main__":
                 dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=reflect.T,memo='Attention:This is absorbance measurement data.')
                 plt.show()
 
-        # 'd' key to start measurement(3-dimention)
+        # 'f' key to start measurement(3-dimention)
         if g_key =='f' and stage_s_flag:
             if inc is None or stage_s_flag == False:
                 if stage_s_flag ==False:
@@ -469,6 +466,17 @@ if __name__ == "__main__":
                 #save data
                 dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=reference,spectra=itf_3d,memo=memo)
                 dh.save_spectra_3d(wavelength=pma.wavelength,width=width,height=height,reference=inc,spectra=reflect,memo=memo+'Attention:This is absorbance measurement data.')
+        
+        # 'b'key to delete reference data and incident light data
+        if g_key =='b':
+            reference=None
+            ax0_1.set_data(ccs.wavelength[ccs_st:ccs_ed],np.zeros(ccs_ed-ccs_st))
+            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))
+            print('Reference data deleted.') 
+            inc = None
+            ax2_1.set_data(pma.wavelength[pma_st:pma_ed],np.zeros(pma_ed-pma_st)+1)
+            ax3_0.set_data(pma.wavelength[pma_st:pma_ed],np.zeros(pma_ed-pma_st))
+            print('Incident light data deleted.')            
 
         """-----Auto stage control functions-----"""
         if g_key in ['4','6','5','2','8']:
