@@ -62,12 +62,12 @@ if __name__ == "__main__":
     resolution=2000
     depth_max=0.3 #maximum value of depth axis[mm]
     use_um=True #whether to use [μm]　units or not
-    averaging=10 #The number of measurement repetitions. used in 2d/3d measurement.
-    step_h=1000 # Number of horizontal divisions
+    averaging=20 #The number of measurement repetitions. used in 2d/3d measurement.
+    step_h=5000 # Number of horizontal divisions
     width=20 # Horizontal scanning width[mm]
     step_v=10 # Number of vertical divisions
-    height=5 # Vertical scaninng height[mm]
-    memo='Sample:Thin skin of onion. lens=THORLABS 54-850'
+    height=10 # Vertical scaninng height[mm]
+    memo='Sample:wet tissue paper.  lens=THORLABS 54-850,averaging=20, width=5mm,step_h=1000' 
 
     #Constants
     ccs_st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -194,7 +194,7 @@ if __name__ == "__main__":
             ax0_0.set_color('tab:red')
         else:
             if ccs_err:
-                print("                            ", end="\r")
+                print("                                     ", end="\r")
                 ax0_0.set_color('tab:blue')
                 ccs_err= False
         ax0_0.set_data(ccs.wavelength[ccs_st:ccs_ed], itf[0,ccs_st:ccs_ed])  # Graph update
@@ -217,7 +217,7 @@ if __name__ == "__main__":
             ax2_0.set_color('tab:red')
         else:
             if pma_err:
-                print("                            ", end="\r")
+                print("                                     ", end="\r")
                 ax2_0.set_color('tab:blue')
                 pma_err= False               
         ax2_0.set_data(pma.wavelength[pma_st:pma_ed],reflect[0,pma_st:pma_ed])
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
         """-----OCT function-----"""
         # 'q' key to update reference data
-        if g_key == 'q':
+        if g_key == 'enter':
             reference = ccs.read_spectra(averaging=100)
             sp.set_reference(reference[ccs_st:ccs_ed])
             print("Reference data updated.")
@@ -481,15 +481,12 @@ if __name__ == "__main__":
 
         """-----Auto stage control functions-----"""
         if g_key in ['4','6','5','2','8']:
-            if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9)
-            elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)
-            elif g_key=='5':
-                if hi==0 and vi==0:
-                    stage_s.move_origin()
-                else:
-                    stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
-            elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9)
-            elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9)
+            if g_key=='6':stage_s.relative_move(2000,axis_num=1,velocity=9) #move 1mm to right
+            elif g_key=='4':stage_s.relative_move(-2000,axis_num=1,velocity=9)  #move 1mm to left
+            elif g_key=='5': #move origin
+                stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+            elif g_key=='2':stage_s.relative_move(2000,axis_num=2,velocity=9) #down
+            elif g_key=='8':stage_s.relative_move(-2000,axis_num=2,velocity=9) #up
             location[0]=stage_s.read_position(axis_num=1)
             location[1]=stage_s.read_position(axis_num=2)
             print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
@@ -497,6 +494,27 @@ if __name__ == "__main__":
         #'/' key to move the stage to the left edge (for when change sample)
         if g_key=='/': 
             stage_s.absolute_move(-71000)
+
+        # 'p' key to check measurement range of 2d measurement
+        # Set the light source to He-Ne laser and check if the light hits the target range of the measurement.
+        if g_key == 'p':
+            stage_s.biaxial_move(v=0, vmode='a', h=int((width*pl_rate/2)+hi), hmode='a')
+            time.sleep(1)
+            stage_s.absolute_move(position=int((-1)*(width*pl_rate/2)+hi),axis_num=1)
+            time.sleep(1)
+            stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+
+        # 'l' key to check measurement range of 2d measurement
+        if g_key == 'l':
+            stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=0, vmode='r', h=(-1)*int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=(-1)*int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=0, vmode='r', h=(-1)*int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
 
         g_key = None
         plt.pause(0.0001)
