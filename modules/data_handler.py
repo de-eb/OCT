@@ -117,6 +117,11 @@ def load_spectra(file_path, wavelength_range=[0,2000]):
         data['spectra'] = df.loc[:, 'Spectra [-]'].values
     elif 'Spectra0 [-]' in df.columns:
         data['spectra'] = df.iloc[:, df.columns.get_loc('Spectra0 [-]'):].values.T
+    with open(file_path) as f:
+        date = f.readline().strip('date,')
+        memo = f.readline().strip('memo,')
+    info = {'date':date.strip('\n'), 'memo':memo.strip('\n')}
+    data.update(info)
     return data
 
 
