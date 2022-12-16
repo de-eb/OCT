@@ -9,13 +9,14 @@ import glob
 
 if __name__== "__main__":
     #constants
-    filename='data/220804_0.npz'
+    filename='data/221216_0.npz'
     resolution=2000
     depth_max=0.25
     n=1.5
     st=1664
     ed=2491
-    target_depth=183
+    target_depth=210
+    vmax=1
 
     process_completed=False
 
@@ -32,16 +33,12 @@ if __name__== "__main__":
             h=founddata['height'][0]
             process_completed=True
         else:
-            print('Calculation condition did not matched.')
+            print('Calculation condition did not match.')
     if process_completed is False:
         data=np.load(file=filename,allow_pickle=True)
         sp=Processor(data['wavelength'][st:ed],n,depth_max,resolution)
         dh.output_datainfo(data)
         result_all=sp.generate_cscan(data['spectra'][:,:,st:ed],data['reference'][st:ed])
-        cs_map=generate_cross_section(result_all,target_depth,sp.depth)
-        w=data['width'][0]
-        h=data['height'][0]
-
         np.savez_compressed(filename.strip('.npz')+'_calculated.npz',
         data=result_all,
         date=data['date'],
@@ -53,6 +50,9 @@ if __name__== "__main__":
         width=data['width'],
         height=data['height']
         )
+        cs_map=generate_cross_section(result_all,target_depth,sp.depth)
+        w=data['width'][0]
+        h=data['height'][0]
         print('Calculation result saved.')
     
     #grath drawing
@@ -60,6 +60,6 @@ if __name__== "__main__":
     plt.ylabel('height[mm]',fontsize=15)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.imshow(cs_map,extent=[0,w,0,h],vmax=0.04)
+    plt.imshow(cs_map,cmap='jet',extent=[0,w,0,h],vmax=np.amax(cs_map)*vmax)
     plt.colorbar()
     plt.show()
