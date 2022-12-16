@@ -6,20 +6,16 @@ import matplotlib.pyplot as plt
 
 if __name__=="__main__":
     #constants
-    filename='data/221213_1.csv'
-    resolution=2000
+    filename='data/221216_4.csv'
+    resolution=4000
     n=1.5
-    depth_max=0.25
-    resolution=1500
+    depth_max=0.275
     width_h=1
     aspect=2/3
-    vmax=0.05
+    vmax=0.01
 
     data=dh.load_spectra(file_path=filename,wavelength_range=[770,910])
-    print('<data information>')
-    print('filename:',filename)
-    print('date:',data['date'])
-    print('memo:',data['memo'])
+    print('<data information>\nfilename:{}\ndate:{}\nmemo:{}'.format(filename,data['date'],data['memo']))
     sp=Processor(data['wavelength'], n, depth_max, resolution)
     result_map=sp.generate_bscan(data['spectra'], data['reference'])
 
