@@ -64,11 +64,12 @@ if __name__ == "__main__":
     resolution=2000
     depth_max=0.3 #maximum value of depth axis[mm]
     use_um=True #whether to use [μm]　units or not
-    step_h=1000 # Number of horizontal divisions
-    width=20 # Horizontal scanning width[mm]
-    step_v=10 # Number of vertical divisions
-    height=5 # Vertical scaninng height[mm]
-    memo='Sample:Thin skin of onion. lens=THORLABS 54-850'
+    step_h=150 # Number of horizontal divisions
+    width=0.5 # Horizontal scanning width[mm]
+    step_v=150 # Number of vertical divisions
+    height=0.5 # Vertical scaninng height[mm]
+    averaging=20
+    memo='thin skin of onion.horizontal way is parallel to the fiber. lens=THORLABS LSM54-850'
 
     #Constants
     st=1664 # Calculation range (Start) of spectrum(ccs)
@@ -90,7 +91,7 @@ if __name__ == "__main__":
         stage_m_flag=False
     else:
         stage_m_flag=True
-    try: stage_s = Crux('COM4')  # Auto stage (sample side)
+    try: stage_s = Crux('COM6')  # Auto stage (sample side)
     except CruxError:
         print('\033[31m'+'Error:Crux not found. Sample stage movement function is disabled.'+'\033[0m ')
         stage_s_flag=False
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     x, y, z = 100000, 0, 0  # Stage position (Initial)
     ref = None  # Reference spectra
     itf = np.zeros((step_h,ccs.wavelength.size), dtype=float)  # Interference spectra
-    itf_3d=np.zeros((step_h,step_v,ccs.wavelength.size),dtype=float)
+    itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
     ascan = np.zeros_like(sp.depth)
     err = False
     location=np.zeros(3,dtype=int)
@@ -222,7 +223,7 @@ if __name__ == "__main__":
                 print("Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
-                    itf[i,:]=ccs.read_spectra()
+                    itf[i,:]=ccs.read_spectra(averaging)
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 result_map=sp.generate_bscan(itf[:,st:ed], ref[st:ed])
                 plt.figure()
@@ -231,7 +232,7 @@ if __name__ == "__main__":
                 plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
-                #dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=ref, spectra=itf.T, memo=memo)
                 stage_s.move_origin(axis_num=1,ret_form=1)
                 plt.show()
         # 't'key to start measurement(3-dimention data), triple
@@ -239,16 +240,37 @@ if __name__ == "__main__":
             if ref is None:
                 print('Error:No reference data available.')
             else:
-                itf_3d=np.zeros((step_v,step_h,ccs.wavelength.size),dtype=float)
-                result_map=np.zeros((step_v,step_h,resolution))
                 stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
                 for i in tqdm(range(step_v)):
                     for j in range(step_h):
-                        itf_3d[i][j]=ccs.read_spectra()
-                        #result_map[i][j]=sp.generate_ascan(itf_3d[i][j][st:ed], ref[st:ed])
+                        itf_3d[i][j]=ccs.read_spectra(averaging)
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v=int(height/step_v*pl_rate*(-1)), vmode='r', h=int((width*pl_rate/2)), hmode='a')
                 dh.save_spectra_3d(wavelength=ccs.wavelength,width=width,height=height,reference=ref,spectra=itf_3d,memo=memo)
+
+        # 'p' key to check measurement range of 2d measurement
+        # Set the light source to He-Ne laser and check if the light hits the target range of the measurement.
+        if g_key == 'p':
+            print('pre-check function called.\n<current parameter of 2D measurement>\nstaninng width:{}[mm]\nstep:{}'.format(width,step_h))
+            stage_s.biaxial_move(v=vi, vmode='a', h=int((width*pl_rate/2)+hi), hmode='a')
+            time.sleep(1)
+            stage_s.absolute_move(position=int((-1)*(width*pl_rate/2)+hi),axis_num=1)
+            time.sleep(1)
+            stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')
+
+        # 'l' key to check measurement range of 2d measurement
+        if g_key == 'l':
+            print('pre-check function called.\n<current parameter of 2D measurement>\n \
+            length horizontal:{}[mm]/vertical:{}[mm]\nstep:horizontal:{}/vertical:{}'.format(width,height,step_h,step_v))
+            stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=0, vmode='r', h=(-1)*int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=(-1)*int(height*pl_rate/2)+vi, vmode='a', h=int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=0, vmode='r', h=(-1)*int((width*pl_rate/2))+hi, hmode='a')
+            time.sleep(1)
+            stage_s.biaxial_move(v=vi, vmode='a', h=hi, hmode='a')                
         g_key = None
         plt.pause(0.0001)
     proc1.join()
