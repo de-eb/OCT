@@ -192,7 +192,7 @@ class SignalProcessorHamasaki():
         print('Generating C-scan...')
         for i in tqdm(range(len(interference))):
             for j in range(len(interference[i])):
-                cscan=self.generate_ascan(interference[i][j],reference)
+                cscan[i][j]=self.generate_ascan(interference[i][j],reference)
         return cscan
     
     #functions for Absorbance calculation
