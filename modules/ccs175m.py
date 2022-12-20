@@ -127,22 +127,30 @@ class Ccs175m():
         """This function reads out spectra.
         Be sure to call 'start_scan' function before this function.
 
+        Parameters
+        ----------
+        averaging : `int`
+            The number of measurement repetitions. 2 or more, the data is an average value.
+
         Return
         ---------
         `1d-ndarray`
             Spectra sampled evenly in the wavelength space.
+            In case of size_reduction=True, the returned data type is float32.
         """
         data=np.zeros_like(self.wavelength)
         if averaging<1:
             warnings.warn('The value of averaging must always be greater than or equal to 1.')
             averaging=1
+            
         for i in range(averaging):
             data2=Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
             if np.amax(data2)>=1:
                 raise CcsError(status_code=None, session=None,msg="CcsError:Measured data are saturated.")
-            data+=data2  
+            data+=data2    
+
         return data/averaging
-    
+
     def close_ccs(self):
         """ Release the instrument and device driver
         and terminate the connection.
