@@ -57,29 +57,59 @@ def on_key(event, q):
     g_key = event.key
     q.put(g_key)
 
+def find_index(wavelength,wl_range):
+    """
+    Finds the index of an array of wavelengths from a specified range
+
+    Parameters
+    ----------
+    wavelength : `1d-ndarray`, required
+        Wavelength axis[nm] The given spectra must be sampled evenly in wavelength space.
+    wavelengrh_range : `list`
+        Wavelength range [nm] of the spectra to be found.
+        Specify the lower limit in the first element and the upper limit in the next element.
+
+    Returns
+    ----------
+    st : `int`
+        bottom of index
+    ed : `int`
+        top of index   
+    """
+    #find bottom of index
+    for i in range(len(wavelength)):
+        if wavelength[i]>=wl_range[0]:
+            st=i
+            break
+
+    #find top of index
+    for i in range(len(wavelength)):
+        if wavelength[i]>=wl_range[1]:
+            ed=i
+            break
+    return st,ed
+
 if __name__ == "__main__":
     # Parameter initialization
     resolution=2000
     depth_max=0.3 #maximum value of depth axis[mm]
     use_um=True #whether to use [μm]　units or not
-    averaging=20 #The number of measurement repetitions. used in 2d/3d measurement.
-    step_h=5000 # Number of horizontal divisions
-    width=20 # Horizontal scanning width[mm]
+    averaging=1 #The number of measurement repetitions. used in 2d/3d measurement.
+    step_h=2000 # Number of horizontal divisions
+    width=15 # Horizontal scanning width[mm]
     step_v=10 # Number of vertical divisions
     height=10 # Vertical scaninng height[mm]
-    memo='Sample:wet tissue paper.  lens=THORLABS 54-850,averaging=20, width=5mm,step_h=1000' 
+    memo='red cellophane and blue cellophane.  lens=THORLABS 54-850,averaging=1, width=15mm,step_h=2000' 
 
     #Constants
-    ccs_st=1664 # Calculation range (Start) of spectrum(ccs)
-    ccs_ed=2491 # Calculation range (End) of spectrum(ccs)
     pl_rate=2000 # Number of pulses equals to 1mm [pulse/mm]
-    pma_st=134 # calculation range(start) of spectrum(pma)
-    pma_ed=953 # calculation range(end) of spectrum(pma)
+    ccs_wl_st, ccs_wl_ed = 770, 910
+    pma_wl_st, pma_wl_ed = 300, 910
+
 
     #Flag for equipment operation
     stage_s_flag=None #sample stage(Crux)
-    stage_m_flag=None #reference mirror stage(fine01r)
-    stage_p_flag=None #spectrometer(PMA)
+    stage_m_flag=False #reference mirror stage(fine01r)
 
     #Initial position of auto stage
     vi=0 #initial position of vertical stage
@@ -87,14 +117,13 @@ if __name__ == "__main__":
 
     # Device connection
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (for OCT measurement)
+    ccs_st,ccs_ed=find_index(ccs.wavelength, [ccs_wl_st, ccs_wl_ed])
+
     # Spectrometer (for Absorbance measurement)
-    try: pma = Pma12(dev_id=5)  
-    except PmaError:
-        print('\033[31m'+'Error:PMA not found. Absorbance measurement function is disabled.'+'\033[0m ')
-        stage_p_flag=False
-    else:
-        stage_p_flag=True
-        
+    pma = Pma12(dev_id=5)  
+    pma_st,pma_ed=find_index(pma.wavelength, [pma_wl_st, pma_wl_ed])
+
+    '''    
     # Piezo stage (reference mirror side)
     try: stage_m = Fine01r('COM12')  
     except Fine01rError:
@@ -102,7 +131,8 @@ if __name__ == "__main__":
         stage_m_flag=False
     else:
         stage_m_flag=True
-    
+    '''
+
     # Auto stage (sample side)
     try: stage_s = Crux('COM6')  
     except CruxError:
@@ -170,6 +200,7 @@ if __name__ == "__main__":
     ax2_1,=ax2.plot(pma.wavelength[pma_st:pma_ed], reflect[0,pma_st:pma_ed]+1, label='incidence')
     ax2.legend(bbox_to_anchor=(1,1), loc='upper right', borderaxespad=0.2)
     ax2.set_yscale("log")
+    ax2.set_ylim(top=65535)
 
     # Graph settings for Absorbance calculation result
     ax3 = fig.add_subplot(224,title='Absorbance', xlabel='Wavelength [nm]')
@@ -223,13 +254,10 @@ if __name__ == "__main__":
         ax2_0.set_data(pma.wavelength[pma_st:pma_ed],reflect[0,pma_st:pma_ed])
         
         #Signal processing and plot(PMA)
-        if inc is None:
-            ax2.set_ylim((1,np.amax(reflect[0,pma_st:pma_ed])*1.2))
-        else:
+        if inc is not None:
             absorbance=calculate_absorbance(reflect[0,pma_st:pma_ed], inc[pma_st:pma_ed])
             ax3_0.set_data(pma.wavelength[pma_st:pma_ed],absorbance)
             ax3.set_ylim(0,np.nanmax(absorbance))
-
         """-----OCT function-----"""
         # 'q' key to update reference data
         if g_key == 'enter':
@@ -270,7 +298,7 @@ if __name__ == "__main__":
                 plt.xlabel('depth[mm]')
                 plt.ylabel('width[mm]')
                 # Save data
-                dh.save_spectra(wavelength=ccs.wavelength, reference=reference, spectra=itf.T)
+                dh.save_spectra(wavelength=ccs.wavelength, reference=reference, spectra=itf.T, memo=memo)
                 plt.show()
 
         # 'r'key to start measurement(3-dimention data)
@@ -306,7 +334,6 @@ if __name__ == "__main__":
             sp.set_incidence(inc[pma_st:pma_ed])
             print('Incident light data updated.')
             ax2_1.set_data(pma.wavelength[pma_st:pma_ed],inc[pma_st:pma_ed])
-            ax2.set_ylim(top=np.amax(inc)*1.2)
 
         # 's' key to save single data
         if g_key == 's':
@@ -331,19 +358,22 @@ if __name__ == "__main__":
                     reflect[i,:]=pma.read_spectra(averaging=averaging)
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 stage_s.move_origin(axis_num=1,ret_form=1)
-                result_map=sp.calculate_absorbance_2d(reflection=reflect)
+
+                #save data
+                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=reflect.T,memo='Attention:This is absorbance measurement data.'+memo)
+
+                #signal processing and plot
+                result_map=sp.calculate_absorbance_2d(reflection=reflect[:,pma_st:pma_ed])
                 plt.figure()
                 plt.imshow(result_map,cmap='jet',
                 extent=[pma.wavelength[pma_st],pma.wavelength[pma_ed],0,width],
-                aspect=(((pma.wavelength[pma_st]-pma.wavelength[pma_ed])/width))*(2/3),
+                aspect=((abs(pma.wavelength[pma_st]-pma.wavelength[pma_ed])/width))*(2/3),
                 #vmax=10
                 )
                 plt.colorbar()
                 plt.xlabel('Wavelength[nm]')
                 plt.ylabel('Width [mm]')
 
-                #save data
-                dh.save_spectra(wavelength=pma.wavelength,reference=inc,spectra=reflect.T,memo='Attention:This is absorbance measurement data.')
                 plt.show()
 
         # 'f' key to start measurement(3-dimention)
@@ -378,7 +408,6 @@ if __name__ == "__main__":
             sp.set_incidence(inc[pma_st:pma_ed])
             print('Incident light data updated.')
             ax2_1.set_data(pma.wavelength[pma_st:pma_ed],inc[pma_st:pma_ed])
-            ax2.set_ylim(top=np.amax(inc)*1.2)
             reference = ccs.read_spectra(averaging=100)
             sp.set_reference(reference[ccs_st:ccs_ed])
             print("Reference data updated.")
@@ -498,7 +527,7 @@ if __name__ == "__main__":
         # 'p' key to check measurement range of 2d measurement
         # Set the light source to He-Ne laser and check if the light hits the target range of the measurement.
         if g_key == 'p':
-            stage_s.biaxial_move(v=0, vmode='a', h=int((width*pl_rate/2)+hi), hmode='a')
+            stage_s.biaxial_move(v=vi, vmode='a', h=int((width*pl_rate/2)+hi), hmode='a')
             time.sleep(1)
             stage_s.absolute_move(position=int((-1)*(width*pl_rate/2)+hi),axis_num=1)
             time.sleep(1)
