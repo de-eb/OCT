@@ -194,7 +194,7 @@ class SignalProcessorHamasaki():
             for j in range(len(interference[i])):
                 cscan[i][j]=self.generate_ascan(interference[i][j],reference)
         return cscan
-    
+
     #functions for Absorbance calculation
     def set_incidence(self, incidence):
         """Specify the incidence light spectra.This spectra will be used for absorbance calculation later.
@@ -287,6 +287,54 @@ def generate_cross_section(cscan, target, depth):
             cross_section[i][j]=cscan[i][j][index]
     return cross_section
 
+def generate_tomographical_view(data, target:float, mode:str):
+    """Generates a tomographical view from c-scan data at a specified width/height in a plane parallel to the optical axis direction.
+    
+    Parameters
+    ----------
+    data : `numpy.lib.npyio.NpzFile`
+        Data read from files with _calculated at the end
+    target : `float` ,required
+        Width/Height to generate tomographical view[mm].
+    mode : `str`, required
+        'h' : generate height versus depth graph
+        'w' : generate width  versus depth graph
+        other : not supported
+ 
+    Return
+    ----------
+    tmg_view : `2d-ndarray`
+        Generated tomographical view of C-csan.
+    """
+    if mode == 'w':
+        y_axis = np.linspace(0,data['height'][0],len(data['data']))
+    elif mode == 'h':
+        y_axis = np.linspace(0,data['width'][0],len(data['data'][0]))
+    else:
+        print("Error:Invalid parameter was set to mode.(v or h only)")
+        return 0
+
+    #find index to generate tomographical view
+    if np.amax(y_axis)<target or np.amin(y_axis)>target:
+        print("Error:Target is not included in y-axis array. Returned y_axis[0]")
+        index=0
+    else:
+        for i in range(len(y_axis)):
+            if y_axis[i]>=target:
+                index=i
+                break
+        
+    # mode = 'w' to generage width versus depth graph
+    if mode == 'w':
+        tmg_view=data['data'][index]
+
+    # mode = 'h' to generage height versus depth graph
+    elif mode == 'h':
+        tmg_view=np.zeros((len(data['data']),len(data['data'][0][0])))
+        for i in tqdm(range(len(data['data']))):
+            tmg_view[i]=data['data'][i][index]
+    return tmg_view
+            
 def calculate_absorbance(transmission,incidence):
     """Calculate tranmittance based on the incident and transmitted light.
     Parameters
