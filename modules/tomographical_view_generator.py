@@ -51,13 +51,14 @@ if __name__=="__main__":
         print('Calculation result saved.')
         c_data=np.load(filename.strip('.npz')+'_calculated.npz',allow_pickle=True,mmap_mode='r')
     
-    result=generate_tomographical_view(c_data,target,w_or_h)
     plt.figure()
     plt.xlabel('depth[mm]')
     if w_or_h == 'w':
+        result=generate_tomographical_view(c_data['data'],c_data['width'][0],target,w_or_h)
         plt.imshow(result,cmap='jet',extent=[0,depth_max,0,c_data['width'][0]],aspect=(depth_max/c_data['width'][0])*aspect,vmax=vmax)
         plt.ylabel('width[mm]')
     elif w_or_h == 'h':
+        result=generate_tomographical_view(c_data['data'],c_data['height'][0],target,w_or_h)
         plt.imshow(result,cmap='jet',extent=[0,depth_max,0,c_data['height'][0]],aspect=(depth_max/c_data['height'][0])*aspect,vmax=vmax)
         plt.ylabel('height[mm]')
     plt.show()

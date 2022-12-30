@@ -252,7 +252,7 @@ class SignalProcessorHamasaki():
 
 #Please note that following 2 function is excluded from SignalProcessorHamasaki class, 
 #since there are cases the the SignalProcessorHamasaki class is not needed as long as these function is called.
-def generate_cross_section(cscan, target, depth):
+def generate_cross_section(cscan, target:float, depth):
     """Generates a cross-sectional view from c-scan data at a specified depth in a plane perpendicular to the optical axis direction.
     
     Parameters
@@ -287,13 +287,15 @@ def generate_cross_section(cscan, target, depth):
             cross_section[i][j]=cscan[i][j][index]
     return cross_section
 
-def generate_tomographical_view(data, target:float, mode:str):
+def generate_tomographical_view(cscan, y_max:float, target:float, mode:str):
     """Generates a tomographical view from c-scan data at a specified width/height in a plane parallel to the optical axis direction.
     
     Parameters
     ----------
-    data : `numpy.lib.npyio.NpzFile`
-        Data read from files with _calculated at the end
+    cscan : `3d-ndarray`, required
+        Data calculated by generate_cscan function
+    y_max : `float`, required
+        Vertical/Horizontal scaninng distance[mm]
     target : `float` ,required
         Width/Height to generate tomographical view[mm].
     mode : `str`, required
@@ -306,19 +308,20 @@ def generate_tomographical_view(data, target:float, mode:str):
     tmg_view : `2d-ndarray`
         Generated tomographical view of C-csan.
     """
-    if mode == 'w':
-        y_axis = np.linspace(0,data['height'][0],len(data['data']))
-    elif mode == 'h':
-        y_axis = np.linspace(0,data['width'][0],len(data['data'][0]))
-    else:
-        print("Error:Invalid parameter was set to mode.(v or h only)")
-        return 0
 
     #find index to generate tomographical view
-    if np.amax(y_axis)<target or np.amin(y_axis)>target:
+    if y_max < target or 0 > target:
         print("Error:Target is not included in y-axis array. Returned y_axis[0]")
         index=0
     else:
+        if mode == 'w':
+            y_axis=np.linspace(0,y_max,len(cscan))
+        elif mode == 'h':
+            y_axis=np.linspace(0,y_max,len(cscan[0]))
+        else:
+            print("Error:Invalid parameter was set to mode.(v or h only)")
+            return 0
+        
         for i in range(len(y_axis)):
             if y_axis[i]>=target:
                 index=i
@@ -326,13 +329,13 @@ def generate_tomographical_view(data, target:float, mode:str):
         
     # mode = 'w' to generage width versus depth graph
     if mode == 'w':
-        tmg_view=data['data'][index]
+        tmg_view=cscan[index]
 
     # mode = 'h' to generage height versus depth graph
     elif mode == 'h':
-        tmg_view=np.zeros((len(data['data']),len(data['data'][0][0])))
-        for i in tqdm(range(len(data['data']))):
-            tmg_view[i]=data['data'][i][index]
+        tmg_view=np.zeros((len(cscan),len(cscan[0][0])))
+        for i in tqdm(range(len(cscan))):
+            tmg_view[i]=cscan[i][index]
     return tmg_view
             
 def calculate_absorbance(transmission,incidence):
