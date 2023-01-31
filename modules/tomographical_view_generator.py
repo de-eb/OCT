@@ -13,10 +13,10 @@ if __name__=="__main__":
     n=1.5
     st=1664
     ed=2491
-    target=0.25
-    vmax=0.01
-    w_or_h='h' 
-    aspect=2/3
+    target=0.2
+    vmax=0.008
+    w_or_h='w'
+    aspect=1
 
     data_prepared=False
 
@@ -52,14 +52,19 @@ if __name__=="__main__":
         c_data=np.load(filename.strip('.npz')+'_calculated.npz',allow_pickle=True,mmap_mode='r')
     
     plt.figure()
-    plt.xlabel('depth[mm]')
+    plt.xlabel('Depth [μm]',fontsize=13)
+    
+    plt.xticks(fontsize=13)
+    plt.yticks(fontsize=13)
     if w_or_h == 'w':
+        plt.ylabel('X [mm]',fontsize=13)
         result=generate_tomographical_view(c_data['data'],c_data['width'][0],target,w_or_h)
-        plt.imshow(result,cmap='jet',extent=[0,depth_max,0,c_data['width'][0]],aspect=(depth_max/c_data['width'][0])*aspect,vmax=vmax)
-        plt.ylabel('width[mm]')
+        plt.imshow(result,cmap='gray',extent=[0,depth_max*1e3,0,c_data['width'][0]],aspect=(depth_max*1e3/c_data['width'][0])*aspect,vmax=vmax)
+
     elif w_or_h == 'h':
+        plt.ylabel('Y [mm]',fontsize=13)
         result=generate_tomographical_view(c_data['data'],c_data['height'][0],target,w_or_h)
-        plt.imshow(result,cmap='jet',extent=[0,depth_max,0,c_data['height'][0]],aspect=(depth_max/c_data['height'][0])*aspect,vmax=vmax)
-        plt.ylabel('height[mm]')
+        plt.imshow(result,cmap='gray',extent=[0,depth_max*1e3,0,c_data['height'][0]],aspect=(depth_max*1e3/c_data['height'][0])*aspect,vmax=vmax)
+
+    plt.vlines(260,0,c_data['width'],colors='red')
     plt.show()
-        
