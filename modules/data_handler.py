@@ -117,6 +117,7 @@ def load_spectra(file_path, wavelength_range=[0,2000]):
     -------
     data : `dict`
         Data name-value pairs.
+        contents : 'wavelength', 'reference', 'spectra', 'date', 'memo'
     """
     data = {}
     df = pd.read_csv(file_path, header=2, index_col=0)
@@ -296,7 +297,7 @@ def load_position(file_path):
     horizontal : `int`
         Initial position of horizontal stage.
     """
-    data=pd.read_csv(filepath_or_buffer=file_path,encoding="utf_8",sep=",")
-    vertical=int(data["vertical"].values[0])
-    horizontal=int(data["horizontal"].values[0])
-    return vertical,horizontal
+    data = pd.read_csv(filepath_or_buffer=file_path, encoding="utf_8", sep=",")
+    vertical = int(data["vertical"].values[0])
+    horizontal = int(data["horizontal"].values[0])
+    return vertical, horizontal
