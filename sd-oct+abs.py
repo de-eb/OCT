@@ -57,38 +57,6 @@ def on_key(event, q):
     g_key = event.key
     q.put(g_key)
 
-def find_index(wavelength,wl_range):
-    """
-    Finds the index of an array of wavelengths from a specified range
-
-    Parameters
-    ----------
-    wavelength : `1d-ndarray`, required
-        Wavelength axis[nm] The given spectra must be sampled evenly in wavelength space.
-    wavelengrh_range : `list`
-        Wavelength range [nm] of the spectra to be found.
-        Specify the lower limit in the first element and the upper limit in the next element.
-
-    Returns
-    ----------
-    st : `int`
-        bottom of index
-    ed : `int`
-        top of index   
-    """
-    #find bottom of index
-    for i in range(len(wavelength)):
-        if wavelength[i]>=wl_range[0]:
-            st=i
-            break
-
-    #find top of index
-    for i in range(len(wavelength)):
-        if wavelength[i]>=wl_range[1]:
-            ed=i
-            break
-    return st,ed
-
 if __name__ == "__main__":
     # Parameter initialization
     resolution=2000
@@ -117,13 +85,12 @@ if __name__ == "__main__":
 
     # Device connection
     ccs=Ccs175m(name='USB0::0x1313::0x8087::M00801544::RAW') #Spectrometer (for OCT measurement)
-    ccs_st,ccs_ed=find_index(ccs.wavelength, [ccs_wl_st, ccs_wl_ed])
+    ccs_st,ccs_ed=Processor.find_index(ccs.wavelength, [ccs_wl_st, ccs_wl_ed])
 
     # Spectrometer (for Absorbance measurement)
     pma = Pma12(dev_id=5)  
-    pma_st,pma_ed=find_index(pma.wavelength, [pma_wl_st, pma_wl_ed])
+    pma_st,pma_ed=Processor.find_index(pma.wavelength, [pma_wl_st, pma_wl_ed])
 
-    '''    
     # Piezo stage (reference mirror side)
     try: stage_m = Fine01r('COM12')  
     except Fine01rError:
@@ -131,7 +98,7 @@ if __name__ == "__main__":
         stage_m_flag=False
     else:
         stage_m_flag=True
-    '''
+    
 
     # Auto stage (sample side)
     try: stage_s = Crux('COM6')  
@@ -258,6 +225,7 @@ if __name__ == "__main__":
             absorbance=calculate_absorbance(reflect[0,pma_st:pma_ed], inc[pma_st:pma_ed])
             ax3_0.set_data(pma.wavelength[pma_st:pma_ed],absorbance)
             ax3.set_ylim(0,np.nanmax(absorbance))
+            
         """-----OCT function-----"""
         # 'q' key to update reference data
         if g_key == 'enter':
