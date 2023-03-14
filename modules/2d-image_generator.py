@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 
 if __name__=="__main__":
     #constants
-    filename='data/221216_4.csv'
+    filename='data/wet_tissue_paper.csv'
     resolution=4000
     n=1.5
     depth_max=0.275
     width_h=1
-    aspect=2/3
-    vmax=0.01
+    aspect=1
+    vmax=0.02
 
     data=dh.load_spectra(file_path=filename,wavelength_range=[770,910])
     print('<data information>\nfilename:{}\ndate:{}\nmemo:{}'.format(filename,data['date'],data['memo']))
@@ -20,7 +20,10 @@ if __name__=="__main__":
     result_map=sp.generate_bscan(data['spectra'], data['reference'])
 
     plt.figure()
-    plt.imshow(result_map,cmap='jet',extent=[0,depth_max,0,width_h],aspect=(depth_max/width_h)*aspect,vmax=vmax)
-    plt.xlabel('depth[mm]')
-    plt.ylabel('width[mm]')
+    plt.imshow(result_map,cmap='gray',extent=[0,depth_max*1e3,0,width_h],aspect=(depth_max*1e3/width_h)*aspect,vmax=np.amax(result_map)*vmax)
+    plt.xlabel('Depth [µm]',fontsize=14)
+    plt.ylabel('X [mm]',fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+
     plt.show()

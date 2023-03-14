@@ -222,7 +222,7 @@ if __name__ == "__main__":
         
         #Signal processing and plot(PMA)
         if inc is not None:
-            absorbance=calculate_absorbance(reflect[0,pma_st:pma_ed], inc[pma_st:pma_ed])
+            absorbance=sp.calculate_absorbance(reflect[0,pma_st:pma_ed], inc[pma_st:pma_ed])
             ax3_0.set_data(pma.wavelength[pma_st:pma_ed],absorbance)
             ax3.set_ylim(0,np.nanmax(absorbance))
             
