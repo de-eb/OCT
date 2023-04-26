@@ -3,7 +3,7 @@ from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Proces
 import matplotlib.pyplot as plt
 
 
-filename = 'data/thin_skin_of_onion.npz'
+filename = 'data/thin_skin_of_onion_calculated.npz'
 data = np.load(file = filename, allow_pickle=True)
 
 
