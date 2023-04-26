@@ -60,14 +60,14 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 2000                 # 計算結果の解像度
+    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
     depth_max = 0.3                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 150                      # 水平方向の分割数
     width = 0.5                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 20                    # 測定の平均回数
+    averaging = 20                    # １点の測定の平均回数
     memo = 'thin skin of onion.horizontal way is parallel to the fiber. lens=THORLABS LSM54-850'
 
     # SLD光源の波長
