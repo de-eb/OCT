@@ -125,15 +125,15 @@ if __name__ == "__main__":
     ax0 = fig.add_subplot(211, title = 'Spectrometer output', xlabel = 'Wavelength [nm]', ylabel = 'Intensity [-]')    # 参照光と干渉光
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText = True))
     ax0.ticklabel_format(style = "sci",  axis = "y",scilimits = (0,0))
-    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'interference')      # 干渉光
-    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'reference')         # 参照光
+    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Interference')      # 干渉光
+    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Reference')         # 参照光
     ax0.legend(bbox_to_anchor = (1,1), loc = 'upper right', borderaxespad = 0.2)
     if use_um:
-        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'depth [μm]', ylabel = 'Intensity [-]')                  # A-scanの結果
+        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'Depth [μm]', ylabel = 'Intensity [-]')                  # A-scanの結果
         ax1_0, = ax1.plot(sp.depth*1e3, ascan)
         ax1.set_xlim(0,np.amax(sp.depth)*1e3)
     else:
-        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'depth [mm]', ylabel = 'Intensity [-]')
+        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'Depth [mm]', ylabel = 'Intensity [-]')
         ax1_0, = ax1.plot(sp.depth, ascan)
         ax1.set_xlim(0,np.amax(sp.depth))
     ax1.yaxis.set_major_formatter(ScalarFormatter(useMathText = True))
@@ -232,8 +232,8 @@ if __name__ == "__main__":
                 plt.figure()
                 plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmax = 0.5)
                 plt.colorbar()
-                plt.xlabel('depth[mm]')
-                plt.ylabel('width[mm]')
+                plt.xlabel('Depth[mm]')
+                plt.ylabel('Width[mm]')
                 # データの保存
                 dh.save_spectra(wavelength = ccs.wavelength, reference = ref, spectra = itf.T, memo = memo)
                 stage_s.move_origin(axis_num = 1,ret_form = 1)
