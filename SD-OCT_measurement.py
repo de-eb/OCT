@@ -230,7 +230,7 @@ if __name__ == "__main__":
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])        # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
-                plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmax = 0.5)
+                plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmin = 0.05,vmax = 0.5)
                 plt.colorbar()
                 plt.xlabel('Depth[mm]')
                 plt.ylabel('Width[mm]')
