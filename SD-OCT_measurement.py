@@ -84,7 +84,7 @@ if __name__ == "__main__":
     hi = 0                            # 水平方向のステージの初期位置
 
     # 使用機器の設定
-    try: stage_m = Fine01r('COM11')   # ピエゾステージ（参照ミラー側）
+    try: stage_m = Fine01r('COM8')   # ピエゾステージ（参照ミラー側）
     except Fine01rError:
         print('\033[31m'+'Error:FINE01R not found. Reference mirror movement function is disabled.'+'\033[0m ')
         stage_m_flag = False
