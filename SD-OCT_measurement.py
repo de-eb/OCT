@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
-    depth_max = 0.3                   # 深さ方向の最大値 [mm]
+    resolution = 5000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
+    depth_max = 0.5                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 150                      # 水平方向の分割数
-    width = 0.5                       # 水平方向の走査幅 [mm]
+    width = 1.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 20                    # １点の測定の平均回数
-    memo = 'thin skin of onion.horizontal way is parallel to the fiber. lens=THORLABS LSM54-850'
+    memo = 'Sample Description(Res.= , Ave.= ). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         stage_m_flag = False
     else:
         stage_m_flag = True
-    try: stage_s = Crux('COM6')       # 自動ステージ（参照ミラー側）
+    try: stage_s = Crux('COM6')       # 自動ステージ　（試料ミラー側）
     except CruxError:
         print('\033[31m'+'Error:Crux not found. Sample stage movement function is disabled.'+'\033[0m ')
         stage_s_flag = False
@@ -102,34 +102,34 @@ if __name__ == "__main__":
         else:
             print('Stage position data loaded.')
             stage_s.biaxial_move(v=vi, vmode='a', h = hi, hmode = 'a')
-    #pma = Pma12(dev_id=5)                                                  # 分光器：PMA (古い)
-    ccs = Ccs175m(name = 'USB0::0x1313::0x8087::M00801544::RAW')            # 分光器：CCS (新しい)
-    sp = Processor(ccs.wavelength[st:ed], n = 1.5,depth_max = depth_max,resolution = resolution)
+    #pma = Pma12(dev_id=5)                                                      # 旧分光器：PMA (分光測定)
+    ccs = Ccs175m(name = 'USB0::0x1313::0x8087::M00801544::RAW')                # 新分光器：CCS (OCT測定)
+    sp = Processor(ccs.wavelength[st:ed], n = 1.5, depth_max = depth_max, resolution = resolution)
     q = Queue()
-    proc1 = Process(target = profile_beam, args = (q,))                     # Beam profiler
+    proc1 = Process(target = profile_beam, args = (q,))                         # Beam profiler
     proc1.start()
    
-    # step = 1000                   # Stage operation interval [nm]
-    # limit = 300000                # Stage operation limit [nm]
-    x, y, z = 100000, 0, 0          # ステージの初期位置
-    ref = None                      # 参照光
-    itf = np.zeros((step_h,ccs.wavelength.size), dtype = float)             # 干渉光（step_h, ccs.wavelength）
-    itf_3d = np.zeros((step_v,step_h,ccs.wavelength.size),dtype = float)    # 干渉光（step_v, step_h, ccs.wavelength）
+    # step = 1000                                                               # Stage operation interval [nm]
+    # limit = 300000                                                            # Stage operation limit [nm]
+    x, y, z = 100000, 0, 0                                                      # ステージの初期位置
+    ref = None                                                                  # 参照光
+    itf = np.zeros((step_h,ccs.wavelength.size), dtype = float)                 # 干渉光（step_h, ccs.wavelength）
+    itf_3d = np.zeros((step_v,step_h,ccs.wavelength.size),dtype = float)        # 干渉光（step_v, step_h, ccs.wavelength）
     ascan = np.zeros_like(sp.depth)
     err = False
     location = np.zeros(3,dtype = int)
 
     # グラフの初期設定（参照光と干渉光のグラフ、A-scan結果のグラフ）
     fig = plt.figure(figsize = (10, 10), dpi = 80, tight_layout = True)
-    fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))  # Key event
-    ax0 = fig.add_subplot(211, title = 'Spectrometer output', xlabel = 'Wavelength [nm]', ylabel = 'Intensity [-]')    # 参照光と干渉光
+    fig.canvas.mpl_connect('key_press_event', lambda event:on_key(event,q))                                             # Key event
+    ax0 = fig.add_subplot(211, title = 'Spectrometer output', xlabel = 'Wavelength [nm]', ylabel = 'Intensity [-]')     # 参照光と干渉光
     ax0.yaxis.set_major_formatter(ScalarFormatter(useMathText = True))
     ax0.ticklabel_format(style = "sci",  axis = "y",scilimits = (0,0))
-    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Interference')      # 干渉光
-    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Reference')         # 参照光
+    ax0_0, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Interference')                                      # 干渉光
+    ax0_1, = ax0.plot(ccs.wavelength[st:ed], itf[0,st:ed], label = 'Reference')                                         # 参照光
     ax0.legend(bbox_to_anchor = (1,1), loc = 'upper right', borderaxespad = 0.2)
     if use_um:
-        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'Depth [μm]', ylabel = 'Intensity [-]')                  # A-scanの結果
+        ax1 = fig.add_subplot(212, title = 'A-scan', xlabel = 'Depth [μm]', ylabel = 'Intensity [-]')                   # A-scanの結果
         ax1_0, = ax1.plot(sp.depth*1e3, ascan)
         ax1.set_xlim(0,np.amax(sp.depth)*1e3)
     else:
@@ -149,18 +149,19 @@ if __name__ == "__main__":
 
 
     # メインループ（SD-OCTの測定）
-    while g_key != 'escape':            # 'ESC' キーで終了
-
+    while g_key != 'escape':                                                                # 'ESC' キーで終了
+        
+        # 自動ステージ（試料ステージ）の位置調整
         if g_key in ['4','6','5','2','8']:
-            if g_key == '6':stage_s.relative_move(2000,axis_num = 1,velocity = 9)       # ６：右方向に移動
-            elif g_key == '4':stage_s.relative_move(-2000,axis_num = 1,velocity = 9)    # ４：左方向に移動
-            elif g_key == '5':                                                          # ５：ステージの初期位置に移動
+            if g_key == '6':stage_s.relative_move(2000,axis_num = 1,velocity = 9)           # ６：右方向に1mm移動
+            elif g_key == '4':stage_s.relative_move(-2000,axis_num = 1,velocity = 9)        # ４：左方向に1mm移動
+            elif g_key == '5':                                                              # ５：ステージの初期位置に移動
                 if hi == 0 and vi == 0:
                     stage_s.move_origin()
                 else:
                     stage_s.biaxial_move(v = vi, vmode = 'a', h = hi, hmode = 'a')
-            elif g_key == '2':stage_s.relative_move(2000,axis_num = 2,velocity = 9)     # ２：上方向に移動
-            elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)    # ８：下方向に移動
+            elif g_key == '2':stage_s.relative_move(2000,axis_num = 2,velocity = 9)         # ２：上方向に1mm移動
+            elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
             print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
@@ -176,14 +177,14 @@ if __name__ == "__main__":
                 print("                            ", end = "\r")
                 err= False
                 ax0_0.set_color('tab:blue')
-        ax0_0.set_data(ccs.wavelength[st:ed], itf[0,st:ed])             # グラフの更新
+        ax0_0.set_data(ccs.wavelength[st:ed], itf[0,st:ed])                 # グラフの更新
         ax0.set_ylim((0, 1.2*itf[0,st:ed].max()))
 
         # 信号処理
         if ref is not None:
             ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
-            if use_um:                                                  # グラフの更新
-                ax1_0.set_data(sp.depth*1e3, ascan)                     # 距離の単位換算
+            if use_um:                                                      # グラフの更新
+                ax1_0.set_data(sp.depth*1e3, ascan)                         # 距離の単位換算
             else:
                 ax1_0.set_data(sp.depth, ascan)
             ax1.set_ylim((0,np.amax(ascan)))
@@ -191,8 +192,8 @@ if __name__ == "__main__":
         # 'Delete'キーで参照光とa-scanのデータを削除する  
         if g_key == 'delete':
             ref = None
-            ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))       # 参照光のデータ
-            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))        # A-scanのデータ
+            ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))           # 参照光のデータ
+            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))            # A-scanのデータ
             print('Reference data deleted.')            
 
         # 'Enter'キーで参照光のデータを登録する
@@ -226,9 +227,9 @@ if __name__ == "__main__":
                 print("Measurement(2D) start")
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
-                    itf[i,:] = ccs.read_spectra(averaging)                      # 均等に分割された波長軸での干渉光
+                    itf[i,:] = ccs.read_spectra(averaging)                          # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])        # 均等に分割された時間軸での光強度（b-scan）
+                result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])            # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
                 plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmin = 0.05,vmax = 0.5)
                 plt.colorbar()
