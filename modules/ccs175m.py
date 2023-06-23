@@ -83,7 +83,7 @@ class Ccs175m():
 
         #get wavelength data
         self.__wavelength = Ccs175m.__dev.GetWavelengthDataArray(Ccs175m.__handle)
-        print('CCS175M is ready.')
+        print('CCS175M  (Spectroscope OCT) is ready.')
 
     @property
     def wavelength(self):

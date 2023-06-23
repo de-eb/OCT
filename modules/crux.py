@@ -39,7 +39,7 @@ class Crux:
             print(self.hw_info)
             raise CruxError(msg="*IDN? query failed.\n")
         self.move_origin()
-        print("CRUX     (Sample Stage) is ready.")
+        print("CRUX     (Sample Stage)     is ready.")
 
     def __send_cmd(self,cmd:str,param=[]):
         """Format the command string and send it to the controller.

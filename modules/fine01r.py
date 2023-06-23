@@ -24,7 +24,7 @@ class Fine01r:
         self.read_hw_info()
         if self.__hw_info['device_name'] != 'FINE-01r':
             raise Fine01rError(msg="FINE01R not found.")
-        print("FINE-01r (Reference Stage) is ready.")
+        print("FINE-01r (Reference Stage)  is ready.")
     
     @property
     def hw_info(self):
