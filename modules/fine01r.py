@@ -38,15 +38,15 @@ class Fine01r:
         stat = self.sendreceive('Q:').split(',')
         self.__status = {}
         self.__status['position'] = int(stat[0])
-        if stat[1] == 'K':
+        if stat[1] == 'K':                                  # コマンド受付状態（K or X）
             self.__status['cmd_success'] = True
         else:
             self.__status['cmd_success'] = False
-        if stat[2] == 'K':
+        if stat[2] == 'K':                                  # 停止要因（K or W）
             self.__status['Stop'] = True
         else:
             self.__status['Stop'] = False
-        if stat[3] == 'R':
+        if stat[3] == 'R':                                  # コマンド受付可（R or B）
             self.__status['cmd_permission'] = True
         else:
             self.__status['cmd_permission'] = False
