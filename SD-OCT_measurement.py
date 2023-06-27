@@ -164,7 +164,13 @@ if __name__ == "__main__":
             elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
-            print('Stage position:x={}[mm],y={}[mm],z={}[nm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
+            print('CRUX stage position : x={}[mm], y={}[mm], z={}[mm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
+        
+        if g_key in ['7','1','0']:
+            if g_key == '7':stage_m.relative_move(2000)                                     # 7：前方に2000nm移動
+            elif g_key == '1':stage_m.relative_move(100)                                    # 1：前方に100nm移動
+            elif g_key == '0':stage_m.absolute_move(0)                                      # 0：ステージの初期位置に移動
+            print('FINE stage position : x={}[nm]'.format(stage_m.status['position']))
 
         # スペクトル測定（光強度が飽和しているとエラーメッセージ）
         try: itf[0,:] = ccs.read_spectra(averaging = 5)

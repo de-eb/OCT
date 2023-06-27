@@ -84,6 +84,15 @@ class Fine01r:
             self.sendreceive('A:1+P{}'.format(position))
             return self.sendreceive('G:')
     
+    def relative_move(self, position: int):
+        """ Move stage to the relative position.
+        """
+        if position == 0:
+            return self.sendreceive('H:1')
+        else:
+            self.sendreceive('M:1+P{}'.format(position))
+            return self.sendreceive('G:')
+    
     def stop(self):
         """ Like the Emergency Stop button, it makes the stage stop and returns to the home(0mV) position.
         """
@@ -127,21 +136,3 @@ if __name__ == "__main__":
     stage = Fine01r('COM8')
     print(stage.hw_info)
     print(stage.status)
-
-    x = 1000
-
-    g_key = None
-    def on_key(event, q):
-        global g_key
-        g_key = event.key
-        q.put(g_key)
-
-    while g_key != 'escape':                                        # 'ESC' キーで終了
-        
-        if g_key in ['8','2','0']:
-            if g_key == '8':stage.absolute_move(-x)                 # 8：後方に移動
-            elif g_key == '2':stage.absolute_move(x)                # 2：前方に移動
-            elif g_key == '0':stage.absolute_move(0)                # 0：ステージの初期位置に移動
-            position = stage.status['position']
-            print('Stage position:x={}[mm]'.format(position))
-    stage.absolute_move(0)
