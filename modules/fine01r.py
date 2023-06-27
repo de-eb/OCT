@@ -32,8 +32,7 @@ class Fine01r:
     
     @property
     def status(self):
-        """ Sends back the operating status of the stage
-            and the coordinate values for each axis.
+        """ Sends back the operating status of the stage and the coordinate values for each axis.
         """
         stat = self.sendreceive('Q:').split(',')
         self.__status = {}
@@ -64,7 +63,7 @@ class Fine01r:
         return ret.decode('utf-8').strip()
     
     def sendreceive(self, cmd: str):
-        """ Send a command and receive a reply
+        """ Send a command and receive a reply.
         """
         self.__send(cmd)
         return self.__receive()
@@ -86,21 +85,19 @@ class Fine01r:
             return self.sendreceive('G:')
     
     def stop(self):
-        """ Like the Emergency Stop button, it makes the stage stop
-            and returns to the home(0mV) position.
+        """ Like the Emergency Stop button, it makes the stage stop and returns to the home(0mV) position.
         """
         return self.sendreceive('L:E')
     
     def close(self) -> bool:
-        """ Release the instrument and device driver
-            and terminate the connection.
+        """ Release the instrument and device driver and terminate the connection.
         """
         self.absolute_move(0)
         self.__ser.close()
 
 
 class Fine01rError(Exception):
-    """Base exception class for this modules.
+    """ Base exception class for this modules.
 
     Attributes
     ----------
@@ -110,7 +107,7 @@ class Fine01rError(Exception):
     """
 
     def __init__(self, msg: str):
-        """Set the error message.
+        """ Set the error message.
     
         Parameters
         ----------
@@ -121,11 +118,30 @@ class Fine01rError(Exception):
         self.msg = '\033[31m' + msg + '\033[0m'
     
     def __str__(self):
-        """Return the error message."""
+        """ Return the error message.
+        """
         return self.msg
 
 
 if __name__ == "__main__":
-    stage = Fine01r('COM11')
+    stage = Fine01r('COM8')
     print(stage.hw_info)
     print(stage.status)
+
+    x = 1000
+
+    g_key = None
+    def on_key(event, q):
+        global g_key
+        g_key = event.key
+        q.put(g_key)
+
+    while g_key != 'escape':                                        # 'ESC' キーで終了
+        
+        if g_key in ['8','2','0']:
+            if g_key == '8':stage.absolute_move(-x)                 # 8：後方に移動
+            elif g_key == '2':stage.absolute_move(x)                # 2：前方に移動
+            elif g_key == '0':stage.absolute_move(0)                # 0：ステージの初期位置に移動
+            position = stage.status['position']
+            print('Stage position:x={}[mm]'.format(position))
+    stage.absolute_move(0)
