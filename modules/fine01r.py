@@ -89,8 +89,11 @@ class Fine01r:
         """
         if position == 0:
             return self.sendreceive('H:1')
-        else:
+        elif position > 0:
             self.sendreceive('M:1+P{}'.format(position))
+            return self.sendreceive('G:')
+        elif position < 0:
+            self.sendreceive('M:1-P{}'.format(position))
             return self.sendreceive('G:')
     
     def stop(self):
