@@ -64,11 +64,11 @@ if __name__ == "__main__":
     depth_max = 0.5                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 150                      # 水平方向の分割数
-    width = 1.0                       # 水平方向の走査幅 [mm]
+    width = 10.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 20                    # １点の測定の平均回数
-    memo = 'Sample Description(Res.= , Ave.= ). lens=THORLABS LSM54-850'
+    memo = '2layer cellophanes behind the cover glass(Res.=5000, Ave.=20). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             stage_s.biaxial_move(v=vi, vmode='a', h = hi, hmode = 'a')
     #pma = Pma12(dev_id=5)                                                      # 旧分光器：PMA (分光測定)
     ccs = Ccs175m(name = 'USB0::0x1313::0x8087::M00801544::RAW')                # 新分光器：CCS (OCT測定)
-    sp = Processor(ccs.wavelength[st:ed], n = 1.5, depth_max = depth_max, resolution = resolution)
+    sp = Processor(ccs.wavelength[st:ed], n = 1.52, depth_max = depth_max, resolution = resolution)
     q = Queue()
     proc1 = Process(target = profile_beam, args = (q,))                         # Beam profiler
     proc1.start()
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                 print("Error:No reference data available.")
             else:
                 print("Measurement(2D) start")
-                stage_s.absolute_move(int((width*pl_rate/2)+hi))
+                # stage_s.absolute_move(int((width*pl_rate/2)+hi))                    # 調整後の位置から測定したい場合はコメントアウト
                 for i in tqdm(range(step_h)):
                     itf[i,:] = ccs.read_spectra(averaging)                          # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
