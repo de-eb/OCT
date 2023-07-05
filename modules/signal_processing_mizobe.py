@@ -113,8 +113,8 @@ class SignalProcessorMizobe():
         `1d-ndarray`
             interference light removed background[arb. unit]
         """
-        # return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
-        return spectra - self.__ref
+        return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
+        # return spectra - self.__ref
 
     def apply_inverse_ft(self,spectra):
         """ Apply inverse ft to the spectra and convert it to distance data
@@ -130,12 +130,23 @@ class SignalProcessorMizobe():
             Data after IFFT
         
         """
-        result=np.zeros_like(self.__depth)
+        result = np.zeros_like(self.__depth)
         for i in range(len(spectra)):
             result += spectra[i]*self.__freq_dataset[i]
         result /= np.amax(result)
         return abs(result)
-
+    
+        # n = len(self.__freq_dataset[1])
+        # number = n//2 - 1
+        # result = np.fft.ifft(spectra, n)
+        # result[1 : n//2+1] = 2*result[1 : n//2+1]
+        # result[n//2+1 : ] = 0.0
+        # result /= np.amax(result)
+        # for i in range(n//2 - 1):
+        #     result[2*(number-i)] = result[number-i]
+        #     result[number-i] = 0
+        # return abs(result)
+    
     def apply_hilbert1(self,spectra,reference):
         """ Apply the Hilbert transform to the spectrum to obtain the imaginary part of the complex analytic signal
         
