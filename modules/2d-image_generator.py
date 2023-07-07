@@ -30,14 +30,14 @@ if __name__=="__main__":
         target2[i] = b_scan[i, depth2]
 
 
-    # # グラフ表示(B-scan)
-    # plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)    # cmapは jet or gist_gray
-    # plt.colorbar()
-    # plt.xlabel('Depth [µm]', fontsize = 12)
-    # plt.ylabel('X [mm]', fontsize = 12)
-    # plt.show()
+    # グラフ表示(B-scan)
+    plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)    # cmapは jet or gist_gray
+    plt.colorbar()
+    plt.xlabel('Depth [µm]', fontsize = 12)
+    plt.ylabel('X [mm]', fontsize = 12)
+    plt.show()
 
-
+"""
     # グラフ設定(B-scan + A-scan)
     plt.figure(figsize = (11,6))
     plt.subplot(1,2,1)
@@ -54,8 +54,9 @@ if __name__=="__main__":
     plt.legend(loc = "upper right")
     plt.show()
 
-    # plt.plot(b_scan[0~149], label = 'A-scan')         　          # b_scanは 0～149 の範囲で選択
-    # plt.xlabel('Depth [mm]', fontsize = 12)
-    # plt.ylabel('Intensity [a.u.]', fontsize = 12)
-    # plt.legend()
-    # plt.show()
+    plt.plot(b_scan[0~149], label = 'A-scan')                       # b_scanは 0～149 の範囲で選択
+    plt.xlabel('Depth [mm]', fontsize = 12)
+    plt.ylabel('Intensity [a.u.]', fontsize = 12)
+    plt.legend()
+    plt.show()
+"""
