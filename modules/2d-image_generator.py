@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 if __name__=="__main__":
     # 初期設定
-    filename = 'data/230703_2LC_Itf_410_(glass_basis).csv'
+    filename = 'data/230703_2LC_Ref_410_(glass_basis).csv'
 
     n, resolution, depth_max, width_h = 1.52, 5000, 0.5, 10
 
@@ -19,6 +19,17 @@ if __name__=="__main__":
     sp = Processor(data['wavelength'], n, depth_max, resolution)
     b_scan = sp.generate_bscan(data['spectra'], data['reference'])
 
+
+    # グラフ表示(B-scan)
+    plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)    # cmapは jet or gist_gray
+    plt.colorbar()
+    plt.xlabel('Depth [µm]', fontsize = 12)
+    plt.ylabel('Width [mm]', fontsize = 12)
+    plt.show()
+    
+    
+    
+    """
     # 特定の深さにおけるA-scan
     target1 = np.zeros(b_scan.shape[0])
     target2 = np.zeros(b_scan.shape[0])
@@ -30,26 +41,18 @@ if __name__=="__main__":
         target2[i] = b_scan[i, depth2]
 
 
-    # グラフ表示(B-scan)
-    plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)    # cmapは jet or gist_gray
-    plt.colorbar()
-    plt.xlabel('Depth [µm]', fontsize = 12)
-    plt.ylabel('X [mm]', fontsize = 12)
-    plt.show()
-
-"""
     # グラフ設定(B-scan + A-scan)
     plt.figure(figsize = (11,6))
     plt.subplot(1,2,1)
     plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)
     plt.colorbar()
     plt.xlabel('Depth [µm]', fontsize = 12)
-    plt.ylabel('X [mm]', fontsize = 12)
+    plt.ylabel('Width [mm]', fontsize = 12)
 
     plt.subplot(1,2,2)                                              # 2次元画像のXと方向が反転して表示される
     plt.plot(target1, label = 'Depth={} [µm]'.format(label_d1))
     plt.plot(target2, label = 'Depth={} [µm]'.format(label_d2))
-    plt.xlabel('X [mm]', fontsize = 12)
+    plt.xlabel('Width [mm]', fontsize = 12)
     plt.ylabel('Intensity [a.u.]', fontsize = 12)
     plt.legend(loc = "upper right")
     plt.show()
@@ -59,4 +62,4 @@ if __name__=="__main__":
     plt.ylabel('Intensity [a.u.]', fontsize = 12)
     plt.legend()
     plt.show()
-"""
+    """
