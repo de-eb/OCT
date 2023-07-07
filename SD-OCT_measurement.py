@@ -198,21 +198,21 @@ if __name__ == "__main__":
                 ax1_0.set_data(sp.depth, ascan)
             ax1.set_ylim((0,np.amax(ascan)))
 
-        # 'Delete'キーで参照光とa-scanのデータを削除する  
+        # 'Delete'キーでリファレンスとa-scanのデータを削除する  
         if g_key == 'delete':
             ref = None
             ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))           # 参照光のデータ
             ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))            # A-scanのデータ
             print('Reference data deleted.')            
 
-        # 'Enter'キーで参照光のデータを登録する
+        # 'Enter'キーでリファレンス（干渉光）を登録する
         if g_key == 'enter':
             ref = ccs.read_spectra(averaging = 100)
             sp.set_reference(ref[st:ed])
             print("Reference data updated.")
             ax0_1.set_data(ccs.wavelength[st:ed], ref[st:ed])
         
-        # 'Alt'キーで参照光のデータを保存する
+        # 'Alt'キーでリファレンスのデータを保存する
         if g_key == 'alt':
             data = ccs.read_spectra(averaging = 100)
             if ref is None:

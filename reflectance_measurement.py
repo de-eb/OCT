@@ -60,7 +60,11 @@ st = 201
 ed = 941
 
 pma.set_parameter(shutter = 1)
+
+# メインループ（分光測定）
 while g_key != 'escape':
+    
+    # PMAによるスペクトル測定
     try :data = pma.read_spectra()
     except PmaError as e:
         err = True
@@ -71,6 +75,7 @@ while g_key != 'escape':
             err = False
     ax0_0.set_data(pma.wavelength[st:ed], data[st:ed]) #changed
 
+    # 信号処理
     if incidence is None:
         ax0.set_ylim(1, np.amax(data)*1.2)
     else:
@@ -79,12 +84,14 @@ while g_key != 'escape':
         ax1_0.set_data(pma.wavelength[st:ed], reflectance) #changed
         ax1.set_ylim(0, np.nanmax(reflectance)*1.2) 
 
+    # 'Enter'キーでリファレンスを登録する
     if g_key == 'enter':
         incidence=pma.read_spectra(averaging = 100)
         ax0_1.set_data(pma.wavelength[st:ed], incidence[st:ed]) #changed
         ax0.set_ylim(0, np.amax(incidence)*1.2) 
         print("Incident light spectra updated.")
     
+    # 'Alt'キーでリファレンスのデータを保存する
     if g_key == 'alt':
         data = pma.read_spectra(averaging = 100)
         if incidence is None:
@@ -92,11 +99,12 @@ while g_key != 'escape':
         else:
             dh.save_spectra(pma.wavelength, incidence, data, memo='Attention:This is transmittance measurement data.')
     
+    # 'Delete'キーでリファレンスのデータを削除する
     if g_key == 'delete':
         incidence = None
         ax0_1.set_data(pma.wavelength[st:ed], np.zeros_like(pma.wavelength[st:ed])) #changed
         ax1_0.set_data(pma.wavelength[st:ed], np.zeros_like(pma.wavelength[st:ed])) #changed
         print('Incident data daleted.')
-        
+    
     g_key = None
     plt.pause(0.0001)
