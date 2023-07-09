@@ -36,7 +36,7 @@ def on_key(event,q):
 if __name__ == "__main__":
     # パラメーターの初期設定
     step_h, step_v = 150, 150                               # 水平方向、垂直方向の分割数
-    width, height = 5.0, 0.5                                # 水平方向、垂直方向の走査幅 [mm]
+    width, height = 10.0, 0.5                                # 水平方向、垂直方向の走査幅 [mm]
     averaging = 1                                           # １点の測定の平均回数
     st, ed = 201, 941                                       # スペクトル（CCS）の計算範囲
     pl_rate = 2000                                          # 1mmに相当するパルス数［pulse/mm］
@@ -96,6 +96,21 @@ if __name__ == "__main__":
     # メインループ（分光測定）
     while g_key != 'escape':
         
+         # 自動ステージ（試料ステージ）の位置調整
+        if g_key in ['4','6','5','2','8']:
+            if g_key == '6':stage_s.relative_move(2000, axis_num = 1, velocity = 9)           # ６：右方向に1mm移動
+            elif g_key == '4':stage_s.relative_move(-2000, axis_num = 1, velocity = 9)        # ４：左方向に1mm移動
+            elif g_key == '5':                                                                # ５：ステージの初期位置に移動
+                if hi == 0 and vi == 0:
+                    stage_s.move_origin()
+                else:
+                    stage_s.biaxial_move(v = vi, vmode = 'a', h = hi, hmode = 'a')
+            elif g_key == '2':stage_s.relative_move(2000, axis_num = 2, velocity = 9)         # ２：上方向に1mm移動
+            elif g_key == '8':stage_s.relative_move(-2000, axis_num = 2, velocity = 9)        # ８：下方向に1mm移動
+            location[0] = stage_s.read_position(axis_num = 1)
+            location[1] = stage_s.read_position(axis_num = 2)
+            print('CRUX stage position : x={}[mm], y={}[mm], z={}[mm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
+        
         # PMAによるスペクトル測定
         try : reflect[0, :] = pma.read_spectra(averaging = 5)
         except PmaError as e:
@@ -146,7 +161,7 @@ if __name__ == "__main__":
                     print('Error:Incident light data not found.')
             else:
                 print('REF : Measurement(2D) start')
-                stage_s.absolute_move(int((width*pl_rate/2)+hi))
+                # stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
                     reflect[i,:] = pma.read_spectra(averaging = averaging)
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
