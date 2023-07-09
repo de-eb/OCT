@@ -414,11 +414,11 @@ def calculate_reflectance(reflection,incidence):
     reflectance : `1d-ndarray`
         calculated reflectance data 
     """
-    with np.errstate(divide='ignore',invalid='ignore'):
-        reflectance=reflection/incidence
+    with np.errstate(divide = 'ignore', invalid = 'ignore'):
+        reflectance = reflection / incidence
     for i in range(len(reflectance)):
         if np.isinf(reflectance[i]):
-            reflectance[i]=np.nan
+            reflectance[i] = np.nan
     return reflectance
 
 def calculate_reflectance_2d(reflection,incidence):
@@ -432,10 +432,10 @@ def calculate_reflectance_2d(reflection,incidence):
     reflectance_2d : `2d-ndarray`
         calculated absorbance data
     """
-    reflectance_2d = np.zeros((len(reflection),len(incidence)))
+    reflectance_2d = np.zeros((len(reflection), len(incidence)))
     print('Generating reflectance distribution map(2D)...')
     for i in tqdm(range((len(reflection)))):
-        reflectance_2d[i] = calculate_reflectance(reflection[i],incidence)
+        reflectance_2d[i] = calculate_reflectance(reflection[i], incidence)
     return reflectance_2d
 
 if __name__=="__main__":

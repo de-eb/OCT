@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
         # 'Enter'キーでリファレンスを登録する
         if g_key == 'enter':
-            incident = pma.read_spectra(averaging = 100)
+            incident = pma.read_spectra(averaging = 50)
             ax0_1.set_data(pma.wavelength[pma_st:pma_ed], incident[pma_st:pma_ed]) #changed
             ax0.set_ylim(0, np.amax(incident)*1.2) 
             print("Incident light spectra updated.")
@@ -145,18 +145,17 @@ if __name__ == "__main__":
                 else: 
                     print('Error:Incident light data not found.')
             else:
-                print('ABS : Measurement(2D) start')
+                print('REF : Measurement(2D) start')
                 stage_s.absolute_move(int((width*pl_rate/2)+hi))
                 for i in tqdm(range(step_h)):
                     reflect[i,:] = pma.read_spectra(averaging = averaging)
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 stage_s.move_origin(axis_num = 1, ret_form = 1)
 
-                #save data
-                dh.save_spectra(wavelength=pma.wavelength, reference=incident, spectra=reflect.T, memo='Attention:This is absorbance measurement data.'+memo)
+                dh.save_spectra(wavelength = pma.wavelength, reference = incident, spectra = reflect.T, memo = 'Attention:This is reflectance measurement data.'+memo)
 
-                #signal processing and plot
-                result_map = calculate_reflectance_2d(reflection = reflect[:,pma_st:pma_ed])
+                # 反射率の計算
+                result_map = calculate_reflectance_2d(reflection = reflect[:,pma_st:pma_ed], incidence = incident[pma_st:pma_ed])
                 plt.figure()
                 plt.imshow(result_map, cmap = 'jet', extent = [pma.wavelength[pma_st], pma.wavelength[pma_ed], 0, width],
                 aspect = ((abs(pma.wavelength[pma_st] - pma.wavelength[pma_ed]) / width))*(2/3))
