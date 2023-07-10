@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 5000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
+    resolution = 3000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）      最適な深さ方向の分割数は？
     depth_max = 0.5                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 150                      # 水平方向の分割数
-    width = 10.0                       # 水平方向の走査幅 [mm]
+    width = 10.0                      # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 20                    # １点の測定の平均回数
-    memo = '2layer cellophanes behind the cover glass(Res.=5000, Ave.=20). lens=THORLABS LSM54-850'
+    memo = 'Red and Green cellophanes behind the cover glass(Res.=3000, Ave.=50). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -168,10 +168,10 @@ if __name__ == "__main__":
         
         # ピエゾステージ（参照ミラー）の位置調整
         if g_key in ['7','9','1','3','0']:
-            if g_key == '7':stage_m.relative_move(-200)                                     # 7：後方に200nm移動
-            elif g_key == '9':stage_m.relative_move(-10)                                    # 7：後方に10nm移動
+            if g_key == '7':stage_m.relative_move(100)                                      # 7：前方に100nm移動
+            elif g_key == '9':stage_m.relative_move(1)                                      # 9：前方に1nm移動
             elif g_key == '1':stage_m.relative_move(200)                                    # 1：前方に200nm移動
-            elif g_key == '3':stage_m.relative_move(10)                                     # 7：後方に10nm移動
+            elif g_key == '3':stage_m.relative_move(20)                                     # 3：前方に20nm移動
             elif g_key == '0':stage_m.absolute_move(0)                                      # 0：ステージの初期位置に移動
             print('FINE stage position : x={}[nm]'.format(stage_m.status['position']))
 
