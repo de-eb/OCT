@@ -7,54 +7,51 @@ from tqdm import tqdm
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    # filename_ccs = 'data/230703_2LC_Ref_410_(glass_basis).csv'
-
-    # n, resolution, depth_max, width_h = 1.52, 5000, 0.5, 10
-
-    # extent, aspect = [0, depth_max*1e3, 0, width_h], (depth_max*1e3/width_h)*1          # aspect : 1の値を変えて調整可能
-    # vmin, vmax, depth1, depth2 = 0.00, 0.50, 2000, 2500                                 # depth  : resolution の範囲内 
-
-    # # データ読み込み
-    # data_ccs = dh.load_spectra(file_path = filename_ccs,wavelength_range = [770,910])
-    # print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs,data_ccs['date'],data_ccs['memo']))
-    # sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    # b_scan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
-
-
-    # # グラフ表示(B-scan)
-    # plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)    # cmapは jet or gist_gray
-    # plt.colorbar()
-    # plt.xlabel('Depth [µm]', fontsize = 12)
-    # plt.ylabel('Width [mm]', fontsize = 12)
-    # plt.show()
+    filename_ccs = 'data/230710_RGC_focus_x6.csv'
+    n , resolution , depth_max , width = 1.51 , 3000 , 0.5 , 10
+    extent , aspect = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
+    vmin_oct , vmax_oct = 0.01 , 0.25
+    
+    # データ読み込み
+    data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
+    print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs, data_ccs['date'], data_ccs['memo']))
+    sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
+    b_scan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
+    
     
     # 初期設定(SS)
     filename_pma = 'data/230710_SS_RGC_x7_Av10.csv'
+    width = 10.0                                                                          # 水平方向、垂直方向の走査幅 [mm]
+    st , ed , vmin_ss, vmax_ss = 201 , 940 , 0.00 , 3.0                                   # スペクトル（CCS）の計算範囲
     
-    width= 10.0                                     # 水平方向、垂直方向の走査幅 [mm]
-    st, ed = 201, 940                               # スペクトル（CCS）の計算範囲
-    vmin, vmax = 0.00, 3.0
-    
-
     # データ読み込み
     data_pma = dh.load_spectra(file_path = filename_pma, wavelength_range = [201,941])
-    print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_pma,data_pma['date'],data_pma['memo']))
+    print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_pma, data_pma['date'], data_pma['memo']))
     wavelength, reflect, incident = data_pma['wavelength'], data_pma['spectra'], data_pma['reference']
     reflectance = calculate_reflectance_2d(reflection = reflect, incidence = incident)
     pma_st, pma_ed = Processor.find_index(wavelength, [st, ed])
-    extent, aspect = [wavelength[pma_st], wavelength[pma_ed], 0, width], ((abs(wavelength[pma_st] - wavelength[pma_ed]) / width))*(2/3)
 
     
-    # グラフ表示
-    plt.imshow(reflectance, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = vmax)
+
+    # グラフ表示(B-scan)
+    plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin_oct, vmax = np.amax(b_scan)*vmax_oct)    # cmapは jet or gist_gray
     plt.colorbar()
-    plt.xlabel('Wavelength [nm]', fontsize = 12)
+    plt.xlabel('Depth [µm]', fontsize = 12)
     plt.ylabel('Width [mm]', fontsize = 12)
     plt.show()
+    
+
+    # グラフ表示(ss)
+    # plt.imshow(reflectance, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = vmax)
+    # plt.colorbar()
+    # plt.xlabel('Wavelength [nm]', fontsize = 12)
+    # plt.ylabel('Width [mm]', fontsize = 12)
+    # plt.show()
     
     
     """
     # 特定の深さにおけるA-scan
+    depth1, depth2 = 2000, 2500                         # depth  : resolution の範囲内
     target1 = np.zeros(b_scan.shape[0])
     target2 = np.zeros(b_scan.shape[0])
     label_d1 = 1e3*depth_max*(depth1/resolution)
