@@ -6,8 +6,8 @@ from matplotlib.ticker import ScalarFormatter
 import modules.data_handler as dh
 from modules.pma12 import Pma12,PmaError
 from modules.crux import Crux,CruxError
-from modules.signal_processing_hamasaki import calculate_reflectance, calculate_reflectance_2d
-from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
+from modules.signal_processing_mizobe import calculate_reflectance, calculate_reflectance_2d
+from modules.signal_processing_mizobe import SignalProcessorMizobe as Processor
 from multiprocessing import Process, Queue
 import warnings
 
