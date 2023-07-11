@@ -169,7 +169,7 @@ if __name__ == "__main__":
         # ピエゾステージ（参照ミラー）の位置調整
         if g_key in ['7','9','1','3','0']:
             if g_key == '7':stage_m.relative_move(100)                                      # 7：前方に100nm移動
-            elif g_key == '9':stage_m.relative_move(1)                                      # 9：前方に1nm移動
+            elif g_key == '9':stage_m.relative_move(10)                                     # 9：前方に10nm移動
             elif g_key == '1':stage_m.relative_move(200)                                    # 1：前方に200nm移動
             elif g_key == '3':stage_m.relative_move(20)                                     # 3：前方に20nm移動
             elif g_key == '0':stage_m.absolute_move(0)                                      # 0：ステージの初期位置に移動
