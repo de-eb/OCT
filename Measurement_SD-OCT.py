@@ -16,7 +16,7 @@ import modules.data_handler as dh
 from modules.ccs175m import Ccs175m,CcsError
 
 # グラフの設定
-plt.rcParams['font.family'] ='sans-serif'
+plt.rcParams['font.family'] = "Times New Roman"
 plt.rcParams['xtick.direction'] = 'in'
 plt.rcParams['ytick.direction'] = 'in'
 plt.rcParams["xtick.minor.visible"] = True

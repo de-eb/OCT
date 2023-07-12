@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 import warnings
 
 # グラフ設定
-plt.rcParams['font.family'] ='sans-serif'
+plt.rcParams['font.family'] = "Times New Roman"
 plt.rcParams['xtick.direction'] = 'in'
 plt.rcParams['ytick.direction'] = 'in'
 plt.rcParams["xtick.minor.visible"] = True
