@@ -113,8 +113,15 @@ class SignalProcessorMizobe():
         `1d-ndarray`
             interference light removed background[arb. unit]
         """
-        return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
+        # return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
         # return spectra - self.__ref
+        
+        # トレンド除去
+        ave = np.convolve(spectra, np.ones(3)/3, mode = 'valid')
+        ave = np.append(0, ave)
+        ave = np.append(ave, 0)
+        rmv = spectra - ave
+        return rmv
 
     def apply_inverse_ft(self,spectra):
         """ Apply inverse ft to the spectra and convert it to distance data
