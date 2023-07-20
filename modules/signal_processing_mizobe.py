@@ -217,11 +217,18 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain (i.e. A-scan).
             The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
-        if self.__ref is None:
-            self.set_reference(reference)                               # 周波数軸にリサンプルされた参照光のデータ
-        itf=self.resample(interference)                                 # 周波数軸にリサンプルされた干渉光のデータ
-        rmv=self.remove_background(itf)                                 # 参照光を除去した干渉光のデータ
-        ascan=self.apply_inverse_ft(rmv)                                # 時間軸に対する光強度のデータ（A-scan）
+        # 濵崎さんが使用していた信号処理
+        # if self.__ref is None:
+        #     self.set_reference(reference)                             # 周波数軸にリサンプルされた参照光のデータ
+        # itf=self.resample(interference)                               # 周波数軸にリサンプルされた干渉光のデータ
+        # rmv=self.remove_background(itf)                               # 参照光を除去した干渉光のデータ
+        # ascan=self.apply_inverse_ft(rmv)                              # 時間軸に対する光強度のデータ（A-scan）
+        # return ascan
+
+        # 溝部が使用している信号処理
+        rmv = self.remove_background(interference)                      # トレンド除去（バックグラウンド除去）
+        res = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
+        ascan = self.apply_inverse_ft(res)                              # 時間軸に対する光強度のデータ（A-scan）
         return ascan
     
     def generate_bscan(self,interference,reference):
