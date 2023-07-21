@@ -90,22 +90,22 @@ class SignalProcessorMizobe():
         func = interpolate.interp1d(self.__freq, spectra, kind='cubic')
         return func(self.__freq_fixed)
 
-    def set_reference(self,reference):
+    def set_reference(self, reference):
         """ Specify the reference spectra. This spectra will be used in later calculations.
 
         Parameter
         ----------
-        spectra : `1d-ndarray`, required
+        reference : `1d-ndarray`, required
             Spectra of reference light only, sampled evenly in wavelength space.
         """
         self.__ref=self.resample(reference)
 
-    def remove_background(self,spectra):
+    def remove_background(self, spectra):
         """ Subtract reference light from interference light.
     
         Parameter
         ----------
-        sp : `1d-ndarray`, required
+        spectra : `1d-ndarray`, required
             Spectra. Normally, specify the interference spectra after resampling.
         
         Return
@@ -113,17 +113,26 @@ class SignalProcessorMizobe():
         `1d-ndarray`
             interference light removed background[arb. unit]
         """
-        # return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
-        # return spectra - self.__ref
+        return spectra-np.multiply(self.__ref,(np.amax(spectra)/np.amax(self.__ref)))
+
+    def detrending(self, interference):
+        """ Remove the autocorrelation function.
         
-        # トレンド除去
-        ave = np.convolve(spectra, np.ones(3)/3, mode = 'valid')
+        Parameter
+        ----------
+        interference : `1d-ndarray`, required
+        
+        Return
+        -------
+        `1d-ndarray`
+        """
+        ave = np.convolve(interference, np.ones(3)/3, mode = 'valid')
         ave = np.append(0, ave)
         ave = np.append(ave, 0)
-        rmv = spectra - ave
+        rmv = interference - ave
         return rmv
 
-    def apply_inverse_ft(self,spectra):
+    def apply_inverse_ft(self, spectra):
         """ Apply inverse ft to the spectra and convert it to distance data
 
         Parameter
@@ -226,9 +235,9 @@ class SignalProcessorMizobe():
         # return ascan
 
         # 溝部が使用している信号処理
-        rmv = self.remove_background(interference)                      # トレンド除去（バックグラウンド除去）
-        res = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
-        ascan = self.apply_inverse_ft(res)                              # 時間軸に対する光強度のデータ（A-scan）
+        rmv = self.detrending(interference)                             # トレンド除去（自己相関ピークの除去）
+        rsm = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
+        ascan = self.apply_inverse_ft(rsm)                              # 時間軸に対する光強度のデータ（A-scan）
         return ascan
     
     def generate_bscan(self,interference,reference):
