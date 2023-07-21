@@ -162,7 +162,115 @@ class SignalProcessorMizobe():
         #     result[2*(number-i)] = result[number-i]
         #     result[number-i] = 0
         # return abs(result)
+
+    def generate_ascan(self,interference,reference):
+        """ Performs a series of signal processing in one step.
+
+        Parameters
+        ----------
+        interference : `1d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+        reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.
+        
+        Return
+        -------
+        ascan : `1d-ndarray`
+            Light intensity data in the time domain (i.e. A-scan).
+            The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
+        """
+        if self.__ref is None:
+            self.set_reference(reference)                               # 周波数軸にリサンプルされた参照光のデータ
+        itf=self.resample(interference)                                 # 周波数軸にリサンプルされた干渉光のデータ
+        rmv=self.remove_background(itf)                                 # 参照光を除去した干渉光のデータ
+        ascan=self.apply_inverse_ft(rmv)                                # 時間軸に対する光強度のデータ（A-scan）
+        return ascan
     
+    def generate_bscan(self,interference,reference):
+        """ Generate a B-scan by calling generate_ascan function multiple times.
+
+        Parameters
+        ----------
+        intereference : `2d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+         reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.           
+
+        Return
+        ----------
+        bscan : `2d-ndarray`
+            Light intensity data in the time domain(i.e. B-scan)
+            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+        """
+        bscan=np.zeros((len(interference),self.__res))                  # ゼロ行列（干渉光の数 × 分解能の数）
+        print("Generating B-scan...")
+        for i in tqdm(range(len(interference))):
+            bscan[i]=self.generate_ascan(interference[i], reference)
+        return bscan
+    
+    def generate_ascan_mizobe(self,interference):
+        """ Performs a series of signal processing in one step.
+
+        Parameters
+        ----------
+        interference : `1d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+        
+        Return
+        -------
+        ascan : `1d-ndarray`
+            Light intensity data in the time domain (i.e. A-scan).
+            The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
+        """
+        rmv = self.detrending(interference)                             # トレンド除去（自己相関ピークの除去）
+        rsm = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
+        ascan = self.apply_inverse_ft(rsm)                              # 時間軸に対する光強度のデータ（A-scan）
+        return ascan
+    
+    def generate_bscan_mizobe(self,interference):
+        """ Generate a B-scan by calling generate_ascan function multiple times.
+
+        Parameters
+        ----------
+        intereference : `2d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.          
+
+        Return
+        ----------
+        bscan : `2d-ndarray`
+            Light intensity data in the time domain(i.e. B-scan)
+            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+        """
+        bscan=np.zeros((len(interference),self.__res))                  # ゼロ行列（干渉光の数 × 分解能の数）
+        print("Generating B-scan...")
+        for i in tqdm(range(len(interference))):
+            bscan[i]=self.generate_ascan_mizobe(interference[i])
+        return bscan
+    
+    def generate_cscan(self, interference,reference):
+        """ Generate a C-scan by calling generate_ascan function multiple times.
+
+        Parameters
+        ----------
+        intereference : `3d-ndarray`, required
+            Spectra of interference light only, sampled evenly in wavelength space.
+         reference : `1d-ndarray`, required
+            Spectra of reference light only, sampled evenly in wavelength space.           
+
+        Return
+        ----------
+        bscan : `3d-ndarray`
+            Light intensity data in the time domain(i.e. C-scan)
+            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
+        """
+        cscan=np.zeros((len(interference),len(interference[0]),self.__res))
+        print('Generating C-scan...')
+        for i in tqdm(range(len(interference))):
+            for j in range(len(interference[i])):
+                cscan[i][j]=self.generate_ascan(interference[i][j],reference)
+        return cscan
+
+
     def apply_hilbert1(self,spectra,reference):
         """ Apply the Hilbert transform to the spectrum to obtain the imaginary part of the complex analytic signal
         
@@ -210,80 +318,6 @@ class SignalProcessorMizobe():
         phase = np.angle(hilbert)                                       # Arctan2(x_h, x)
         return rmv, real, imag, phase
 
-    def generate_ascan(self,interference,reference):
-        """ Performs a series of signal processing in one step.
-
-        Parameters
-        ----------
-        interference : `1d-ndarray`, required
-            Spectra of interference light only, sampled evenly in wavelength space.
-        reference : `1d-ndarray`, required
-            Spectra of reference light only, sampled evenly in wavelength space.
-        
-        Return
-        -------
-        ascan : `1d-ndarray`
-            Light intensity data in the time domain (i.e. A-scan).
-            The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
-        """
-        # 濵崎さんが使用していた信号処理
-        # if self.__ref is None:
-        #     self.set_reference(reference)                             # 周波数軸にリサンプルされた参照光のデータ
-        # itf=self.resample(interference)                               # 周波数軸にリサンプルされた干渉光のデータ
-        # rmv=self.remove_background(itf)                               # 参照光を除去した干渉光のデータ
-        # ascan=self.apply_inverse_ft(rmv)                              # 時間軸に対する光強度のデータ（A-scan）
-        # return ascan
-
-        # 溝部が使用している信号処理
-        rmv = self.detrending(interference)                             # トレンド除去（自己相関ピークの除去）
-        rsm = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
-        ascan = self.apply_inverse_ft(rsm)                              # 時間軸に対する光強度のデータ（A-scan）
-        return ascan
-    
-    def generate_bscan(self,interference,reference):
-        """ Generate a B-scan by calling generate_ascan function multiple times.
-
-        Parameters
-        ----------
-        intereference : `2d-ndarray`, required
-            Spectra of interference light only, sampled evenly in wavelength space.
-         reference : `1d-ndarray`, required
-            Spectra of reference light only, sampled evenly in wavelength space.           
-
-        Return
-        ----------
-        bscan : `2d-ndarray`
-            Light intensity data in the time domain(i.e. B-scan)
-            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
-        """
-        bscan=np.zeros((len(interference),self.__res))                  # ゼロ行列（干渉光の数 × 分解能の数）
-        print("Generating B-scan...")
-        for i in tqdm(range(len(interference))):
-            bscan[i]=self.generate_ascan(interference[i], reference)
-        return bscan
-    
-    def generate_cscan(self, interference,reference):
-        """ Generate a C-scan by calling generate_ascan function multiple times.
-
-        Parameters
-        ----------
-        intereference : `3d-ndarray`, required
-            Spectra of interference light only, sampled evenly in wavelength space.
-         reference : `1d-ndarray`, required
-            Spectra of reference light only, sampled evenly in wavelength space.           
-
-        Return
-        ----------
-        bscan : `3d-ndarray`
-            Light intensity data in the time domain(i.e. C-scan)
-            The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
-        """
-        cscan=np.zeros((len(interference),len(interference[0]),self.__res))
-        print('Generating C-scan...')
-        for i in tqdm(range(len(interference))):
-            for j in range(len(interference[i])):
-                cscan[i][j]=self.generate_ascan(interference[i][j],reference)
-        return cscan
 
     #functions for Absorbance calculation
     def set_incidence(self, incidence):

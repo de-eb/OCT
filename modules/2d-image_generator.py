@@ -10,16 +10,17 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/230711_RGC_150_x6(new).csv'
-    n , resolution , depth_max , width = 1.51 , 3000 , 0.5 , 10.0
+    filename_ccs = 'data/2307/230711_RGC_new.csv'
+    n , resolution , depth_max , width = 1.52 , 3000 , 0.5 , 10.0
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0.00 , 0.26
+    vmin_oct , vmax_oct = 0.00 , 0.27
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    b_scan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
+    b_scan = sp.generate_bscan_mizobe(data_ccs['spectra'])
+    # b_scan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
     
     # グラフ表示(B-scan)
     plt.figure(tight_layout = True)
@@ -28,6 +29,7 @@ if __name__=="__main__":
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
     plt.show()
+
 
     # 初期設定(SS)
     filename_pma = 'data/230710_RGC_SS_x7_Av10.csv'
