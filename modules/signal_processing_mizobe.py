@@ -137,33 +137,41 @@ class SignalProcessorMizobe():
 
         Parameter
         ----------
-        spectra : `1d-ndarray`, required
-            spectra(After applying resampling)
+        spectra : `1d-ndarray`, required : spectra(After applying resampling)
 
         Return
         ----------
-        `1d-array`
-            Data after IFFT
-        
+        `1d-array`, required : Data after IFFT
         """
         result = np.zeros_like(self.__depth)
         for i in range(len(spectra)):
             result += spectra[i]*self.__freq_dataset[i]
         result /= np.amax(result)
         return abs(result)
-    
-        # n = len(self.__freq_dataset[1])
-        # number = n//2 - 1
-        # result = np.fft.ifft(spectra, n)
-        # result[1 : n//2+1] = 2*result[1 : n//2+1]
-        # result[n//2+1 : ] = 0.0
-        # result /= np.amax(result)
-        # for i in range(n//2 - 1):
-        #     result[2*(number-i)] = result[number-i]
-        #     result[number-i] = 0
-        # return abs(result)
 
-    def generate_ascan(self,interference,reference):
+    def apply_numpy_ifft(self, spectra):
+        """ Apply inverse ft to the spectra and convert it to distance data
+
+        Parameter
+        ----------
+        spectra : `1d-ndarray`, required : spectra(After applying resampling)
+
+        Return
+        ----------
+        `1d-array`, required : Data after IFFT
+        """
+        n = len(self.__freq_dataset[1])
+        number = n//2 - 1
+        result = np.fft.ifft(spectra, n)
+        result[1 : n//2+1] = 2*result[1 : n//2+1]
+        result[n//2+1 : ] = 0.0
+        result /= np.amax(result)
+        for i in range(n//2 - 1):
+            result[2*(number-i)] = result[number-i]
+            result[number-i] = 0
+        return abs(result)
+
+    def generate_ascan(self, interference, reference):
         """ Performs a series of signal processing in one step.
 
         Parameters
@@ -180,13 +188,13 @@ class SignalProcessorMizobe():
             The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
         if self.__ref is None:
-            self.set_reference(reference)                               # 周波数軸にリサンプルされた参照光のデータ
-        itf=self.resample(interference)                                 # 周波数軸にリサンプルされた干渉光のデータ
-        rmv=self.remove_background(itf)                                 # 参照光を除去した干渉光のデータ
-        ascan=self.apply_inverse_ft(rmv)                                # 時間軸に対する光強度のデータ（A-scan）
+            self.set_reference(reference)                                 # 周波数軸にリサンプルされた参照光のデータ
+        itf = self.resample(interference)                                 # 周波数軸にリサンプルされた干渉光のデータ
+        rmv = self.remove_background(itf)                                 # 参照光を除去した干渉光のデータ
+        ascan = self.apply_inverse_ft(rmv)                                # 時間軸に対する光強度のデータ（A-scan）
         return ascan
     
-    def generate_bscan(self,interference,reference):
+    def generate_bscan(self, interference, reference):
         """ Generate a B-scan by calling generate_ascan function multiple times.
 
         Parameters
@@ -202,13 +210,13 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain(i.e. B-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
-        bscan=np.zeros((len(interference),self.__res))                  # ゼロ行列（干渉光の数 × 分解能の数）
+        bscan = np.zeros((len(interference), self.__res))                 # ゼロ行列（干渉光の数 × 分解能の数）
         print("Generating B-scan...")
         for i in tqdm(range(len(interference))):
-            bscan[i]=self.generate_ascan(interference[i], reference)
+            bscan[i] = self.generate_ascan(interference[i], reference)
         return bscan
     
-    def generate_ascan_mizobe(self,interference):
+    def generate_ascan_mizobe(self, interference):
         """ Performs a series of signal processing in one step.
 
         Parameters
@@ -222,12 +230,12 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain (i.e. A-scan).
             The corresponding horizontal axis data (depth) can be obtained with `self.depth`.
         """
-        rmv = self.detrending(interference)                             # トレンド除去（自己相関ピークの除去）
-        rsm = self.resample(rmv)                                        # リサンプリング（波長軸から周波数軸に変換）
-        ascan = self.apply_inverse_ft(rsm)                              # 時間軸に対する光強度のデータ（A-scan）
+        rmv = self.detrending(interference)                               # トレンド除去（自己相関ピークの除去）
+        rsm = self.resample(rmv)                                          # リサンプリング（波長軸から周波数軸に変換）
+        ascan = self.apply_inverse_ft(rsm)                                # 時間軸に対する光強度のデータ（A-scan）
         return ascan
     
-    def generate_bscan_mizobe(self,interference):
+    def generate_bscan_mizobe(self, interference):
         """ Generate a B-scan by calling generate_ascan function multiple times.
 
         Parameters
@@ -241,10 +249,10 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain(i.e. B-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
-        bscan=np.zeros((len(interference),self.__res))                  # ゼロ行列（干渉光の数 × 分解能の数）
+        bscan = np.zeros((len(interference), self.__res))                 # ゼロ行列（干渉光の数 × 分解能の数）
         print("Generating B-scan...")
         for i in tqdm(range(len(interference))):
-            bscan[i]=self.generate_ascan_mizobe(interference[i])
+            bscan[i] = self.generate_ascan_mizobe(interference[i])
         return bscan
     
     def generate_cscan(self, interference,reference):
@@ -263,11 +271,11 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain(i.e. C-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
-        cscan=np.zeros((len(interference),len(interference[0]),self.__res))
+        cscan = np.zeros((len(interference), len(interference[0]), self.__res))
         print('Generating C-scan...')
         for i in tqdm(range(len(interference))):
             for j in range(len(interference[i])):
-                cscan[i][j]=self.generate_ascan(interference[i][j],reference)
+                cscan[i][j] = self.generate_ascan(interference[i][j], reference)
         return cscan
 
 
