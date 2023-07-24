@@ -10,10 +10,10 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2307/230711_RGC_new.csv'
+    filename_ccs = 'data/2307/230711_RGC_150_x6(new).csv'
     n , resolution , depth_max , width = 1.52 , 3000 , 0.5 , 10.0
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0.00 , 0.27
+    vmin_oct , vmax_oct = 0.00 , 0.25
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
@@ -32,7 +32,7 @@ if __name__=="__main__":
 
 
     # 初期設定(SS)
-    filename_pma = 'data/230710_RGC_SS_x7_Av10.csv'
+    filename_pma = 'data/2307/230711_RGC_SS_x6(new).csv'
     width , st , ed = 10.0 , 201 , 940                               # 水平方向、垂直方向の走査幅 [mm]
     vmin_ss , vmax_ss = 0.00 , 3.0
     
