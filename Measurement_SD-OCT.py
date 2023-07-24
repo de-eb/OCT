@@ -164,7 +164,7 @@ if __name__ == "__main__":
             elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
-            print('CRUX stage position : x={}[mm], y={}[mm], z={}[mm]'.format((location[0]-hi)/pl_rate,(location[1]-vi)/pl_rate,location[2]/pl_rate))
+            print('CRUX stage position : x={}[mm], y={}[mm], z={}[mm]'.format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate, location[2]/pl_rate))
         
         # ピエゾステージ（参照ミラー）の位置調整
         if g_key in ['7','9','1','3','0']:
@@ -191,8 +191,8 @@ if __name__ == "__main__":
 
         # 信号処理
         if ref is not None:
-            # ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
             ascan = sp.generate_ascan_mizobe(itf[0,st:ed])
+            # ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
             if use_um:                                                      # グラフの更新
                 ax1_0.set_data(sp.depth*1e3, ascan)                         # 距離の単位換算
             else:
@@ -239,16 +239,16 @@ if __name__ == "__main__":
                 for i in tqdm(range(step_h)):
                     itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                # result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
                 result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
+                # result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
-                plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmin = 0.05,vmax = 0.5)
+                plt.imshow(result_map, cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
                 plt.colorbar()
                 plt.xlabel('Depth[mm]')
                 plt.ylabel('Width[mm]')
                 # データの保存
                 dh.save_spectra(wavelength = ccs.wavelength, reference = ref, spectra = itf.T, memo = memo)
-                stage_s.move_origin(axis_num = 1,ret_form = 1)
+                stage_s.move_origin(axis_num = 1, ret_form = 1)
                 plt.show()
     
         # 't'キーで測定開始（3次元のデータ）
@@ -263,7 +263,7 @@ if __name__ == "__main__":
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v = int(height/step_v*pl_rate*(-1)), vmode = 'r', h = int((width*pl_rate/2)), hmode = 'a')
                 # データの保存
-                dh.save_spectra_3d(wavelength = ccs.wavelength,width = width,height = height,reference = ref,spectra = itf_3d,memo = memo)
+                dh.save_spectra_3d(wavelength = ccs.wavelength, width = width, height = height, reference = ref, spectra = itf_3d, memo = memo)
 
         # 光源をHe-Neレーザーに設定し、測定対象範囲に光が当たるかどうかを確認する
         # 'p' キーで 2 次元測定の測定範囲を確認する
