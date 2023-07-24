@@ -8,12 +8,12 @@ from matplotlib.ticker import ScalarFormatter
 from tqdm import tqdm
 from modules.pma12 import Pma12, PmaError
 from modules.fine01r import Fine01r, Fine01rError
-#from modules.ncm6212c import Ncm6212c, Ncm6212cError
 from modules.crux import Crux,CruxError
 from modules.artcam130mi import ArtCam130
-from modules.signal_processing_hamasaki import SignalProcessorHamasaki as Processor
+from modules.signal_processing_mizobe import SignalProcessorMizobe as Processor
 import modules.data_handler as dh
 from modules.ccs175m import Ccs175m,CcsError
+#from modules.ncm6212c import Ncm6212c, Ncm6212cError
 
 # グラフの設定
 plt.rcParams['font.family'] = "Times New Roman"
@@ -191,7 +191,8 @@ if __name__ == "__main__":
 
         # 信号処理
         if ref is not None:
-            ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
+            # ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
+            ascan = sp.generate_ascan_mizobe(itf[0,st:ed])
             if use_um:                                                      # グラフの更新
                 ax1_0.set_data(sp.depth*1e3, ascan)                         # 距離の単位換算
             else:
@@ -234,11 +235,12 @@ if __name__ == "__main__":
                 print("Error:No reference data available.")
             else:
                 print("Measurement(2D) start")
-                # stage_s.absolute_move(int((width*pl_rate/2)+hi))                    # 調整後の位置から測定したい場合はコメントアウト
+                # stage_s.absolute_move(int((width*pl_rate/2)+hi))                      # 調整後の位置から測定したい場合はコメントアウト
                 for i in tqdm(range(step_h)):
-                    itf[i,:] = ccs.read_spectra(averaging)                          # 均等に分割された波長軸での干渉光
+                    itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])            # 均等に分割された時間軸での光強度（b-scan）
+                # result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
+                result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
                 plt.figure()
                 plt.imshow(result_map,cmap = 'jet',extent = [0,depth_max,0,width],aspect = (depth_max/width)*(2/3),vmin = 0.05,vmax = 0.5)
                 plt.colorbar()
