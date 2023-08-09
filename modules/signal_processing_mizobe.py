@@ -126,9 +126,9 @@ class SignalProcessorMizobe():
         -------
         `1d-ndarray`
         """
-        ave = np.convolve(interference, np.ones(3)/3, mode = 'valid')
-        ave = np.append(0, ave)
-        ave = np.append(ave, 0)
+        ave = np.convolve(interference, np.ones(5)/5, mode = 'valid')
+        ave = np.append([0,0], ave)
+        ave = np.append(ave, [0,0])
         rmv = interference - ave
         return rmv
 
@@ -197,7 +197,7 @@ class SignalProcessorMizobe():
         # 論文掲載の信号処理手順
         rmv = interference - np.multiply(reference, (np.amax(interference)/np.amax(reference)))
         res = self.resample(rmv)
-        ascan = self.apply_inverse_ft(res)
+        ascan = self.apply_numpy_ifft(res)
         return ascan
     
     def generate_bscan(self, interference, reference):
@@ -238,7 +238,7 @@ class SignalProcessorMizobe():
         """
         rmv = self.detrending(interference)                               # トレンド除去（自己相関ピークの除去）
         rsm = self.resample(rmv)                                          # リサンプリング（波長軸から周波数軸に変換）
-        ascan = self.apply_inverse_ft(rsm)                                # 時間軸に対する光強度のデータ（A-scan）
+        ascan = self.apply_numpy_ifft(rsm)                                # 時間軸に対する光強度のデータ（A-scan）
         return ascan
     
     def generate_bscan_mizobe(self, interference):
@@ -261,6 +261,19 @@ class SignalProcessorMizobe():
             bscan[i] = self.generate_ascan_mizobe(interference[i])
         return bscan
     
+    def bscan_2d_ifft(self, interference, reference):
+        """ Generate a B-scan by using 2d_IFFT """
+        itf = np.zeros((len(interference), len(interference[0])))
+        rsm = np.zeros((len(interference), len(interference[0])*3))
+        bscan = np.zeros((len(interference), self.__res))
+        for i in tqdm(range(len(interference))):
+            # itf[i] = interference[i] - np.multiply(reference, (np.amax(interference[i])/np.amax(reference)))
+            itf[i] = self.detrending(interference[i])
+            rsm[i] = self.resample(itf[i])
+        bscan = np.fft.ifft(rsm)
+        result = np.abs(bscan)
+        return result
+
     def generate_cscan(self, interference,reference):
         """ Generate a C-scan by calling generate_ascan function multiple times.
 
