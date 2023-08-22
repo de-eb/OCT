@@ -270,7 +270,7 @@ class SignalProcessorMizobe():
             # itf[i] = interference[i] - np.multiply(reference, (np.amax(interference[i])/np.amax(reference)))
             itf[i] = self.detrending(interference[i])
             rsm[i] = self.resample(itf[i])
-        bscan = np.fft.ifft(rsm)
+        bscan = np.fft.ifft2(rsm)
         result = np.abs(bscan)
         return result
 
