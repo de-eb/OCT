@@ -102,19 +102,20 @@ if __name__ == "__main__":
         else:
             print('Stage position data loaded.')
             stage_s.biaxial_move(v=vi, vmode='a', h = hi, hmode = 'a')
-    #pma = Pma12(dev_id=5)                                                      # 旧分光器：PMA (分光測定)
-    ccs = Ccs175m(name = 'USB0::0x1313::0x8087::M00801544::RAW')                # 新分光器：CCS (OCT測定)
+    #pma = Pma12(dev_id=5)                                                                  # 旧分光器：PMA (分光測定)
+    ccs = Ccs175m(name = 'USB0::0x1313::0x8087::M00801544::RAW')                            # 新分光器：CCS (OCT測定)
     sp = Processor(ccs.wavelength[st:ed], n = 1.52, depth_max = depth_max, resolution = resolution)
     q = Queue()
-    proc1 = Process(target = profile_beam, args = (q,))                         # Beam profiler
+    proc1 = Process(target = profile_beam, args = (q,))
     proc1.start()
    
-    # step = 1000                                                               # Stage operation interval [nm]
-    # limit = 300000                                                            # Stage operation limit [nm]
-    x, y, z = 100000, 0, 0                                                      # ステージの初期位置
-    ref = None                                                                  # 参照光
-    itf = np.zeros((step_h,ccs.wavelength.size), dtype = float)                 # 干渉光（step_h, ccs.wavelength）
-    itf_3d = np.zeros((step_v,step_h,ccs.wavelength.size),dtype = float)        # 干渉光（step_v, step_h, ccs.wavelength）
+    # step = 1000                                                                           # Stage operation interval [nm]
+    # limit = 300000                                                                        # Stage operation limit [nm]
+    x, y, z = 100000, 0, 0                                                                  # ステージの初期位置
+    ref = None                                                                              # 参照光（リアルタイム測定用）
+    rld = np.zeros((step_h, ccs.wavelength.size), dtype = float)                            # 参照光（step_h, ccs.wavelength）
+    itf = np.zeros((step_h, ccs.wavelength.size), dtype = float)                            # 干渉光（step_h, ccs.wavelength）
+    itf_3d = np.zeros((step_v, step_h, ccs.wavelength.size), dtype = float)                 # 干渉光（step_v, step_h, ccs.wavelength）
     ascan = np.zeros_like(sp.depth)
     err = False
     location = np.zeros(3,dtype = int)
@@ -164,7 +165,7 @@ if __name__ == "__main__":
             elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
-            print('CRUX stage position : x={}[mm], y={}[mm], z={}[mm]'.format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate, location[2]/pl_rate))
+            print("CRUX stage position : x={}[mm], y={}[mm]".format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate))
         
         # ピエゾステージ（参照ミラー）の位置調整
         if g_key in ['7','9','1','3','0']:
@@ -173,7 +174,7 @@ if __name__ == "__main__":
             elif g_key == '1':stage_m.relative_move(200)                                    # 1：前方に200nm移動
             elif g_key == '3':stage_m.relative_move(20)                                     # 3：前方に20nm移動
             elif g_key == '0':stage_m.absolute_move(0)                                      # 0：ステージの初期位置に移動
-            print('FINE stage position : x={}[nm]'.format(stage_m.status['position']))
+            print("FINE stage position : x={}[nm]".format(stage_m.status['position']))
 
         # スペクトル測定（光強度が飽和しているとエラーメッセージ）
         try: itf[0,:] = ccs.read_spectra(averaging = 5)
@@ -204,7 +205,7 @@ if __name__ == "__main__":
             ref = None
             ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))           # 参照光のデータ
             ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))            # A-scanのデータ
-            print('Reference data deleted.')            
+            print("Reference data deleted.")            
 
         # 'Enter'キーでリファレンス（干渉光）を登録する
         if g_key == 'enter':
@@ -218,9 +219,9 @@ if __name__ == "__main__":
             data = ccs.read_spectra(averaging = 100)
             if ref is None:
                 dh.save_spectra(wavelength = ccs.wavelength, spectra = data)
-                print('Message:Reference data was not registered. Only spectra data was saved.')
+                print("Message:Reference data was not registered. Only spectra data was saved.")
             else:
-                dh.save_spectra(wavelength = ccs.wavelength, spectra = data,reference = ref)
+                dh.save_spectra(wavelength = ccs.wavelength, spectra = data, reference = ref)
             file_path = dh.generate_filename('png')
             plt.savefig(file_path)
             print("Saved the graph to {}.".format(file_path))
@@ -229,9 +230,20 @@ if __name__ == "__main__":
         if g_key == '/':
             stage_s.absolute_move(-71000)
 
+        # 's'キーで参照光分布測定開始
+        elif g_key == 's' and stage_s_flag:
+            start = stage_s.read_position(axis_num = 1)
+            print("Measurement(Reference light distribution) start")
+            print("Start position : x={}[nm]".format(start-hi)/pl_rate)
+            for i in tqdm(range(step_h)):
+                rld[i,:] = ccs.read_spectra(averaging)                                  # 均等に分割された波長軸での参照光
+                stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
+            print("Reference light distribution is updated.")
+            stage_s.absolute_move(start)
+
         # 'd'キーで測定開始（2次元のデータ）
         elif g_key == 'd' and stage_s_flag:
-            if ref is None:
+            if rld is None:
                 print("Error:No reference data available.")
             else:
                 print("Measurement(2D) start")
@@ -240,20 +252,19 @@ if __name__ == "__main__":
                     itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
-                # result_map = sp.generate_bscan(itf[:,st:ed], ref[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
+                # result_map = sp.generate_bscan(itf[:,st:ed], rld[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
                 plt.imshow(result_map, cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
                 plt.colorbar()
-                plt.xlabel('Depth[mm]')
-                plt.ylabel('Width[mm]')
-                # データの保存
-                dh.save_spectra(wavelength = ccs.wavelength, reference = ref, spectra = itf.T, memo = memo)
+                plt.xlabel('Depth [mm]')
+                plt.ylabel('Width [mm]')
+                dh.save_spectra(wavelength = ccs.wavelength, reference = rld.T, spectra = itf.T, memo = memo)
                 stage_s.move_origin(axis_num = 1, ret_form = 1)
                 plt.show()
     
         # 't'キーで測定開始（3次元のデータ）
         elif g_key == 't' and stage_s_flag:
-            if ref is None:
+            if rld is None:
                 print('Error:No reference data available.')
             else:
                 stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode = 'a', h = int((width*pl_rate/2))+hi, hmode = 'a')
@@ -263,7 +274,7 @@ if __name__ == "__main__":
                         stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                     stage_s.biaxial_move(v = int(height/step_v*pl_rate*(-1)), vmode = 'r', h = int((width*pl_rate/2)), hmode = 'a')
                 # データの保存
-                dh.save_spectra_3d(wavelength = ccs.wavelength, width = width, height = height, reference = ref, spectra = itf_3d, memo = memo)
+                dh.save_spectra_3d(wavelength = ccs.wavelength, width = width, height = height, reference = rld, spectra = itf_3d, memo = memo)
 
         # 光源をHe-Neレーザーに設定し、測定対象範囲に光が当たるかどうかを確認する
         # 'p' キーで 2 次元測定の測定範囲を確認する
