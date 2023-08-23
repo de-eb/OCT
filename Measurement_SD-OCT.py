@@ -165,7 +165,7 @@ if __name__ == "__main__":
             elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
-            print("CRUX stage position : x={}[mm], y={}[mm]".format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate))
+            print("CRUX stage position : x={} [mm], y={} [mm]".format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate))
         
         # ピエゾステージ（参照ミラー）の位置調整
         if g_key in ['7','9','1','3','0']:
@@ -174,7 +174,7 @@ if __name__ == "__main__":
             elif g_key == '1':stage_m.relative_move(200)                                    # 1：前方に200nm移動
             elif g_key == '3':stage_m.relative_move(20)                                     # 3：前方に20nm移動
             elif g_key == '0':stage_m.absolute_move(0)                                      # 0：ステージの初期位置に移動
-            print("FINE stage position : x={}[nm]".format(stage_m.status['position']))
+            print("FINE stage position : x={} [nm]".format(stage_m.status['position']))
 
         # スペクトル測定（光強度が飽和しているとエラーメッセージ）
         try: itf[0,:] = ccs.read_spectra(averaging = 5)
@@ -192,8 +192,8 @@ if __name__ == "__main__":
 
         # 信号処理
         if ref is not None:
-            ascan = sp.generate_ascan_mizobe(itf[0,st:ed])
-            # ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
+            # ascan = sp.generate_ascan_mizobe(itf[0,st:ed])
+            ascan = sp.generate_ascan(itf[0,st:ed], ref[st:ed])
             if use_um:                                                      # グラフの更新
                 ax1_0.set_data(sp.depth*1e3, ascan)                         # 距離の単位換算
             else:
@@ -219,7 +219,7 @@ if __name__ == "__main__":
             data = ccs.read_spectra(averaging = 100)
             if ref is None:
                 dh.save_spectra(wavelength = ccs.wavelength, spectra = data)
-                print("Message:Reference data was not registered. Only spectra data was saved.")
+                print("Message : Reference data was not registered. Only spectra data was saved.")
             else:
                 dh.save_spectra(wavelength = ccs.wavelength, spectra = data, reference = ref)
             file_path = dh.generate_filename('png')
@@ -230,23 +230,24 @@ if __name__ == "__main__":
         if g_key == '/':
             stage_s.absolute_move(-71000)
 
-        # 's'キーで参照光分布測定開始
-        elif g_key == 's' and stage_s_flag:
+        # 'r'キーで参照光分布測定開始
+        elif g_key == 'r' and stage_s_flag:
             start = stage_s.read_position(axis_num = 1)
-            print("Measurement(Reference light distribution) start")
-            print("Start position : x={}[nm]".format(start-hi)/pl_rate)
+            print("Measurement( Reference light distribution ) start")
             for i in tqdm(range(step_h)):
                 rld[i,:] = ccs.read_spectra(averaging)                                  # 均等に分割された波長軸での参照光
                 stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
             print("Reference light distribution is updated.")
             stage_s.absolute_move(start)
+            now_crux = ((stage_s.read_position(axis_num = 1)) -hi)/pl_rate
+            print("Crux stage position : x={} [nm]".format(now_crux))
 
         # 'd'キーで測定開始（2次元のデータ）
         elif g_key == 'd' and stage_s_flag:
             if rld is None:
-                print("Error:No reference data available.")
+                print("Error : No reference data available.")
             else:
-                print("Measurement(2D) start")
+                print("Measurement( 2D:Interference light ) start")
                 # stage_s.absolute_move(int((width*pl_rate/2)+hi))                      # 調整後の位置から測定したい場合はコメントアウト
                 for i in tqdm(range(step_h)):
                     itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
@@ -265,8 +266,9 @@ if __name__ == "__main__":
         # 't'キーで測定開始（3次元のデータ）
         elif g_key == 't' and stage_s_flag:
             if rld is None:
-                print('Error:No reference data available.')
+                print('Error : No reference data available.')
             else:
+                print("Measurement( 3D:Interference light ) start")
                 stage_s.biaxial_move(v=int(height*pl_rate/2)+vi, vmode = 'a', h = int((width*pl_rate/2))+hi, hmode = 'a')
                 for i in tqdm(range(step_v)):
                     for j in range(step_h):
