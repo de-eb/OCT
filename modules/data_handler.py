@@ -132,12 +132,17 @@ def load_spectra(file_path, wavelength_range=[0,2000]):
     df = df[(df['Wavelength [nm]']>wavelength_range[0]) & (df['Wavelength [nm]']<wavelength_range[1])]
     if 'Wavelength [nm]' in df.columns:
         data['wavelength'] = df.loc[:, 'Wavelength [nm]'].values
+    
     if 'Reference [-]' in df.columns:
         data['reference'] = df.loc[:, 'Reference [-]'].values
+    elif 'Reference0 [-]' in df.columns:
+        data['reference'] = df.iloc[:, df.columns.get_loc('Reference0 [-]'):].values.T
+    
     if 'Spectra [-]' in df.columns:
         data['spectra'] = df.loc[:, 'Spectra [-]'].values
     elif 'Spectra0 [-]' in df.columns:
         data['spectra'] = df.iloc[:, df.columns.get_loc('Spectra0 [-]'):].values.T
+    
     with open(file_path) as f:
         date = f.readline().strip('date,')
         memo = f.readline().strip('memo,')
