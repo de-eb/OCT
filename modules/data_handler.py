@@ -18,8 +18,9 @@ def save_spectra(wavelength, reference=None, spectra=None, file_path=None, memo=
     ----------
     wavelength : `1d-ndarray`, required
         Wavelength [nm] data corresponding to spectra.
-    reference : `1d-ndarray`
-        Spectra of reference light only. If it is not specified, it will not be recorded.
+    reference : `ndarray`
+        Spectra, such as reference light.
+        When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
     spectra : `ndarray`
         Spectra, such as interference light.
         When specifying 2-dimensional data, axis0 should correspond to the wavelength data.
@@ -31,17 +32,24 @@ def save_spectra(wavelength, reference=None, spectra=None, file_path=None, memo=
     """
     # Data formatting
     columns = ['Wavelength [nm]']
-    data = wavelength.reshape([wavelength.size,1])
+    data = wavelength.reshape([wavelength.size, 1])
+    # if reference is not None:
+    #     columns.append('Reference [-]')
+    #     data = np.hstack((data,reference.reshape([wavelength.size,1])))
     if reference is not None:
-        columns.append('Reference [-]')
-        data = np.hstack((data,reference.reshape([wavelength.size,1])))
+        if reference.ndim == 1:
+            columns.append('Reference [-]')
+            reference = reference.reshape([wavelength.size, 1])
+        elif spectra.ndim == 2:
+            columns += ['Reference{} [-]'.format(i) for i in range(reference.shape[1])]
+        data = np.hstack((data, reference))
     if spectra is not None:
         if spectra.ndim == 1:
             columns.append('Spectra [-]')
-            spectra = spectra.reshape([wavelength.size,1])
+            spectra = spectra.reshape([wavelength.size, 1])
         elif spectra.ndim == 2:
             columns += ['Spectra{} [-]'.format(i) for i in range(spectra.shape[1])]
-        data = np.hstack((data,spectra))
+        data = np.hstack((data, spectra))
     df = pd.DataFrame(data=data, columns=columns, dtype='float')
     # Save
     file_path = generate_filename('csv')
