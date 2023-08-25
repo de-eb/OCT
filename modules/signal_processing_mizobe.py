@@ -253,16 +253,15 @@ class SignalProcessorMizobe():
             bscan[i] = self.generate_ascan_mizobe(interference[i])
         return bscan
     
-    def bscan_2d_ifft(self, interference, reference):
+    def bscan_ifft(self, interference, reference):
         """ Generate a B-scan by using 2d_IFFT """
-        itf = np.zeros((len(interference), len(interference[0])))
-        rsm = np.zeros((len(interference), len(interference[0])*3))
+        itf = np.zeros((len(interference), len(self.__wl)))
+        rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
             itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i])))
-            # itf[i] = self.detrending(interference[i])
             rsm[i] = self.resample(itf[i])
-        bscan = np.fft.ifft2(rsm)
+        bscan = np.fft.ifft(rsm)
         result = np.abs(bscan)
         return result
 
