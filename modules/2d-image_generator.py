@@ -10,10 +10,10 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2308/230823_2LC_RLD.csv'
+    filename_ccs = 'data/2309/230906_2LC.csv'
     n , resolution , depth_max , width = 1.52 , 3000 , 0.5 , 10.0
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0.00 , 0.2
+    vmin_oct , vmax_oct = 0.00 , 0.3
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
