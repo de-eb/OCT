@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 3000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）      最適な深さ方向の分割数は？
+    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
     depth_max = 0.5                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
-    step_h = 150                      # 水平方向の分割数
-    width = 10.0                      # 水平方向の走査幅 [mm]
+    step_h = 200                      # 水平方向の分割数
+    width = 2.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 20                    # １点の測定の平均回数
-    memo = 'Red and Green cellophanes behind the cover glass(Res.=3000, Ave.=50). lens=THORLABS LSM54-850'
+    memo = 'Double cellophane(Res.=2000, Ave.=20). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -154,8 +154,8 @@ if __name__ == "__main__":
         
         # 自動ステージ（試料ステージ）の位置調整
         if g_key in ['4','6','5','2','8']:
-            if g_key == '6':stage_s.relative_move(2000,axis_num = 1,velocity = 9)           # ６：右方向に1mm移動
-            elif g_key == '4':stage_s.relative_move(-2000,axis_num = 1,velocity = 9)        # ４：左方向に1mm移動
+            if g_key == '6':stage_s.relative_move(1000,axis_num = 1,velocity = 9)           # ６：右方向に1mm移動
+            elif g_key == '4':stage_s.relative_move(-1000,axis_num = 1,velocity = 9)        # ４：左方向に1mm移動
             elif g_key == '5':                                                              # ５：ステージの初期位置に移動
                 if hi == 0 and vi == 0:
                     stage_s.move_origin()
