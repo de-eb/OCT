@@ -252,10 +252,12 @@ if __name__ == "__main__":
                 for i in tqdm(range(step_h)):
                     itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
-                # result_map = sp.generate_bscan(itf[:,st:ed], rld[st:ed])              # 均等に分割された時間軸での光強度（b-scan）
+                result_map = sp.bscan_ifft(itf[:,st:ed], rld[st:ed])                    # 均等に分割された時間軸での光強度（b-scan）
+                n_max = len(result_map[1]) // 8
+                # result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
+                # result_map = sp.generate_bscan(itf[:,st:ed], rld[st:ed])
                 plt.figure()
-                plt.imshow(result_map, cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
+                plt.imshow(result_map[:, :n_max], cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
                 plt.colorbar()
                 plt.xlabel('Depth [mm]')
                 plt.ylabel('Width [mm]')
