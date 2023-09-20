@@ -10,10 +10,10 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2309/230907_Double_cello_3.csv'
-    n , resolution , depth_max , width = 1.52 , 2000 , 0.5 , 3.0
+    filename_ccs = 'data/2309/230920_1.csv'
+    n , resolution , depth_max , width = 1.52 , 2048 , 0.5 , 2.0
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0.00 , 0.13
+    vmin_oct , vmax_oct = 0 , 0.07
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
