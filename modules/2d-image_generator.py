@@ -13,13 +13,12 @@ if __name__=="__main__":
     filename_ccs = 'data/2309/230907_Double_cello_3.csv'
     n , resolution , depth_max , width = 1.52 , 2000 , 0.5 , 3.0
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0.00 , 0.18
+    vmin_oct , vmax_oct = 0.00 , 0.13
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    ref = data_ccs['reference']
     
     # bscan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
     # n_max = len(bscan[1]) // 4
@@ -32,7 +31,7 @@ if __name__=="__main__":
     
     # グラフ表示(B-scan)
     plt.figure(tight_layout = True)
-    plt.imshow(bscan[:,0:n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
+    plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
     plt.colorbar()
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
