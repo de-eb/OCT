@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
-    depth_max = 0.5                   # 深さ方向の最大値 [mm]
+    resolution = 2048                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
+    depth_max = 1.0                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 200                      # 水平方向の分割数
     width = 2.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 20                    # １点の測定の平均回数
-    memo = 'Double cellophane(Res.=2000, Ave.=20). lens=THORLABS LSM54-850'
+    averaging = 30                    # １点の測定の平均回数
+    memo = 'Rolls of cellophane(Res.=2048, Ave.=30). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -248,16 +248,12 @@ if __name__ == "__main__":
                 print("Error : No reference data available.")
             else:
                 print("Measurement( 2D:Interference light ) start")
-                # stage_s.absolute_move(int((width*pl_rate/2)+hi))                      # 調整後の位置から測定したい場合はコメントアウト
                 for i in tqdm(range(step_h)):
                     itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
-                result_map = sp.bscan_ifft(itf[:,st:ed], rld[st:ed])                    # 均等に分割された時間軸での光強度（b-scan）
-                n_max = len(result_map[1]) // 8
-                # result_map = sp.generate_bscan_mizobe(itf[:,st:ed])
-                # result_map = sp.generate_bscan(itf[:,st:ed], rld[st:ed])
+                result_map = sp.generate_bscan_mizobe(itf[:,st:ed])                     # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
-                plt.imshow(result_map[:, :n_max], cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
+                plt.imshow(result_map, cmap = 'jet', extent = [0,depth_max,0,width], aspect = (depth_max/width)*(2/3), vmin = 0.05, vmax = 0.5)
                 plt.colorbar()
                 plt.xlabel('Depth [mm]')
                 plt.ylabel('Width [mm]')
