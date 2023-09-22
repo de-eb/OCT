@@ -10,10 +10,10 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2309/230920_1.csv'
-    n , resolution , depth_max , width = 1.52 , 2048 , 0.5 , 2.0
-    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    vmin_oct , vmax_oct = 0 , 0.07
+    filename_ccs = 'data/2309/230920_Roll_cellophane.csv'
+    n , resolution , depth_max , width= 1.52 , 2048, 0.5 , 2.0
+    vmin_oct , vmax_oct = 0.0 , 0.08
+    target = 0.25                                                           # B-scanのWidthから選択
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
@@ -22,19 +22,33 @@ if __name__=="__main__":
     
     # bscan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
     # n_max = len(bscan[1]) // 4
-
     # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])
     # n_max = len(bscan[1]) // 4
-
     bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])
     n_max = len(bscan[1]) // 8
     
     # グラフ表示(B-scan)
-    plt.figure(tight_layout = True)
+    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
+    # plt.figure(tight_layout = True)
+    # plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
+    # plt.colorbar()
+    # plt.xlabel('Depth [µm]')
+    # plt.ylabel('Width [mm]')
+    # plt.show()
+
+    # グラフ表示(B-scan & A-scan)
+    plt.figure(figsize = (12,5), tight_layout = True)
+    plt.subplot(121, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
     plt.colorbar()
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
+    plt.subplot(122, title = 'A-scan (Not log)')
+    plt.plot(bscan[int((2.0 - target)*100),:n_max], label ='Width ={} [mm]'.format(target))
+    plt.ylim(bottom = 0, top = 0.001)
+    plt.xlabel('Depth [µm]')
+    plt.ylabel('Intensity [-]')
+    plt.legend()
     plt.show()
 
 
