@@ -263,7 +263,9 @@ class SignalProcessorMizobe():
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
-        return np.abs(bscan)
+        result = np.abs(bscan)
+        # result = np.abs(np.log10(result))
+        return result
 
     def generate_cscan(self, interference,reference):
         """ Generate a C-scan by calling generate_ascan function multiple times.
