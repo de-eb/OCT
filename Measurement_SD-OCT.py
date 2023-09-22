@@ -67,8 +67,8 @@ if __name__ == "__main__":
     width = 2.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 30                    # １点の測定の平均回数
-    memo = 'Rolls of cellophane(Res.=2048, Ave.=30). lens=THORLABS LSM54-850'
+    averaging = 20                    # １点の測定の平均回数
+    memo = 'Rolls of cellophane(Res.=2048, Ave.=20). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -232,15 +232,15 @@ if __name__ == "__main__":
 
         # 'r'キーで参照光分布測定開始
         elif g_key == 'r' and stage_s_flag:
-            start = stage_s.read_position(axis_num = 1)
+            start_x, start_y = stage_s.read_position(axis_num = 1), stage_s.read_position(axis_num = 2)
             print("Measurement( Reference light distribution ) start")
             for i in tqdm(range(step_h)):
-                rld[i,:] = ccs.read_spectra(averaging)                                  # 均等に分割された波長軸での参照光
+                rld[i,:] = ccs.read_spectra(averaging)
                 stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
             print("Reference light distribution is updated.")
-            stage_s.absolute_move(start)
-            now_crux = ((stage_s.read_position(axis_num = 1)) -hi)/pl_rate
-            print("Crux stage position : x={} [nm]".format(now_crux))
+            stage_s.biaxial_move(v = start_y, vmode = 'a', h = start_x, hmode = 'a')
+            crux_x, crux_y = ((stage_s.read_position(axis_num = 1)) -hi)/pl_rate, ((stage_s.read_position(axis_num = 2)) -vi)/pl_rate
+            print("Crux stage position : x={} [nm], y={} [mm]".format(crux_x, crux_y))
 
         # 'd'キーで測定開始（2次元のデータ）
         elif g_key == 'd' and stage_s_flag:
