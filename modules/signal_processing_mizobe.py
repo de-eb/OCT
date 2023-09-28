@@ -264,7 +264,7 @@ class SignalProcessorMizobe():
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        # result = np.abs(np.log10(result))
+        result = np.log10(result)
         return result
 
     def generate_cscan(self, interference,reference):
