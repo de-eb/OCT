@@ -3,30 +3,37 @@ from signal_processing_mizobe import calculate_reflectance_2d
 import data_handler as dh
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2309/230920_Roll_cellophane.csv'
+    filename_ccs = 'data/2309/230922_Roll_cello(Ave_120).csv'
     n , resolution , depth_max , width= 1.52 , 2048, 0.5 , 2.0
-    vmin_oct , vmax_oct = 0.0 , 0.08
-    target = 0.25                                                           # B-scanのWidthから選択
+    vmin_oct , vmax_oct = -5.0 , 0.0
+    point = 1.78                                                          # 走査範囲（Width）から選択
+    target = (width - point)*100                                          # 指定の走査位置における要素
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    
-    # bscan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
-    # n_max = len(bscan[1]) // 4
-    # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])
-    # n_max = len(bscan[1]) // 4
     bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])
     n_max = len(bscan[1]) // 8
-    
+    # bscan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
+    # n_max = len(bscan[1]) // 4
+
+    # 信号処理
+    ascan = np.zeros((len(data_ccs['spectra']), resolution))
+    result = np.zeros((len(data_ccs['spectra']), resolution))
+    for i in range(len(data_ccs['spectra'])):
+        med = np.median(bscan[int(target), :n_max])                       # 中央値を基準にノイズ除去
+        avg = np.mean(bscan[int(target), :n_max])                         # 平均値を基準にノイズ除去
+        ascan[i] = np.where((bscan[i] < med*0.95) & (bscan[i] > med*1.05), bscan[i]*1.05, bscan[i])         # ノイズに対する平滑フィルタ
+        result[i] = np.where(ascan[i] > avg*0.90, ascan[i]*0.95, ascan[i])                                  # 試料信号に対する処理
+    print(" Median = {}\n Average = {}".format(med, avg))
+
     # グラフ表示(B-scan)
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
     # plt.figure(tight_layout = True)
@@ -38,14 +45,23 @@ if __name__=="__main__":
 
     # グラフ表示(B-scan & A-scan)
     plt.figure(figsize = (12,5), tight_layout = True)
-    plt.subplot(121, title = 'B-scan')
+    plt.subplot(221, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
     plt.colorbar()
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
-    plt.subplot(122, title = 'A-scan (Not log)')
-    plt.plot(bscan[int((2.0 - target)*100),:n_max], label ='Width ={} [mm]'.format(target))
-    plt.ylim(bottom = 0, top = 0.001)
+    plt.subplot(222, title = 'A-scan (Log)')
+    plt.plot(bscan[int(target),:n_max], label ='Width ={} [mm]'.format(point))
+    plt.xlabel('Depth [µm]')
+    plt.ylabel('Intensity [-]')
+    plt.legend()
+    plt.subplot(223, title = 'B-scan (Correction)')
+    plt.imshow(result[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
+    plt.colorbar()
+    plt.xlabel('Depth [µm]')
+    plt.ylabel('Width [mm]')
+    plt.subplot(224, title = 'A-scan (Correction)')
+    plt.plot(result[int(target),:n_max], label ="Median = {}".format(med))
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
