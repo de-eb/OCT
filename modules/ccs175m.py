@@ -138,16 +138,15 @@ class Ccs175m():
             Spectra sampled evenly in the wavelength space.
             In case of size_reduction=True, the returned data type is float32.
         """
-        sum = np.zeros_like(self.wavelength)
-        spectra = np.zeros(averaging, self.wavelength.size)
-        for i in range(averaging):
-            data = Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
-            if np.amax(data) >= 1:
-                raise CcsError(status_code=None, session=None, msg="CcsError:Measured data are saturated.")
-            sum += data
-            spectra[i] = data
+        data = np.zeros_like(self.wavelength)
             
-        return (sum / averaging), spectra
+        for i in range(averaging):
+            data2 = Ccs175m.__dev.GetScanDataArray(Ccs175m.__handle)
+            if np.amax(data2) >= 1:
+                raise CcsError(status_code=None, session=None, msg="CcsError:Measured data are saturated.")
+            data += data2    
+
+        return data / averaging
 
     def close_ccs(self):
         """ Release the instrument and device driver
