@@ -9,7 +9,7 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2309/230922_Roll_cello(Ave_120).csv'
+    filename_ccs = 'data/2310/231006_Roll_cello(1,1)_100(100).csv'
     n , resolution , depth_max , width= 1.52 , 2048, 0.5 , 2.0
     vmin_oct , vmax_oct = -5.0 , 0.0
     point = 1.78                                                          # 走査範囲（Width）から選択
@@ -34,38 +34,44 @@ if __name__=="__main__":
         result[i] = np.where(ascan[i] > avg*0.90, ascan[i]*0.95, ascan[i])                                  # 試料信号に対する処理
     print(" Median = {}\n Average = {}".format(med, avg))
 
-    # グラフ表示(B-scan)
-    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
-    # plt.figure(tight_layout = True)
-    # plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
-    # plt.colorbar()
-    # plt.xlabel('Depth [µm]')
-    # plt.ylabel('Width [mm]')
-    # plt.show()
-
     # グラフ表示(B-scan & A-scan)
-    plt.figure(figsize = (12,5), tight_layout = True)
-    plt.subplot(221, title = 'B-scan')
+    # plt.figure(tight_layout = True)
+    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
+    plt.subplot(121, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
     plt.colorbar()
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
-    plt.subplot(222, title = 'A-scan (Log)')
+    plt.subplot(122, title = 'A-scan (Log)')
     plt.plot(bscan[int(target),:n_max], label ='Width ={} [mm]'.format(point))
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
-    plt.subplot(223, title = 'B-scan (Correction)')
-    plt.imshow(result[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
-    plt.colorbar()
-    plt.xlabel('Depth [µm]')
-    plt.ylabel('Width [mm]')
-    plt.subplot(224, title = 'A-scan (Correction)')
-    plt.plot(result[int(target),:n_max], label ="Median = {}".format(med))
-    plt.xlabel('Depth [µm]')
-    plt.ylabel('Intensity [-]')
-    plt.legend()
     plt.show()
+
+    # グラフ表示(B-scan & A-scan)
+    # plt.figure(figsize = (12,5), tight_layout = True)
+    # plt.subplot(221, title = 'B-scan')
+    # plt.imshow(bscan[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
+    # plt.colorbar()
+    # plt.xlabel('Depth [µm]')
+    # plt.ylabel('Width [mm]')
+    # plt.subplot(222, title = 'A-scan (Log)')
+    # plt.plot(bscan[int(target),:n_max], label ='Width ={} [mm]'.format(point))
+    # plt.xlabel('Depth [µm]')
+    # plt.ylabel('Intensity [-]')
+    # plt.legend()
+    # plt.subplot(223, title = 'B-scan (Correction)')
+    # plt.imshow(result[:, :n_max], cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(bscan)*vmax_oct)
+    # plt.colorbar()
+    # plt.xlabel('Depth [µm]')
+    # plt.ylabel('Width [mm]')
+    # plt.subplot(224, title = 'A-scan (Correction)')
+    # plt.plot(result[int(target),:n_max], label ="Median = {}".format(med))
+    # plt.xlabel('Depth [µm]')
+    # plt.ylabel('Intensity [-]')
+    # plt.legend()
+    # plt.show()
 
 
     # 初期設定(SS)
