@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 2048                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
+    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
     depth_max = 1.0                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 200                      # 水平方向の分割数
     width = 2.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 20                    # １点の測定の平均回数
-    memo = 'Rolls of cellophane(Res.=2048, Ave.=20). lens=THORLABS LSM54-850'
+    averaging = 200                   # １点の測定の平均回数
+    memo = 'Rolls of cellophane(Res.=2000, Ave.=200). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -161,8 +161,8 @@ if __name__ == "__main__":
                     stage_s.move_origin()
                 else:
                     stage_s.biaxial_move(v = vi, vmode = 'a', h = hi, hmode = 'a')
-            elif g_key == '2':stage_s.relative_move(2000,axis_num = 2,velocity = 9)         # ２：上方向に1mm移動
-            elif g_key == '8':stage_s.relative_move(-2000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
+            elif g_key == '2':stage_s.relative_move(1000,axis_num = 2,velocity = 9)         # ２：上方向に1mm移動
+            elif g_key == '8':stage_s.relative_move(-1000,axis_num = 2,velocity = 9)        # ８：下方向に1mm移動
             location[0] = stage_s.read_position(axis_num = 1)
             location[1] = stage_s.read_position(axis_num = 2)
             print("CRUX stage position : x={} [mm], y={} [mm]".format((location[0]-hi)/pl_rate, (location[1]-vi)/pl_rate))
@@ -198,13 +198,13 @@ if __name__ == "__main__":
                 ax1_0.set_data(sp.depth*1e3, ascan)                         # 距離の単位換算
             else:
                 ax1_0.set_data(sp.depth, ascan)
-            ax1.set_ylim((0,np.amax(ascan)))
+            ax1.set_ylim((0, np.amax(ascan)))
 
         # 'Delete'キーでリファレンスとa-scanのデータを削除する  
         if g_key == 'delete':
             ref = None
-            ax0_1.set_data(ccs.wavelength[st:ed],np.zeros(ed-st))           # 参照光のデータ
-            ax1_0.set_data(sp.depth*1e3,np.zeros_like(sp.depth))            # A-scanのデータ
+            ax0_1.set_data(ccs.wavelength[st:ed], np.zeros(ed-st))          # 参照光のデータ
+            ax1_0.set_data(sp.depth*1e3, np.zeros_like(sp.depth))           # A-scanのデータ
             print("Reference data deleted.")            
 
         # 'Enter'キーでリファレンス（干渉光）を登録する
@@ -249,7 +249,8 @@ if __name__ == "__main__":
             else:
                 print("Measurement( 2D:Interference light ) start")
                 for i in tqdm(range(step_h)):
-                    itf[i,:] = ccs.read_spectra(averaging)                              # 均等に分割された波長軸での干渉光
+                    # itf[i,:] = ccs.read_raw_data(target=50)                             # 均等に分割された波長軸での干渉光
+                    itf[i,:] = ccs.read_spectra(averaging)
                     stage_s.relative_move(int(width/step_h*pl_rate*(-1)))
                 result_map = sp.generate_bscan_mizobe(itf[:,st:ed])                     # 均等に分割された時間軸での光強度（b-scan）
                 plt.figure()
