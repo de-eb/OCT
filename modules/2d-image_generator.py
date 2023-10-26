@@ -9,30 +9,35 @@ plt.rcParams["font.size"] = 14
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    filename_ccs = 'data/2310/231018_Roll_cello_(2,0)_200(M&I).csv'
+    file_ccs = 'data/2310/231018_Roll_cello(2,0)_200(M&I).csv'
+    file_sam = 'data/2310/231018_Roll_cello(2,0)_200(S&I).csv'    
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 2.0, 150
     vmin_oct , vmax_oct = -5.5 , -3.0
-    point = 0.95                                                        # Width全体の何％に該当する走査位置かを指定
-    target = step*(1 - point)                                           # 指定した走査位置におけるA-scanを呼び出す
-    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1              # aspect : 1の値を変えて調整可能
+    point = 0.81                                                                                # Width全体の何％に該当する走査位置かを指定
+    target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
+    extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
     # データ読み込み
-    data_ccs = dh.load_spectra(file_path = filename_ccs, wavelength_range = [770, 910])
-    print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(filename_ccs, data_ccs['date'], data_ccs['memo']))
+    data_ccs = dh.load_spectra(file_path = file_ccs, wavelength_range = [770, 910])
+    data_sam = dh.load_spectra(file_path = file_sam, wavelength_range = [770, 910])
+    sample = data_sam['reference']
+    print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])
+    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
+    # n_max = len(bscan[1]) // 8
+    bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
     n_max = len(bscan[1]) // 8
-    # bscan = sp.generate_bscan(data_ccs['spectra'], data_ccs['reference'])
+    # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])                                     # 干渉光にトレンド除去
     # n_max = len(bscan[1]) // 4
 
     # 信号処理
     ascan = np.zeros((len(data_ccs['spectra']), resolution))
     result = np.zeros((len(data_ccs['spectra']), resolution))
     for i in range(len(data_ccs['spectra'])):
-        med = np.median(bscan[int(target), :n_max])                       # 中央値を基準にノイズ除去
-        avg = np.mean(bscan[int(target), :n_max])                         # 平均値を基準にノイズ除去
-        ascan[i] = np.where((bscan[i] < med*0.975) & (bscan[i] > med*1.025), bscan[i]*1.025, bscan[i])         # ノイズに対する平滑フィルタ
-        result[i] = np.where(ascan[i] > med*0.90, ascan[i]*0.95, ascan[i])                                  # 試料信号に対する処理
+        med = np.median(bscan[int(target), :n_max])                                             # 中央値を基準にノイズ除去
+        avg = np.mean(bscan[int(target), :n_max])                                               # 平均値を基準にノイズ除去
+        ascan[i] = np.where(bscan[i] < med*0.975, bscan[i]*1.025, bscan[i])                     # ノイズに対する平滑フィルタ
+        result[i] = np.where(ascan[i] > med*0.90, ascan[i]*0.95, ascan[i])                      # 試料信号に対する処理
     print(" Median = {}\n Average = {}".format(med, avg))
 
     # グラフ表示(B-scan & A-scan)
@@ -44,7 +49,8 @@ if __name__=="__main__":
     plt.ylabel('Width [mm]')
     plt.subplot(122, title = 'A-scan (Log)')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/150))))
-    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                               # Resolution=400では不要
+    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=400では不要
+    # plt.ylim(bottom = -6.5,top = -3.0)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
