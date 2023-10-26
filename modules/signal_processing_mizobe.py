@@ -259,6 +259,7 @@ class SignalProcessorMizobe():
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
             itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i])))
+            # itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i]))) - light[i]
             rsm[i] = self.resample(itf[i])
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
