@@ -13,11 +13,11 @@ def maddest(d, axis=None):
     return np.mean(np.absolute(d - np.mean(d, axis)), axis)
 
 def Wavelet_transform(x, wavelet, level):
-    coeff = pywt.wavedec(x, wavelet, mode="per")
+    coeff = pywt.wavedec(x, wavelet, mode="sym")
     sigma = (1/0.6745) * maddest(coeff[-level])
     uthresh = sigma * np.sqrt(2*np.log(len(x)))
     coeff[1:] = (pywt.threshold(i, value=uthresh, mode='hard') for i in coeff[1:])
-    return pywt.waverec(coeff, wavelet, mode='per'), wavelet
+    return pywt.waverec(coeff, wavelet, mode='sym'), wavelet
 
 # 平滑フィルタ（中央値）
 def Smooth_filter(data_ccs, resolution, target, n_max):
@@ -46,12 +46,12 @@ if __name__=="__main__":
     sample = data_sam['reference']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
-    n_max = len(bscan[1]) // 8
-    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
     # n_max = len(bscan[1]) // 8
+    bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    n_max = len(bscan[1]) // 8
     # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])                                     # 干渉光にトレンド除去
-    # n_max = len(bscan[1]) // 4
+    # n_max = len(bscan[1]) // 8
 
     # ウェーブレット変換
     result = np.zeros((len(data_ccs['spectra']), resolution))
@@ -80,6 +80,7 @@ if __name__=="__main__":
 
     # グラフ表示(B-scan & A-scan)の原画像と補正画像
     plt.figure(figsize = (12,5), tight_layout = True)
+    plt.subplots_adjust(wspace = 10)
     plt.subplot(221, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
