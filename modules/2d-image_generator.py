@@ -2,17 +2,40 @@ from signal_processing_mizobe import SignalProcessorMizobe as Processor
 from signal_processing_mizobe import calculate_reflectance_2d
 import data_handler as dh
 import numpy as np
+import pywt
 import matplotlib.pyplot as plt
 
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 14
 
+# ウェーブレット変換
+def maddest(d, axis=None):
+    return np.mean(np.absolute(d - np.mean(d, axis)), axis)
+
+def Wavelet_transform(x, wavelet, level):
+    coeff = pywt.wavedec(x, wavelet, mode="per")
+    sigma = (1/0.6745) * maddest(coeff[-level])
+    uthresh = sigma * np.sqrt(2*np.log(len(x)))
+    coeff[1:] = (pywt.threshold(i, value=uthresh, mode='hard') for i in coeff[1:])
+    return pywt.waverec(coeff, wavelet, mode='per'), wavelet
+
+# 平滑フィルタ（中央値）
+def Smooth_filter(data_ccs, resolution, target, n_max):
+    ascan = np.zeros((len(data_ccs['spectra']), resolution))
+    result = np.zeros((len(data_ccs['spectra']), resolution))
+    for i in range(len(data_ccs['spectra'])):
+        med = np.median(bscan[int(target), :n_max])
+        avg = np.mean(bscan[int(target), :n_max])
+        ascan[i] = np.where(bscan[i] < med*0.975, bscan[i]*1.025, bscan[i])
+        result[i] = np.where(ascan[i] > med*0.90, ascan[i]*0.95, ascan[i])
+    return result, med
+
 if __name__=="__main__":
     # 初期設定(OCT)
     file_ccs = 'data/2310/231018_Roll_cello(2,0)_200(M&I).csv'
-    file_sam = 'data/2310/231018_Roll_cello(2,0)_200(S&I).csv'    
+    file_sam = 'data/2310/231018_Roll_cello(2,0)_200(S&I).csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 2.0, 150
-    vmin_oct , vmax_oct = -5.5 , -3.0
+    vmin_oct , vmax_oct = -5.5 , -3.5
     point = 0.81                                                                                # Width全体の何％に該当する走査位置かを指定
     target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
@@ -23,24 +46,23 @@ if __name__=="__main__":
     sample = data_sam['reference']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
-    # n_max = len(bscan[1]) // 8
-    bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
     n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    # n_max = len(bscan[1]) // 8
     # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])                                     # 干渉光にトレンド除去
     # n_max = len(bscan[1]) // 4
 
-    # 信号処理
-    ascan = np.zeros((len(data_ccs['spectra']), resolution))
+    # ウェーブレット変換
     result = np.zeros((len(data_ccs['spectra']), resolution))
     for i in range(len(data_ccs['spectra'])):
-        med = np.median(bscan[int(target), :n_max])                                             # 中央値を基準にノイズ除去
-        avg = np.mean(bscan[int(target), :n_max])                                               # 平均値を基準にノイズ除去
-        ascan[i] = np.where(bscan[i] < med*0.975, bscan[i]*1.025, bscan[i])                     # ノイズに対する平滑フィルタ
-        result[i] = np.where(ascan[i] > med*0.90, ascan[i]*0.95, ascan[i])                      # 試料信号に対する処理
-    print(" Median = {}\n Average = {}".format(med, avg))
+        result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)
 
-    # グラフ表示(B-scan & A-scan)
+    # 平滑フィルタ（中央値）
+    # result = np.zeros((len(data_ccs['spectra']), resolution))
+    # result, med = Smooth_filter(data_ccs, resolution, target, n_max)
+
+    # グラフ表示(B-scan & A-scan)の原画像
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplot(121, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
@@ -49,14 +71,14 @@ if __name__=="__main__":
     plt.ylabel('Width [mm]')
     plt.subplot(122, title = 'A-scan (Log)')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/150))))
-    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=400では不要
+    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=4000では不要
     # plt.ylim(bottom = -6.5,top = -3.0)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
     plt.show()
 
-    # グラフ表示(B-scan & A-scan)
+    # グラフ表示(B-scan & A-scan)の原画像と補正画像
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplot(221, title = 'B-scan')
     plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
@@ -66,23 +88,27 @@ if __name__=="__main__":
     plt.subplot(222, title = 'A-scan (Log)')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/150))))
     # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))
+    # plt.ylim(bottom=vmin_oct, top=vmax_oct)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
+
     plt.subplot(223, title = 'B-scan (Correction)')
     plt.imshow(result[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
     plt.subplot(224, title = 'A-scan (Correction)')
-    plt.plot(result[int(target),:n_max], label="Median = {}".format(med))
+    plt.plot(result[int(target),:n_max], label="Wavelet = {}".format(wavelet))
+    # plt.plot(result[int(target),:n_max], label="Median = {}".format(med))
     # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))
+    # plt.ylim(bottom=vmin_oct, top=vmax_oct)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
     plt.show()
 
-
+"""""
     # 初期設定(SS)
     filename_pma = 'data/2307/230711_RGC_SS_x6(new).csv'
     width , st , ed = 10.0 , 201 , 940                               # 水平方向、垂直方向の走査幅 [mm]
@@ -98,62 +124,25 @@ if __name__=="__main__":
 
     # グラフ表示(SS)
     plt.figure(tight_layout = True)
-    plt.imshow(reflectance, cmap = 'jet', extent = extent_ss, aspect = aspect_ss, vmin = vmin_ss, vmax = vmax_ss)
+    plt.imshow(reflectance, cmap='jet', extent=extent_ss, aspect=aspect_ss, vmin=vmin_ss, vmax=vmax_ss)
     plt.colorbar()
     plt.xlabel('Wavelength [nm]')
     plt.ylabel('Width [mm]')
     plt.xlim(300, 900)
     plt.show()
 
-    
-    # # グラフ表示(B-scan & SS)
-    # plt.figure(figsize = (12,5), tight_layout = True)
-    # plt.subplot(121, title = 'B-scan')
-    # plt.imshow(b_scan, cmap = 'jet', extent = extent_oct, aspect = aspect_oct, vmin = vmin_oct, vmax = np.amax(b_scan)*vmax_oct)
-    # plt.colorbar(shrink = 0.45)
-    # plt.xlabel('Depth [µm]')
-    # plt.ylabel('Width [mm]')
-
-    # plt.subplot(122, title = 'Reflectance')
-    # plt.imshow(reflectance, cmap = 'jet', extent = extent_ss, aspect = aspect_ss, vmin = vmin_ss, vmax = vmax_ss)
-    # plt.colorbar(shrink = 0.45)
-    # plt.xlabel('Wavelength [nm]')
-    # plt.ylabel('Width [mm]')
-    # plt.show()
-
-    
-    """
-    # 特定の深さにおけるA-scan
-    depth1, depth2 = 2000, 2500                         # depth  : resolution の範囲内
-    target1 = np.zeros(b_scan.shape[0])
-    target2 = np.zeros(b_scan.shape[0])
-    label_d1 = 1e3*depth_max*(depth1/resolution)
-    label_d2 = 1e3*depth_max*(depth2/resolution)
-
-    for i in range(b_scan.shape[0]):
-        target1[i] = b_scan[i, depth1]
-        target2[i] = b_scan[i, depth2]
-
-
-    # グラフ設定(B-scan + A-scan)
-    plt.figure(figsize = (11,6))
-    plt.subplot(1,2,1)
-    plt.imshow(b_scan, cmap = 'jet', extent = extent, aspect = aspect, vmin = vmin, vmax = np.amax(b_scan)*vmax)
+    # グラフ表示(B-scan & SS)
+    plt.figure(figsize = (12,5), tight_layout = True)
+    plt.subplot(121, title = 'B-scan')
+    plt.imshow(bscan, cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
-    plt.xlabel('Depth [µm]', fontsize = 12)
-    plt.ylabel('Width [mm]', fontsize = 12)
+    plt.xlabel('Depth [µm]')
+    plt.ylabel('Width [mm]')
 
-    plt.subplot(1,2,2)                                              # 2次元画像のXと方向が反転して表示される
-    plt.plot(target1, label = 'Depth={} [µm]'.format(label_d1))
-    plt.plot(target2, label = 'Depth={} [µm]'.format(label_d2))
-    plt.xlabel('Width [mm]', fontsize = 12)
-    plt.ylabel('Intensity [a.u.]', fontsize = 12)
-    plt.legend(loc = "upper right")
+    plt.subplot(122, title = 'Reflectance')
+    plt.imshow(reflectance, cmap='jet', extent=extent_ss, aspect=aspect_ss, vmin=vmin_ss, vmax=vmax_ss)
+    plt.colorbar()
+    plt.xlabel('Wavelength [nm]')
+    plt.ylabel('Width [mm]')
     plt.show()
-
-    plt.plot(b_scan[0~149], label = 'A-scan')                       # b_scanは 0～149 の範囲で選択
-    plt.xlabel('Depth [mm]', fontsize = 12)
-    plt.ylabel('Intensity [a.u.]', fontsize = 12)
-    plt.legend()
-    plt.show()
-    """
+"""
