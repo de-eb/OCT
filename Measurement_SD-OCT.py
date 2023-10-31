@@ -67,8 +67,8 @@ if __name__ == "__main__":
     width = 2.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 200                   # １点の測定の平均回数
-    memo = 'Rolls of cellophane(Res.=2000, Ave.=200). lens=THORLABS LSM54-850'
+    averaging = 100                   # １点の測定の平均回数
+    memo = 'Rolls of cellophane(Res.=2000, Ave.=100). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）

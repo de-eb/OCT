@@ -32,10 +32,10 @@ def Smooth_filter(data_ccs, resolution, target, n_max):
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    file_ccs = 'data/2310/231018_Roll_cello(2,0)_200(M&I).csv'
-    file_sam = 'data/2310/231018_Roll_cello(2,0)_200(S&I).csv'
-    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 2.0, 150
-    vmin_oct , vmax_oct = -5.5 , -3.5
+    file_ccs = 'data/2310/231031_Roll_cello(4,-1)_M&I_focus2.csv'
+    file_sam = 'data/2310/231031_Roll_cello(4,-1)_Sam.csv'
+    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 2.0, 200
+    vmin_oct , vmax_oct = -5.5 , -3.0
     point = 0.81                                                                                # Width全体の何％に該当する走査位置かを指定
     target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
@@ -46,10 +46,10 @@ if __name__=="__main__":
     sample = data_sam['reference']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
-    # n_max = len(bscan[1]) // 8
-    bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
     n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
+    # n_max = len(bscan[1]) // 8
     # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])                                     # 干渉光にトレンド除去
     # n_max = len(bscan[1]) // 8
 
