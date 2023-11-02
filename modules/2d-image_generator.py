@@ -46,14 +46,12 @@ if __name__=="__main__":
     sample = data_sam['reference']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # 干渉光 - ミラー光
-    # n_max = len(bscan[1]) // 8
-    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # 干渉光 - ミラー光 - 試料光
-    # n_max = len(bscan[1]) // 8
-    # bscan = sp.generate_bscan_mizobe(data_ccs['spectra'])                                     # 干渉光にトレンド除去
-    # n_max = len(bscan[1]) // 8
-    bscan = sp.bscan_trend(data_ccs['spectra'], data_ccs['reference'])
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # IFFT (干渉光 - ミラー)
     n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # IFFT (干渉光 - ミラー - 試料光)
+    # n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_trend(data_ccs['spectra'], data_ccs['reference'])                        # IFFT (干渉光 - ミラー トレンド除去)
+    # n_max = len(bscan[1]) // 8
 
     # ウェーブレット変換
     result = np.zeros((len(data_ccs['spectra']), resolution))
