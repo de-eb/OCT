@@ -125,8 +125,9 @@ class SignalProcessorMizobe():
         -------
         `1d-ndarray`
         """
-        ave = np.convolve(interference, np.ones(19)/19, mode = 'valid')
-        zero = np.zeros(9)
+        num = 21
+        ave = np.convolve(interference, np.ones(num)/num, mode = 'valid')
+        zero = np.zeros((num-1)//2)
         ave = np.append(np.append(zero, ave), zero)
         result = interference - ave
         return result
@@ -159,13 +160,13 @@ class SignalProcessorMizobe():
         ----------
         `1d-array`, required : Data after IFFT
         """
-        n = len(self.__freq_dataset[1])
-        number = n//2 - 1
-        result = np.fft.ifft(spectra, n)
-        result[1 : n//2+1] = 2*result[1 : n//2+1]
-        result[n//2+1 : ] = 0.0
+        num = len(self.__freq_dataset[1])
+        number = num//2 - 1
+        result = np.fft.ifft(spectra, num)
+        result[1 : num//2+1] = 2*result[1 : num//2+1]
+        result[num//2+1 : ] = 0.0
         result /= np.amax(result)
-        for i in range(n//2 - 1):
+        for i in range(num//2 - 1):
             result[2*(number-i)] = result[number-i]
             result[number-i] = 0
         return abs(result)
