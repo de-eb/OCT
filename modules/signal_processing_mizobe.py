@@ -125,11 +125,11 @@ class SignalProcessorMizobe():
         -------
         `1d-ndarray`
         """
-        ave = np.convolve(interference, np.ones(5)/5, mode = 'valid')
-        ave = np.append([0,0], ave)
-        ave = np.append(ave, [0,0])
-        rmv = interference - ave
-        return rmv
+        ave = np.convolve(interference, np.ones(19)/19, mode = 'valid')
+        zero = np.zeros(9)
+        ave = np.append(np.append(zero, ave), zero)
+        result = interference - ave
+        return result
 
     def apply_inverse_ft(self, spectra):
         """ Apply inverse ft to the spectra and convert it to distance data
@@ -207,7 +207,7 @@ class SignalProcessorMizobe():
             Light intensity data in the time domain(i.e. B-scan)
             The corresponding horizontal axis data(depth) can be obtained with `self.depth`.      
         """
-        bscan = np.zeros((len(interference), self.__res))                 # ゼロ行列（干渉光の数 × 分解能の数）
+        bscan = np.zeros((len(interference), self.__res))
         print("Generating B-scan...")
         for i in tqdm(range(len(interference))):
             bscan[i] = self.generate_ascan(interference[i], reference[i])
@@ -274,6 +274,22 @@ class SignalProcessorMizobe():
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
             itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i]))) - sample[i]
+            rsm[i] = self.resample(itf[i])
+        bscan = np.fft.ifft(rsm, self.__res)
+        bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
+        bscan[self.__res//2: ] = 0.0
+        result = np.abs(bscan)
+        result = np.log10(result)
+        return result
+
+    def bscan_trend(self, interference, reference):
+        """ Generate a B-scan by using 2d_IFFT """
+        itf = np.zeros((len(interference), len(self.__wl)))
+        rsm = np.zeros((len(interference), len(self.__wl)*3))
+        bscan = np.zeros((len(interference), self.__res))
+        for i in tqdm(range(len(interference))):
+            itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i])))
+            itf[i] = self.detrending(itf[i])
             rsm[i] = self.resample(itf[i])
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
