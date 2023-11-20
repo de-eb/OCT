@@ -268,13 +268,13 @@ class SignalProcessorMizobe():
         result = np.log10(result)
         return result
     
-    def bscan_ifft_sample(self, interference, reference, sample):
+    def bscan_ifft_noise(self, interference, reference, noise):
         """ Generate a B-scan by using 2d_IFFT """
         itf = np.zeros((len(interference), len(self.__wl)))
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i]))) - sample[i]
+            itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i]))) - noise[i]
             rsm[i] = self.resample(itf[i])
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]

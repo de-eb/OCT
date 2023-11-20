@@ -32,25 +32,25 @@ def Smooth_filter(data_ccs, resolution, target, n_max):
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    file_ccs = 'data/2310/231031_Roll_cello(4,-1)_M&I.csv'
-    file_sam = 'data/2310/231031_Roll_cello(4,-1)_Sam.csv'
-    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 2.0, 200
+    file_ccs = 'data/2311/231120_Roll_cello(1,0)_1.csv'
+    file_sam = 'data/231120_No_smaple.csv'
+    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 1.0, 100
     vmin_oct , vmax_oct = -5.5 , -3.0
-    point = 0.79                                                                                # Width全体の何％に該当する走査位置かを指定
+    point = 0.70                                                                                # Width全体の何％に該当する走査位置かを指定
     target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
     # データ読み込み
     data_ccs = dh.load_spectra(file_path = file_ccs, wavelength_range = [770, 910])
     data_sam = dh.load_spectra(file_path = file_sam, wavelength_range = [770, 910])
-    sample = data_sam['reference']
+    noise = data_sam['reference']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # IFFT (干渉光 - ミラー)
-    n_max = len(bscan[1]) // 8
-    # bscan = sp.bscan_ifft_sample(data_ccs['spectra'], data_ccs['reference'], sample)          # IFFT (干渉光 - ミラー - 試料光)
+    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # IFFT (干渉光 - ミラー)
     # n_max = len(bscan[1]) // 8
-    # bscan = sp.bscan_trend(data_ccs['spectra'], data_ccs['reference'])                        # IFFT (干渉光 - ミラー トレンド除去)
+    bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], noise)          # IFFT (干渉光 - ミラー - ノイズ)
+    n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_trend(data_ccs['spectra'], data_sam['reference'])                        # IFFT (干渉光 - ミラー トレンド除去)
     # n_max = len(bscan[1]) // 8
 
     # ウェーブレット変換
@@ -70,9 +70,9 @@ if __name__=="__main__":
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
     plt.subplot(122, title = 'A-scan (Log)')
-    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/150))))
+    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
     # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=4000では不要
-    plt.ylim(bottom = -6.5, top = -3.0)
+    plt.ylim(bottom = -6.0, top = -3.0)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
@@ -87,7 +87,7 @@ if __name__=="__main__":
     plt.xlabel('Depth [µm]')
     plt.ylabel('Width [mm]')
     plt.subplot(222, title = 'A-scan (Log)')
-    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/150))))
+    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
     # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))
     # plt.ylim(bottom=vmin_oct, top=vmax_oct)
     plt.xlabel('Depth [µm]')
