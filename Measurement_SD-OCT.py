@@ -60,15 +60,15 @@ def on_key(event, q):
 
 if __name__ == "__main__":
     # パラメーターの初期設定
-    resolution = 2000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
+    resolution = 4000                 # 計算結果の解像度（A-scanの結果を何分割して計算するか）
     depth_max = 1.0                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
-    step_h = 200                      # 水平方向の分割数
-    width = 2.0                       # 水平方向の走査幅 [mm]
+    step_h = 100                      # 水平方向の分割数（100で固定）
+    width = 1.0                       # 水平方向の走査幅 [mm]
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 100                   # １点の測定の平均回数
-    memo = 'Rolls of cellophane(Res.=2000, Ave.=100). lens=THORLABS LSM54-850'
+    memo = 'Roll cello flat(Res.=4000, Ave.=100). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）

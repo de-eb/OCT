@@ -36,7 +36,7 @@ def Noise_removal(data_ccs, noise, resolution):
     itf_new = np.zeros_like(itf)
     result = np.zeros((len(data_ccs['spectra']), resolution))
     for i in range(len(data_ccs['spectra'])):
-        itf_new[i] = np.where(itf[i] < noise[i], 0, itf[i])
+        itf_new[i] = np.where(itf[i] < noise[i]*1.05, 0, itf[i])
     result = sp.bscan_ifft(itf_new, data_ccs['reference'])
     return result
 
@@ -45,7 +45,7 @@ if __name__=="__main__":
     file_ccs = 'data/2311/231120_Roll_cello(1,0)_1.csv'
     file_sam = 'data/231120_No_smaple.csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 1.0, 100
-    vmin_oct , vmax_oct = 0 , 0.00006
+    vmin_oct , vmax_oct = -5.5 , -3.0
     point = 0.70                                                                                # Width全体の何％に該当する走査位置かを指定
     target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
@@ -56,25 +56,19 @@ if __name__=="__main__":
     noise = data_sam['spectra']
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    # bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # IFFT (干渉光 - ミラー)
-    # n_max = len(bscan[1]) // 8
-    bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], noise)          # IFFT (干渉光 - ミラー - ノイズ)
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                         # IFFT (干渉光 - ミラー)
     n_max = len(bscan[1]) // 8
+    # bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], noise)            # IFFT (干渉光 - ミラー - ノイズ)
+    # n_max = len(bscan[1]) // 8
     # bscan = sp.bscan_trend(data_ccs['spectra'], data_sam['reference'])                        # IFFT (干渉光 - ミラー トレンド除去)
     # n_max = len(bscan[1]) // 8
 
-    # ウェーブレット変換
-    # result = np.zeros((len(data_ccs['spectra']), resolution))
-    # for i in range(len(data_ccs['spectra'])):
-    #     result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)
-
-    # 平滑フィルタ（中央値）
-    # result = np.zeros((len(data_ccs['spectra']), resolution))
-    # result, med = Smooth_filter(data_ccs, resolution, target, n_max)
-    
-    # 光学系ノイズ除去
+    # 信号処理
     result = np.zeros((len(data_ccs['spectra']), resolution))
-    result= Noise_removal(data_ccs, noise, resolution)
+    # for i in range(len(data_ccs['spectra'])):
+    #     result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)          # ウェーブレット変換
+    # result, med = Smooth_filter(data_ccs, resolution, target, n_max)                          # 平滑フィルタ
+    result= Noise_removal(data_ccs, noise, resolution)                                        # 光学系ノイズ除去
     
     # グラフ表示(B-scan & A-scan)の原画像
     plt.figure(figsize = (12,5), tight_layout = True)
