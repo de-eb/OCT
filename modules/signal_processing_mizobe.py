@@ -259,14 +259,15 @@ class SignalProcessorMizobe():
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i])))
+            # itf[i] = interference[i] - reference[i]
+            itf[i] = interference[i]
             rsm[i] = self.resample(itf[i])
-        bscan = np.fft.ifft(rsm, self.__res)
+        bscan = np.abs(np.fft.ifft(rsm, self.__res))
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        result = np.log10(result)
-        return result
+        # result = np.log10(result)
+        return rsm, result
     
     def bscan_ifft_noise(self, interference, reference, noise):
         """ Generate a B-scan by using 2d_IFFT """
@@ -274,14 +275,15 @@ class SignalProcessorMizobe():
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            itf[i] = interference[i] - np.multiply(reference[i], (np.amax(interference[i])/np.amax(reference[i]))) - noise[i]
+            # itf[i] = interference[i] - reference[i] - noise[i]
+            itf[i] = interference[i] - noise[i]
             rsm[i] = self.resample(itf[i])
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        result = np.log10(result)
-        return result
+        # result = np.log10(result)
+        return rsm, result
 
     def bscan_trend(self, interference, reference):
         """ Generate a B-scan by using 2d_IFFT """
@@ -296,8 +298,8 @@ class SignalProcessorMizobe():
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        result = np.log10(result)
-        return result
+        # result = np.log10(result)
+        return rsm, result
 
     def generate_cscan(self, interference,reference):
         """ Generate a C-scan by calling generate_ascan function multiple times.
