@@ -259,14 +259,13 @@ class SignalProcessorMizobe():
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            # itf[i] = interference[i] - reference[i]
-            itf[i] = interference[i]
+            itf[i] = interference[i] - reference[i]
             rsm[i] = self.resample(itf[i])
         bscan = np.abs(np.fft.ifft(rsm, self.__res))
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        # result = np.log10(result)
+        result = 10*np.log10(result)
         return rsm, result
     
     def bscan_ifft_noise(self, interference, reference, noise):
@@ -275,14 +274,13 @@ class SignalProcessorMizobe():
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            # itf[i] = interference[i] - reference[i] - noise[i]
-            itf[i] = interference[i] - noise[i]
+            itf[i] = interference[i] - reference[i] - noise[i]
             rsm[i] = self.resample(itf[i])
         bscan = np.fft.ifft(rsm, self.__res)
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        # result = np.log10(result)
+        result = 10*np.log10(result)
         return rsm, result
 
     def bscan_trend(self, interference, reference):
@@ -298,7 +296,7 @@ class SignalProcessorMizobe():
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = np.abs(bscan)
-        # result = np.log10(result)
+        result = np.log10(result)
         return rsm, result
 
     def generate_cscan(self, interference,reference):

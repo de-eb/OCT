@@ -2,6 +2,7 @@ from signal_processing_mizobe import SignalProcessorMizobe as Processor
 from signal_processing_mizobe import calculate_reflectance_2d
 import data_handler as dh
 import numpy as np
+from scipy import signal
 import pywt
 import matplotlib.pyplot as plt
 
@@ -42,10 +43,10 @@ def Noise_removal(data_ccs, noise, resolution):
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    file_ccs = 'data/2311/231107_Roll_cello_glass(1,0)_focus3.csv'
+    file_ccs = 'data/2311/231121_G_RC(5mm)_1.csv'
     file_sam = 'data/231120_No_smaple.csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 1.0, 100
-    vmin_oct , vmax_oct = 0 , 0.001
+    vmin_oct , vmax_oct = -55 , -20
     point = 0.58                                                                                # Width全体の何％に該当する走査位置かを指定
     target = step*(1 - point)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
@@ -63,20 +64,23 @@ if __name__=="__main__":
     data = np.zeros_like(len(rsm))
     data = rsm[50]
     ascan = np.zeros(resolution)
-    ascan = np.abs(np.fft.ifft(bscan[36,], resolution))
+    ascan = np.abs(np.fft.ifft(data, resolution))
+    # ascan = pow(ascan, 2)
+    ascan = 10*np.log10(ascan)
     # np.savetxt("Interference_frequency.csv", data, delimiter=",")
 
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplot(121, title = 'Interference [Hz]')
     plt.plot(data)
     plt.subplot(122, title= 'IFFT')
-    plt.plot(ascan[0:resolution//2])
+    plt.plot(ascan)
+    # plt.plot(np.log10(abs(signal.hilbert(data))))
     plt.show()
 
     # 信号処理
-    # result = np.zeros((len(data_ccs['spectra']), resolution))
+    result = np.zeros((len(data_ccs['spectra']), resolution))
     # for i in range(len(data_ccs['spectra'])):
-    #     result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)          # ウェーブレット変換
+    # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)              # ウェーブレット変換
     # result, med = Smooth_filter(data_ccs, resolution, target, n_max)                          # 平滑フィルタ
     result = Noise_removal(data_ccs, data_sam['spectra'], resolution)                         # 光学系ノイズ除去
     
@@ -90,7 +94,7 @@ if __name__=="__main__":
     plt.subplot(122, title = 'A-scan (Log)')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
     # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=4000では不要
-    plt.ylim(bottom = 0, top = vmax_oct)
+    plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.xlabel('Depth [µm]')
     plt.ylabel('Intensity [-]')
     plt.legend()
