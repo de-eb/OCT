@@ -259,13 +259,13 @@ class SignalProcessorMizobe():
         rsm = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            itf[i] = interference[i] - reference[i]
+            itf[i] = interference[i] - reference
+            itf[i] = self.detrending(itf[i])
             rsm[i] = self.resample(itf[i])
         bscan = np.abs(np.fft.ifft(rsm, self.__res))
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
-        result = np.abs(bscan)
-        result = 10*np.log10(result)
+        result = 10*np.log10(np.abs(bscan))
         return rsm, result
     
     def bscan_ifft_noise(self, interference, reference, noise):

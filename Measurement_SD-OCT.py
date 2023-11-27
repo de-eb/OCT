@@ -68,7 +68,7 @@ if __name__ == "__main__":
     step_v = 150                      # 垂直方向の分割数
     height = 0.5                      # 垂直方向の走査幅 [mm]
     averaging = 100                   # １点の測定の平均回数
-    memo = 'Roll cello flat(Res.=4000, Ave.=100). lens=THORLABS LSM54-850'
+    memo = 'Mirror(Res.=4000, Ave.=100). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
@@ -258,7 +258,7 @@ if __name__ == "__main__":
                 plt.colorbar()
                 plt.xlabel('Depth [mm]')
                 plt.ylabel('Width [mm]')
-                dh.save_spectra(wavelength = ccs.wavelength, reference = rld.T, spectra = itf.T, memo = memo)
+                dh.save_spectra(wavelength = ccs.wavelength, reference = ref, spectra = itf.T, memo = memo)
                 stage_s.move_origin(axis_num = 1, ret_form = 1)
                 plt.show()
     
