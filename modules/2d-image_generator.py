@@ -57,7 +57,6 @@ if __name__=="__main__":
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
     rsm, bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                                    # IFFT (干渉光 - ミラー)
     # rsm, bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], data_sam['spectra'])         # IFFT (干渉光 - ミラー - ノイズ)
-    # rsm, bscan = sp.bscan_trend(data_ccs['spectra'], data_sam['reference'])                                   # IFFT (干渉光 - ミラー トレンド除去)
     n_max = len(bscan[1]) // 8
 
     # ノイズ処理
