@@ -2,6 +2,7 @@ from signal_processing_mizobe import SignalProcessorMizobe as Processor
 from signal_processing_mizobe import calculate_reflectance_2d
 import data_handler as dh
 import numpy as np
+import pandas as pd
 from scipy import signal
 import pywt
 import matplotlib.pyplot as plt
@@ -43,11 +44,11 @@ def Noise_removal(data_ccs, noise, resolution):
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    file_ccs = 'data/2311/231129_Curve_cello_3.csv'
+    file_ccs = 'data/2312/231204_2LC(10mm)_4.csv'
     file_sam = 'data/231120_No_smaple.csv'
-    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 3.0, 100
-    vmin_oct , vmax_oct = -60 , -20
-    target = step*(1 - 0.50)                                                                    # 指定した走査位置におけるA-scanを呼び出す
+    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 10.0, 100
+    vmin_oct , vmax_oct = -60 , -0
+    target = step*(1 - 0.35)                                                                    # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
     # データ読み込み
@@ -60,8 +61,10 @@ if __name__=="__main__":
     n_max = len(bscan[1]) // 8
 
     # ノイズ処理
-    result = np.zeros((len(data_ccs['spectra']), resolution))
-    result, med = Smooth_filter(data_ccs, resolution, target, n_max)                          # 平滑フィルタ
+    result = np.zeros((len(bscan), resolution))
+    for i in range(len(bscan)):
+        result[i] = np.convolve(bscan[i], np.ones(3)/3, mode='same')                          # 移動平均
+    # result, med = Smooth_filter(data_ccs, resolution, target, n_max)                          # 平滑フィルタ
     # result = Noise_removal(data_ccs, data_sam['spectra'], resolution)                         # 光学系ノイズ除去
     # for i in range(len(data_ccs['spectra'])):                                                 # ウェーブレット変換
         # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)
