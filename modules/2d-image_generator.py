@@ -3,14 +3,12 @@ from signal_processing_mizobe import calculate_reflectance_2d
 import data_handler as dh
 import numpy as np
 import pandas as pd
-from scipy import signal
 import pywt
 import matplotlib.pyplot as plt
 
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 14
 
-# ウェーブレット変換
 def maddest(d, axis=None):
     return np.mean(np.absolute(d - np.mean(d, axis)), axis)
 
@@ -21,34 +19,33 @@ def Wavelet_transform(x, wavelet, level):
     coeff[1:] = (pywt.threshold(i, value=uthresh, mode='hard') for i in coeff[1:])
     return pywt.waverec(coeff, wavelet, mode='sym'), wavelet
 
-# 平滑フィルタ（中央値）
-def Smooth_filter(data_ccs, resolution, target, n_max):
-    ascan = np.zeros((len(data_ccs['spectra']), resolution))
-    result = np.zeros((len(data_ccs['spectra']), resolution))
-    for i in range(len(data_ccs['spectra'])):
-        med = np.median(bscan[int(target), :n_max])
-        avg = np.mean(bscan[int(target), :n_max])
-        ascan[i] = np.where(bscan[i] < med*0.95, bscan[i]*1.05, bscan[i])
-        result[i] = np.where(ascan[i] > med*0.90, ascan[i]*0.90, ascan[i])
+def Median_filter(bscan, target, n_max):
+    ascan = np.zeros_like(bscan)
+    result = np.zeros_like(bscan)
+    for i in range(len(bscan)):
+        med = np.median(bscan[i,:n_max])
+        ascan[i] = np.where(bscan[i] < med*0.95, bscan[i]*1.025, bscan[i])
+        result[i] = np.where(ascan[i] > med*0.95, ascan[i]*0.975, ascan[i])
+    med = np.median(bscan[int(target),:n_max])
+    print('Median value = {}'.format(med))
     return result, med
 
-# 光学系ノイズ除去
 def Noise_removal(data_ccs, noise, resolution):
     itf = data_ccs['spectra']
     itf_new = np.zeros_like(itf)
     result = np.zeros((len(data_ccs['spectra']), resolution))
     for i in range(len(data_ccs['spectra'])):
-        itf_new[i] = np.where(itf[i] < noise[i]*1.0, 0, itf[i])
+        itf_new[i] = np.where(itf[i] < noise[i], 0, itf[i])
     result = sp.bscan_ifft(itf_new, data_ccs['reference'])
-    return result[1]
+    return result
 
 if __name__=="__main__":
     # 初期設定(OCT)
     file_ccs = 'data/2312/231204_2LC(10mm)_4.csv'
     file_sam = 'data/231120_No_smaple.csv'
-    n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 10.0, 100
-    vmin_oct , vmax_oct = -60 , -0
-    target = step*(1 - 0.35)                                                                    # 指定した走査位置におけるA-scanを呼び出す
+    n, resolution, depth_max, width, step = 1.52, 12000, 0.5, 10.0, 100
+    vmin_oct , vmax_oct = -60 , -20
+    target = step*(1 - 0.51)                                                                    # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
     # データ読み込み
@@ -56,18 +53,17 @@ if __name__=="__main__":
     data_sam = dh.load_spectra(file_path = file_sam, wavelength_range = [770, 910])
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    rsm, bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                                    # IFFT (干渉光 - ミラー)
-    # rsm, bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], data_sam['spectra'])         # IFFT (干渉光 - ミラー - ノイズ)
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                                    # IFFT (干渉光 - ミラー)
+    # bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], data_sam['spectra'])         # IFFT (干渉光 - ミラー - ノイズ)
     n_max = len(bscan[1]) // 8
 
     # ノイズ処理
     result = np.zeros((len(bscan), resolution))
     for i in range(len(bscan)):
-        result[i] = np.convolve(bscan[i], np.ones(3)/3, mode='same')                          # 移動平均
-    # result, med = Smooth_filter(data_ccs, resolution, target, n_max)                          # 平滑フィルタ
+        result[i] = np.convolve(bscan[i], np.ones(9)/9, mode='same')                          # 移動平均
+        # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)          # ウェーブレット変換
+    # result, med = Median_filter(bscan, target, n_max)                                         # 平滑フィルタ
     # result = Noise_removal(data_ccs, data_sam['spectra'], resolution)                         # 光学系ノイズ除去
-    # for i in range(len(data_ccs['spectra'])):                                                 # ウェーブレット変換
-        # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)
     
     # グラフ表示(B-scan & A-scan)の原画像
     plt.figure(figsize = (12,5), tight_layout = True)
@@ -76,7 +72,7 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(122, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
-    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))                            # Resolution=4000では不要
+    plt.xticks((0,300,600,900,1200,1500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
     plt.show()
@@ -89,7 +85,7 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(222, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
-    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))
+    plt.xticks((0,300,600,900,1200,1500), ('0','100','200','300','400','500'))
     plt.ylim(bottom=vmin_oct, top=vmax_oct)
     plt.legend()
 
@@ -98,7 +94,7 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(224, title = 'A-scan (Correction)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(result[int(target),:n_max], label="Noise reduction")
-    # plt.xticks((0,50,100,150,200,250), ('0','100','200','300','400','500'))
+    plt.xticks((0,300,600,900,1200,1500), ('0','100','200','300','400','500'))
     plt.ylim(bottom=vmin_oct, top=vmax_oct)
     plt.legend()
     plt.show()
