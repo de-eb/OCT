@@ -64,11 +64,11 @@ if __name__ == "__main__":
     depth_max = 1.0                   # 深さ方向の最大値 [mm]
     use_um = True                     # 単位 [μm] を適用するかどうか
     step_h = 100                      # 水平方向の分割数（100で固定）
-    width = 1.0                       # 水平方向の走査幅 [mm]
-    step_v = 150                      # 垂直方向の分割数
-    height = 0.5                      # 垂直方向の走査幅 [mm]
-    averaging = 100                   # １点の測定の平均回数
-    memo = 'Mirror(Res.=4000, Ave.=100). lens=THORLABS LSM54-850'
+    width = 3.0                       # 水平方向の走査幅 [mm]
+    step_v = 100                      # 垂直方向の分割数
+    height = 1.0                      # 垂直方向の走査幅 [mm]
+    averaging = 200                   # １点の測定の平均回数
+    memo = 'Curve cellophane(Res.=4000, Ave.=200). lens=THORLABS LSM54-850'
 
     # SLD光源の波長
     st = 1664                         # スペクトル（CCS）の計算範囲（開始）
