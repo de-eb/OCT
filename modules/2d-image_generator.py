@@ -44,7 +44,7 @@ if __name__=="__main__":
     file_sam = 'data/231120_No_smaple.csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 3.0, 100
     vmin_oct , vmax_oct = -60 , -20
-    target = step*(1 - 0.66)                                                                    # 指定した走査位置におけるA-scanを呼び出す
+    target = step*(1 - 0.670)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
     # データ読み込み
@@ -52,18 +52,18 @@ if __name__=="__main__":
     data_sam = dh.load_spectra(file_path = file_sam, wavelength_range = [770, 910])
     print('<data information>\n filename:{}\n date:{}\n memo:{}'.format(file_ccs, data_ccs['date'], data_ccs['memo']))
     sp = Processor(data_ccs['wavelength'], n, depth_max, resolution)
-    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                                    # IFFT (干渉光 - ミラー)
-    # bscan = sp.bscan_ifft_noise(data_ccs['spectra'], data_ccs['reference'], data_sam['spectra'])         # IFFT (干渉光 - ミラー - ノイズ)
+    bscan = sp.bscan_ifft(data_ccs['spectra'], data_ccs['reference'])                           # IFFT (干渉光 - ミラー)
     n_max = len(bscan[1]) // 8
 
     # ノイズ処理
     result = np.zeros((len(bscan), resolution))
-    for i in range(len(bscan)):
-        result[i] = np.convolve(bscan[i], np.ones(9)/9, mode='same')                          # 移動平均
+    # for i in range(len(bscan)):
+        # result[i] = np.convolve(bscan[i], np.ones(9)/9, mode='same')                          # 移動平均
         # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)          # ウェーブレット変換
     # result, med = Median_filter(bscan, target, n_max)                                         # 平滑フィルタ
     # result = Noise_removal(data_ccs, data_sam['spectra'], resolution)                         # 光学系ノイズ除去
-    
+    result = sp.bscan_ifft_median(data_ccs['spectra'], data_ccs['reference'])
+
     # グラフ表示(B-scan & A-scan)の原画像
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplot(121, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
@@ -71,7 +71,7 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(122, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
-    plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
+    # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
     plt.show()
@@ -84,8 +84,8 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(222, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
-    plt.xticks((0,300,600,900,1200,1500), ('0','100','200','300','400','500'))
-    plt.ylim(bottom=vmin_oct, top=vmax_oct)
+    # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
+    plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
 
     plt.subplot(223, title = 'B-scan (Correction)', xlabel='Depth [µm]', ylabel='Width [mm]')
@@ -93,8 +93,8 @@ if __name__=="__main__":
     plt.colorbar()
     plt.subplot(224, title = 'A-scan (Correction)', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(result[int(target),:n_max], label="Noise reduction")
-    plt.xticks((0,300,600,900,1200,1500), ('0','100','200','300','400','500'))
-    plt.ylim(bottom=vmin_oct, top=vmax_oct)
+    # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
+    plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
     plt.show()
 
