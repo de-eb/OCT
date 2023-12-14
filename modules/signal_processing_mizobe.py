@@ -259,8 +259,7 @@ class SignalProcessorMizobe():
         resam = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            itf[i] = interference[i] - reference
-            itf[i] = self.detrending(itf[i])
+            itf[i] = self.detrending(interference[i] - reference)
             resam[i] = self.resample(itf[i])
         bscan = np.abs(np.fft.ifft(resam, self.__res))
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
@@ -270,19 +269,16 @@ class SignalProcessorMizobe():
     
     def bscan_ifft_median(self, interference, reference):
         """ Generate a B-scan by using 1d_IFFT """
+        itf = np.zeros((len(interference), len(self.__wl)))
         resam = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
-            interference[i] = self.detrending(interference[i] - reference)
-            resam[i] = self.resample(interference[i])
+            itf[i] = self.detrending(interference[i] - reference)
+            resam[i] = self.resample(itf[i])
         bscan = np.fft.ifft(resam, self.__res)
         median = complex(np.median(bscan.real), np.median(bscan.imag))
         bscan = np.abs(bscan - median)
-        bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
-        bscan[self.__res//2: ] = 0.0
-        for i in range(len(bscan)):
-            bscan[i] = self.detrending(bscan[i])
-        result = 10*np.log10(np.abs(bscan))
+        result = 10*np.log10(bscan)
         return result
 
     def bscan_trend(self, interference, reference):
