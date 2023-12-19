@@ -43,7 +43,7 @@ if __name__=="__main__":
     file_ccs = 'data/2312/231208_Curve_cello_2.csv'
     file_sam = 'data/231120_No_smaple.csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 3.0, 100
-    vmin_oct , vmax_oct = -60 , -20
+    vmin_oct , vmax_oct = -60 , -25
     target = step*(1 - 0.670)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
@@ -56,20 +56,21 @@ if __name__=="__main__":
     n_max = len(bscan[1]) // 8
 
     # ノイズ処理
-    result = np.zeros((len(bscan), resolution))
+    result1 = np.zeros((len(bscan), resolution))
+    result2 = np.zeros((len(bscan), resolution))
+    result1 = sp.bscan_ifft_median1(data_ccs['spectra'], data_ccs['reference'])
+    result2 = sp.bscan_ifft_median2(data_ccs['spectra'])
     # for i in range(len(bscan)):
         # result[i] = np.convolve(bscan[i], np.ones(9)/9, mode='same')                          # 移動平均
-        # result[i], wavelet = Wavelet_transform(bscan[i], wavelet='bior3.9', level=1)          # ウェーブレット変換
     # result, med = Median_filter(bscan, target, n_max)                                         # 平滑フィルタ
     # result = Noise_removal(data_ccs, data_sam['spectra'], resolution)                         # 光学系ノイズ除去
-    result = sp.bscan_ifft_median(data_ccs['spectra'], data_ccs['reference'])
 
     # グラフ表示(B-scan & A-scan)の原画像
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplot(121, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
     plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
-    plt.subplot(122, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
+    plt.subplot(122, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
@@ -80,19 +81,21 @@ if __name__=="__main__":
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplots_adjust(wspace = 10)
     plt.subplot(221, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
-    plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
+    plt.imshow(result1[:, :n_max], cmap='gray', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
-    plt.subplot(222, title = 'A-scan (Log)', xlabel='Depth [µm]', ylabel='Intensity [-]')
+    plt.subplot(222, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
     plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
+    plt.plot(result1[int(target),:n_max], label="Reference subtraction")
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
 
-    plt.subplot(223, title = 'B-scan (Correction)', xlabel='Depth [µm]', ylabel='Width [mm]')
-    plt.imshow(result[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
+    plt.subplot(223, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
+    plt.imshow(result2[:, :n_max], cmap='gray', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
-    plt.subplot(224, title = 'A-scan (Correction)', xlabel='Depth [µm]', ylabel='Intensity [-]')
-    plt.plot(result[int(target),:n_max], label="Noise reduction")
+    plt.subplot(224, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
+    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
+    plt.plot(result2[int(target),:n_max], label="Reference no-subtraction")
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()

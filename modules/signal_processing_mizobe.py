@@ -267,7 +267,7 @@ class SignalProcessorMizobe():
         result = 10*np.log10(bscan)
         return result
     
-    def bscan_ifft_median(self, interference, reference):
+    def bscan_ifft_median1(self, interference, reference):
         """ Generate a B-scan by using 1d_IFFT """
         itf = np.zeros((len(interference), len(self.__wl)))
         resam = np.zeros((len(interference), len(self.__wl)*3))
@@ -275,6 +275,19 @@ class SignalProcessorMizobe():
         for i in tqdm(range(len(interference))):
             itf[i] = self.detrending(interference[i] - reference)
             resam[i] = self.resample(itf[i])
+        bscan = np.fft.ifft(resam, self.__res)
+        median = complex(np.median(bscan.real), np.median(bscan.imag))
+        bscan = np.abs(bscan - median)
+        result = 10*np.log10(bscan)
+        return result
+
+    def bscan_ifft_median2(self, interference):
+        """ Generate a B-scan by using 1d_IFFT """
+        resam = np.zeros((len(interference), len(self.__wl)*3))
+        bscan = np.zeros((len(interference), self.__res))
+        for i in tqdm(range(len(interference))):
+            interference[i] = self.detrending(interference[i])
+        resam = self.resample(interference)
         bscan = np.fft.ifft(resam, self.__res)
         median = complex(np.median(bscan.real), np.median(bscan.imag))
         bscan = np.abs(bscan - median)
