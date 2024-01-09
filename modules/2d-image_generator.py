@@ -40,10 +40,10 @@ def Noise_removal(data_ccs, noise, resolution):
 
 if __name__=="__main__":
     # 初期設定(OCT)
-    file_ccs = 'data/2312/231208_Curve_cello_2.csv'
+    file_ccs = 'data/2401/240108_Straight_cello_5.csv'
     file_sam = 'data/231120_No_smaple.csv'
     n, resolution, depth_max, width, step = 1.52, 4000, 0.5, 3.0, 100
-    vmin_oct , vmax_oct = -60 , -25
+    vmin_oct , vmax_oct = -60 , -10
     target = step*(1 - 0.670)                                                                   # 指定した走査位置におけるA-scanを呼び出す
     extent_oct , aspect_oct = [0, depth_max*1e3, 0, width] , (depth_max*1e3/width)*1            # aspect : 1の値を変えて調整可能
     
@@ -71,7 +71,7 @@ if __name__=="__main__":
     plt.imshow(bscan[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
     plt.subplot(122, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
-    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
+    plt.plot(bscan[int(target),:n_max], label='Width ={:.3f} [mm]'.format(width*(1-(target/step))))
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
@@ -81,20 +81,20 @@ if __name__=="__main__":
     plt.figure(figsize = (12,5), tight_layout = True)
     plt.subplots_adjust(wspace = 10)
     plt.subplot(221, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
-    plt.imshow(result1[:, :n_max], cmap='gray', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
+    plt.imshow(result1[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
     plt.subplot(222, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
-    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
+    plt.plot(bscan[int(target),:n_max], label='Width ={:.3f} [mm]'.format(width*(1-(target/step))))
     plt.plot(result1[int(target),:n_max], label="Reference subtraction")
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
     plt.legend()
 
     plt.subplot(223, title = 'B-scan', xlabel='Depth [µm]', ylabel='Width [mm]')
-    plt.imshow(result2[:, :n_max], cmap='gray', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
+    plt.imshow(result2[:, :n_max], cmap='jet', extent=extent_oct, aspect=aspect_oct, vmin=vmin_oct, vmax=vmax_oct)
     plt.colorbar()
     plt.subplot(224, title = 'A-scan', xlabel='Depth [µm]', ylabel='Intensity [-]')
-    plt.plot(bscan[int(target),:n_max], label='Width ={} [mm]'.format(width*(1-(target/step))))
+    plt.plot(bscan[int(target),:n_max], label='Width ={:.3f} [mm]'.format(width*(1-(target/step))))
     plt.plot(result2[int(target),:n_max], label="Reference no-subtraction")
     # plt.xticks((0,100,200,300,400,500), ('0','100','200','300','400','500'))
     plt.ylim(bottom = vmin_oct, top = vmax_oct)
