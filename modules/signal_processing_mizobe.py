@@ -272,26 +272,36 @@ class SignalProcessorMizobe():
         itf = np.zeros((len(interference), len(self.__wl)))
         resam = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
+        result = np.zeros_like(bscan, dtype=float)
         for i in tqdm(range(len(interference))):
             itf[i] = self.detrending(interference[i] - reference)
-            resam[i] = self.resample(itf[i])
+        resam = self.resample(itf)
         bscan = np.fft.ifft(resam, self.__res)
-        median = complex(np.median(bscan.real), np.median(bscan.imag))
-        bscan = np.abs(bscan - median)
-        result = 10*np.log10(bscan)
+        # median = complex(np.median(bscan.real), np.median(bscan.imag))            # Median subtraction for B-scan
+        # bscan = np.abs(bscan - median)
+        # result = 10*np.log10(bscan)
+        for i  in range(len(bscan)):
+            median = complex(np.median(bscan[i].real), np.median(bscan[i].imag))    # Median subtraction for A-scan
+            result[i] = np.abs(bscan[i] - median)
+        result = 10*np.log10(result)
         return result
 
     def bscan_ifft_median2(self, interference):
         """ Generate a B-scan by using 1d_IFFT """
         resam = np.zeros((len(interference), len(self.__wl)*3))
         bscan = np.zeros((len(interference), self.__res))
+        result = np.zeros_like(bscan, dtype=float)
         for i in tqdm(range(len(interference))):
             interference[i] = self.detrending(interference[i])
         resam = self.resample(interference)
         bscan = np.fft.ifft(resam, self.__res)
-        median = complex(np.median(bscan.real), np.median(bscan.imag))
-        bscan = np.abs(bscan - median)
-        result = 10*np.log10(bscan)
+        # median = complex(np.median(bscan.real), np.median(bscan.imag))
+        # bscan = np.abs(bscan - median)
+        # result = 10*np.log10(bscan)
+        for i  in range(len(bscan)):
+            median = complex(np.median(bscan[i].real), np.median(bscan[i].imag))
+            result[i] = np.abs(bscan[i] - median)
+        result = 10*np.log10(result)
         return result
 
     def bscan_trend(self, interference, reference):
