@@ -25,7 +25,7 @@ plt.rcParams['xtick.major.width'] = 1.0
 plt.rcParams['ytick.major.width'] = 1.0
 plt.rcParams["xtick.minor.width"] = 0.5
 plt.rcParams["ytick.minor.width"] = 0.5
-plt.rcParams['font.size'] = 14
+plt.rcParams['font.size'] = 16
 plt.rcParams['axes.linewidth'] = 1.0
 
 # Globals
