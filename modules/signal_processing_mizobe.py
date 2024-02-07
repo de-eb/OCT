@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import interpolate
-from scipy import fftpack
+from scipy import fftpack, signal
 from tqdm import tqdm
 
 class SignalProcessorMizobe():
@@ -260,12 +260,30 @@ class SignalProcessorMizobe():
         bscan = np.zeros((len(interference), self.__res))
         for i in tqdm(range(len(interference))):
             itf[i] = self.detrending(interference[i] - reference)
-            resam[i] = self.resample(itf[i])
+        resam = self.resample(itf)
         bscan = np.abs(np.fft.ifft(resam, self.__res))
         bscan[ :self.__res//2] = 2*bscan[ :self.__res//2]
         bscan[self.__res//2: ] = 0.0
         result = 10*np.log10(bscan)
-        return result
+        # result = bscan
+        return result, resam
+    
+    def bscan_ifft_window(self, interference, reference):
+        """ Generate a B-scan by using 1d_IFFT """
+        itf = np.zeros((len(interference), len(self.__wl)))
+        resam = np.zeros((len(interference), len(self.__wl)*3))
+        bscan = np.zeros((len(interference), self.__res))
+        # window = np.hanning(len(interference[1]))
+        window = np.blackman(len(interference[1]))
+        window = np.roll(window, 10)
+        reference = reference * window
+        interference = interference * window
+        for i in tqdm(range(len(interference))):
+            itf[i] = self.detrending(interference[i] - reference)
+        resam = self.resample(itf)
+        bscan = np.abs(np.fft.ifft(resam, self.__res))
+        result = 10*np.log10(bscan)
+        return result, interference
     
     def bscan_ifft_median1(self, interference, reference):
         """ Generate a B-scan by using 1d_IFFT """
